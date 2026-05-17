@@ -1,0 +1,19 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Usuario {
+  id                Int       @id @default(autoincrement())
+  nombre            String
+  correo            String    @unique
+  contrasena        String
+  rol               String
+  activo            Boolean   @default(true)
+  creadoEn          DateTime  @default(now())
+  tokenRecuperacion String?
+  tokenExpira       DateTime?
+}
