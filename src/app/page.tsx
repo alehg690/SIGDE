@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import LoginPanel from '@/frontend/components/LoginPanel';
 
 type Vista = 'login' | 'recuperar' | 'codigo' | 'nueva-contrasena';
 
@@ -18,12 +19,7 @@ export default function Home() {
   const [error, setError] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [cargando, setCargando] = useState(false);
-
-  const stats = [
-    { num: '100%', label: 'Digital' },
-    { num: '24/7', label: 'Acceso' },
-    { num: 'IA', label: 'Integrada' },
-  ];
+  const [mostrarContrasena, setMostrarContrasena] = useState(false);
 
   function resetear() {
     setError('');
@@ -32,16 +28,12 @@ export default function Home() {
 
   async function handleLogin() {
     resetear();
-    if (!rolSeleccionado) {
-      setError('Por favor selecciona un perfil');
-      return;
-    }
     setCargando(true);
     try {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accion: 'login', correo, contrasena }),
+        body: JSON.stringify({ accion: 'login', correo, contrasena, rolSeleccionado }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -49,7 +41,15 @@ export default function Home() {
         setCorreo('');
         setContrasena('');
       } else {
-        router.push('/dashboard');
+        if (data.usuario.rol.toLowerCase() === 'admin') {
+          router.replace('/dashboard');
+          return;
+        }
+        if (!rolSeleccionado) {
+          setError('Por favor selecciona un perfil');
+          return;
+        }
+        router.replace('/dashboard');
       }
     } catch {
       setError('Error de conexión');
@@ -73,6 +73,32 @@ export default function Home() {
       } else {
         setMensaje('Código enviado a tu correo.');
         setVista('codigo');
+      }
+    } catch {
+      setError('Error de conexión');
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  async function handleVerificarCodigo() {
+    resetear();
+    if (!codigo || codigo.length < 6) {
+      setError('Ingresa el código de 6 dígitos');
+      return;
+    }
+    setCargando(true);
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'verificarCodigo', correo: correoRecuperar, codigo }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error);
+      } else {
+        setVista('nueva-contrasena');
       }
     } catch {
       setError('Error de conexión');
@@ -112,7 +138,7 @@ export default function Home() {
     if (vista === 'login') return (
       <>
         <h2 style={{ textAlign: 'center', color: '#0a1628', fontSize: 28, fontWeight: 600, margin: '0 0 6px' }}>Bienvenido</h2>
-        <p style={{ textAlign: 'center', color: '#7a90a8', fontSize: 14, margin: '0 0 36px', fontWeight: 700 }}>Selecciona tu Perfil para Iniciar Sesion</p>
+        <p style={{ textAlign: 'center', color: '#7a90a8', fontSize: 14, margin: '0 0 36px', fontWeight: 700 }}>Selecciona tu perfil para iniciar sesion</p>
 
         <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#434747', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Perfil</label>
         <select
@@ -127,18 +153,43 @@ export default function Home() {
 
         <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#434747', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Correo</label>
         <input
-          type="email" placeholder="Correo Electronico" value={correo}
+          type="email" placeholder="Example@gmail.com" value={correo}
           onChange={e => setCorreo(e.target.value)}
           style={{ width: '100%', boxSizing: 'border-box', padding: '13px 16px', marginBottom: 20, border: '1px solid #d4dde8', borderRadius: 8, fontSize: 14, color: '#0a1628', background: '#fff', outline: 'none' }}
         />
 
         <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#434747', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Contraseña</label>
-        <input
-          type="password" placeholder="••••••••" value={contrasena}
-          onChange={e => setContrasena(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleLogin()}
-          style={{ width: '100%', boxSizing: 'border-box', padding: '13px 16px', marginBottom: 8, border: '1px solid #d4dde8', borderRadius: 8, fontSize: 14, color: '#0a1628', background: '#fff', outline: 'none' }}
-        />
+<div style={{ position: 'relative' }}>
+  <input
+    type={mostrarContrasena ? 'text' : 'password'}
+    placeholder="••••••••"
+    value={contrasena}
+    onChange={e => setContrasena(e.target.value)}
+    onKeyDown={e => e.key === 'Enter' && handleLogin()}
+    style={{ width: '100%', boxSizing: 'border-box', padding: '13px 48px 13px 16px', marginBottom: 8, border: '1px solid #d4dde8', borderRadius: 8, fontSize: 14, color: '#0a1628', background: '#fff', outline: 'none' }}
+  />
+  <button
+    onMouseDown={() => setMostrarContrasena(true)}
+    onMouseUp={() => setMostrarContrasena(false)}
+    onMouseLeave={() => setMostrarContrasena(false)}
+    onTouchStart={() => setMostrarContrasena(true)}
+    onTouchEnd={() => setMostrarContrasena(false)}
+    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-60%)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#7a90a8' }}
+  >
+    {mostrarContrasena ? (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+        <line x1="1" y1="1" x2="23" y2="23"/>
+      </svg>
+    ) : (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    )}
+  </button>
+</div>
 
         {error && <p style={{ color: '#e53e3e', fontSize: 13, margin: '0 0 16px' }}>{error}</p>}
 
@@ -149,7 +200,7 @@ export default function Home() {
         <p style={{ textAlign: 'center', fontSize: 12, color: '#7a90a8', margin: 0 }}>
           ¿Olvidaste tu contraseña?{' '}
           <a href="#" onClick={e => { e.preventDefault(); setVista('recuperar'); resetear(); }} style={{ color: '#185fa5', fontWeight: 700, textDecoration: 'none' }}>
-            Recupérala aquí
+            Cambiar contraseña
           </a>
         </p>
       </>
@@ -192,14 +243,14 @@ export default function Home() {
         <input
           type="text" placeholder="000000" value={codigo} maxLength={6}
           onChange={e => setCodigo(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && setVista('nueva-contrasena')}
+          onKeyDown={e => e.key === 'Enter' && handleVerificarCodigo()}
           style={{ width: '100%', boxSizing: 'border-box', padding: '13px 16px', marginBottom: 8, border: '1px solid #d4dde8', borderRadius: 8, fontSize: 22, color: '#0a1628', background: '#fff', outline: 'none', letterSpacing: '8px', textAlign: 'center' }}
         />
 
         {error && <p style={{ color: '#e53e3e', fontSize: 13, margin: '0 0 16px' }}>{error}</p>}
 
-        <button onClick={() => { resetear(); setVista('nueva-contrasena'); }} style={{ width: '100%', padding: 15, background: '#0a1628', color: '#e8f4fd', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer', marginBottom: 20, marginTop: 12 }}>
-          Verificar código
+        <button onClick={handleVerificarCodigo} disabled={cargando} style={{ width: '100%', padding: 15, background: cargando ? '#4a6280' : '#0a1628', color: '#e8f4fd', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: cargando ? 'not-allowed' : 'pointer', marginBottom: 20, marginTop: 12 }}>
+          {cargando ? 'Verificando...' : 'Verificar código'}
         </button>
 
         <p style={{ textAlign: 'center', fontSize: 12, color: '#7a90a8', margin: 0 }}>
@@ -248,37 +299,7 @@ export default function Home() {
 
   return (
     <main style={{ position: 'fixed', inset: 0, display: 'flex', fontFamily: 'inherit' }}>
-
-      {/* Panel izquierdo */}
-      <div style={{ flex: 1, background: '#0a1628', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 56, padding: '48px 72px' }}>
-
-        {/* Logo */}
-        <div style={{ textAlign: 'center' }}>
-          <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 80, fontWeight: 700, letterSpacing: '0.12em', color: '#e8f4fd' }}>
-            S<span style={{ color: '#63b3ed' }}>G</span>DE
-          </span>
-          <p style={{ color: 'rgba(200,220,240,0.35)', fontSize: 12, letterSpacing: '0.25em', textTransform: 'uppercase', margin: '8px 0 0' }}>
-            Sistema de Gestión Digital Escolar
-          </p>
-        </div>
-
-        {/* Descripción */}
-        <p style={{ color: 'rgba(200,220,240,0.5)', fontSize: 16, lineHeight: 1.7, maxWidth: 380, margin: 0, textAlign: 'center' }}>
-          Registro, seguimiento y análisis de convivencia en tiempo real.
-        </p>
-
-        {/* Stats */}
-        <div style={{ display: 'flex', gap: 56 }}>
-          {stats.map(s => (
-            <div key={s.label} style={{ textAlign: 'center' }}>
-              <p style={{ color: '#63b3ed', fontSize: 28, fontWeight: 600, margin: '0 0 4px' }}>{s.num}</p>
-              <p style={{ color: 'rgba(200,220,240,0.4)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>{s.label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Panel derecho */}
+      <LoginPanel />
       <div style={{ width: 440, background: '#f7f9fc', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 52px' }}>
         {panelDerecho()}
       </div>

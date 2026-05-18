@@ -7,7 +7,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'SGDE - Sistema de Gestión Digital Escolar',
+  title: 'SIGDE - Sistema de Gestión Digital Escolar',
   description: 'Sistema de gestión de convivencia escolar',
 };
 

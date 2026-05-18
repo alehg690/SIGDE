@@ -23,7 +23,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export function login(correo: string, contrasena: string) {
+export function login(correo: string, contrasena: string, rolSeleccionado?: string) {
   const db = new Database(dbPath);
   const usuario = db.prepare('SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?)').get(correo) as Usuario | undefined;
   db.close();
@@ -33,6 +33,9 @@ export function login(correo: string, contrasena: string) {
   }
   if (!usuario.activo) {
     return { error: 'Usuario inactivo', status: 403 };
+  }
+  if (rolSeleccionado && usuario.rol.toLowerCase() !== 'admin' && usuario.rol.toLowerCase() !== rolSeleccionado.toLowerCase()) {
+    return { error: 'El perfil seleccionado no corresponde a este usuario', status: 403 };
   }
   return {
     data: {
@@ -60,9 +63,9 @@ export async function enviarCodigoRecuperacion(correo: string) {
   db.close();
 
   await transporter.sendMail({
-    from: `"SGDE Sistema Escolar" <${process.env.EMAIL_USER}>`,
+    from: `"no.reply-SIGDE" <${process.env.EMAIL_USER}>`,
     to: correo,
-    subject: 'Código de verificación - SGDE',
+    subject: 'Código de verificación - SIGDE',
     html: `
       <div style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
         <h2 style="color: #0a1628;">Recuperación de contraseña</h2>
@@ -91,9 +94,28 @@ export function cambiarContrasena(correo: string, codigo: string, nuevaContrasen
     db.close();
     return { error: 'El código ha expirado', status: 400 };
   }
+  if (usuario.contrasena === nuevaContrasena) {
+    db.close();
+    return { error: 'La nueva contraseña no puede ser igual a la anterior', status: 400 };
+  }
 
   db.prepare('UPDATE Usuario SET contrasena = ?, tokenRecuperacion = NULL, tokenExpira = NULL WHERE id = ?').run(nuevaContrasena, usuario.id);
   db.close();
 
   return { data: { mensaje: 'Contraseña actualizada correctamente' } };
+}
+export function verificarCodigo(correo: string, codigo: string) {
+  const db = new Database(dbPath);
+  const usuario = db.prepare('SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?)').get(correo) as Usuario | undefined;
+
+  if (!usuario || usuario.tokenRecuperacion !== codigo) {
+    db.close();
+    return { error: 'Código incorrecto', status: 400 };
+  }
+  if (new Date() > new Date(usuario.tokenExpira!)) {
+    db.close();
+    return { error: 'El código ha expirado', status: 400 };
+  }
+  db.close();
+  return { data: { mensaje: 'Código válido' } };
 }
