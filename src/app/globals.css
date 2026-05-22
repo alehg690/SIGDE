@@ -7,5 +7,73 @@
 html, body {
   height: 100%;
   width: 100%;
-  overflow: hidden;
+}
+
+.login-container {
+  display: flex;
+  flex-direction: row;
+  min-height: 100vh;
+  font-family: inherit;
+}
+
+.login-panel-left {
+  flex: 1;
+  min-height: 100vh;
+}
+
+.login-form-panel {
+  width: 440px;
+  min-width: 440px;
+  background: #f7f9fc;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 52px;
+  min-height: 100vh;
+}
+
+.login-mobile-logo {
+  display: none;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 768px) {
+  .login-container {
+    flex-direction: column;
+  }
+
+  .login-panel-desktop {
+    display: none !important;
+  }
+
+  .login-panel-left {
+    min-height: auto;
+    height: auto;
+  }
+
+  .login-form-panel {
+    width: 100%;
+    min-width: unset;
+    background: #0a1628;
+    padding: 48px 28px;
+    min-height: 100vh;
+    justify-content: center;
+  }
+
+  .login-form-panel h2 {
+    color: #e8f4fd !important;
+  }
+
+  .login-form-panel p {
+    color: #7a90a8 !important;
+  }
+
+  .login-form-panel label {
+    color: #7a90a8 !important;
+  }
+
+  .login-mobile-logo {
+    display: block;
+  }
 }

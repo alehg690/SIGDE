@@ -6,7 +6,7 @@ export default function LoginPanel() {
   ];
 
   return (
-    <div style={{ flex: 1, background: '#0a1628', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 56, padding: '48px 72px' }}>
+    <div className="login-panel-left login-panel-desktop" style={{ flex: 1, minWidth: 0, background: '#0a1628', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 56, padding: '48px 72px' }}>
 
       <div style={{ textAlign: 'center' }}>
         <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 80, fontWeight: 700, letterSpacing: '0.12em', color: '#e8f4fd' }}>

@@ -137,6 +137,14 @@ export default function Home() {
   const panelDerecho = () => {
     if (vista === 'login') return (
       <>
+      <div className="login-mobile-logo">
+  <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 52, fontWeight: 700, letterSpacing: '0.12em', color: '#e8f4fd' }}>
+    SI<span style={{ color: '#63b3ed' }}>G</span>DE
+  </span>
+  <p style={{ color: 'rgba(200,220,240,0.35)', fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', margin: '4px 0 0', textAlign: 'center' }}>
+    Sistema de Gestión Digital Escolar
+  </p>
+</div>
         <h2 style={{ textAlign: 'center', color: '#0a1628', fontSize: 28, fontWeight: 600, margin: '0 0 6px' }}>Bienvenido</h2>
         <p style={{ textAlign: 'center', color: '#7a90a8', fontSize: 14, margin: '0 0 36px', fontWeight: 700 }}>Selecciona tu perfil para iniciar sesion</p>
 
@@ -193,9 +201,20 @@ export default function Home() {
 
         {error && <p style={{ color: '#e53e3e', fontSize: 13, margin: '0 0 16px' }}>{error}</p>}
 
-        <button onClick={handleLogin} disabled={cargando} style={{ width: '100%', padding: 15, background: cargando ? '#4a6280' : '#0a1628', color: '#e8f4fd', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: cargando ? 'not-allowed' : 'pointer', marginBottom: 20, marginTop: 12, transition: 'background 0.2s' }}>
-          {cargando ? 'Verificando...' : 'Ingresar al sistema'}
-        </button>
+        <button 
+  onClick={!rolSeleccionado || !correo || !contrasena ? () => setError('Por favor completa todos los campos') : handleLogin} 
+  disabled={cargando}
+  style={{ 
+    width: '100%', padding: 15, 
+    background: cargando ? '#4a6280' : (!rolSeleccionado || !correo || !contrasena) ? '#4a6280' : '#0a1628',
+    opacity: (!rolSeleccionado || !correo || !contrasena) ? 0.5 : 1,
+    color: '#e8f4fd', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 500, 
+    cursor: cargando ? 'not-allowed' : 'pointer', 
+    marginBottom: 20, marginTop: 12, transition: 'all 0.2s' 
+  }}
+>
+  {cargando ? 'Verificando...' : 'Ingresar al sistema'}
+</button>
 
         <p style={{ textAlign: 'center', fontSize: 12, color: '#7a90a8', margin: 0 }}>
           ¿Olvidaste tu contraseña?{' '}
@@ -298,9 +317,9 @@ export default function Home() {
   };
 
   return (
-    <main style={{ position: 'fixed', inset: 0, display: 'flex', fontFamily: 'inherit' }}>
+    <main className="login-container">
       <LoginPanel />
-      <div style={{ width: 440, background: '#f7f9fc', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 52px' }}>
+      <div className="login-form-panel">
         {panelDerecho()}
       </div>
     </main>
