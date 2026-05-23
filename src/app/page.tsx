@@ -201,20 +201,25 @@ export default function Home() {
 
         {error && <p style={{ color: '#e53e3e', fontSize: 13, margin: '0 0 16px' }}>{error}</p>}
 
-        <button 
-  onClick={!rolSeleccionado || !correo || !contrasena ? () => setError('Por favor completa todos los campos') : handleLogin} 
+        <button
+  onClick={!rolSeleccionado || !correo || !contrasena ? () => setError('Por favor completa todos los campos') : handleLogin}
   disabled={cargando}
-  style={{ 
-    width: '100%', padding: 15, 
-    background: cargando ? '#4a6280' : (!rolSeleccionado || !correo || !contrasena) ? '#4a6280' : '#0a1628',
+  style={{
+    width: '100%', padding: 15,
+    background: cargando ? '#4a6280' : (!rolSeleccionado || !correo || !contrasena) ? '#4a6280' : '#63b3ed',
+    color: '#e8f4fd',
     opacity: (!rolSeleccionado || !correo || !contrasena) ? 0.5 : 1,
-    color: '#e8f4fd', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 500, 
-    cursor: cargando ? 'not-allowed' : 'pointer', 
-    marginBottom: 20, marginTop: 12, transition: 'all 0.2s' 
+    border: 'none',
+    borderRadius: 8,
+    fontSize: 14, fontWeight: 500,
+    cursor: 'pointer',
+    marginBottom: 20, marginTop: 12,
+    transition: 'all 0.2s',
   }}
 >
   {cargando ? 'Verificando...' : 'Ingresar al sistema'}
 </button>
+
 
         <p style={{ textAlign: 'center', fontSize: 12, color: '#7a90a8', margin: 0 }}>
           ¿Olvidaste tu contraseña?{' '}
