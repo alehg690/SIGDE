@@ -6,9 +6,9 @@ export async function POST(req: NextRequest) {
   const { accion } = body;
 
   if (accion === 'login') {
-    const { correo, contrasena, rolSeleccionado } = body;
+    const { correo, contrasena} = body;
     if (!correo || !contrasena) return NextResponse.json({ error: 'Correo y contraseña son requeridos' }, { status: 400 });
-    const r = await login(correo, contrasena, rolSeleccionado);
+    const r = await login(correo, contrasena);
     if ('error' in r) return NextResponse.json({ error: r.error }, { status: r.status });
     else return NextResponse.json({ mensaje: 'Login exitoso', usuario: r.data });
   }
