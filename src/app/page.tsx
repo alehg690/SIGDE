@@ -127,18 +127,6 @@ export default function Home() {
   const panelDerecho = () => {
     if (vista === 'login') return (
       <>
-        <div className="login-mobile-logo">
-          <span style={{
-            fontFamily: "'Inter', system-ui, sans-serif",
-            fontSize: 36,
-            fontWeight: 700,
-            letterSpacing: '0.15em',
-            color: '#e8f4fd',
-            display: 'block',
-          }}>
-            SI<span style={{ color: '#63b3ed' }}>G</span>DE
-          </span>
-        </div>
 
         <h2 className="login-title" style={{ textAlign: 'center', fontSize: 22, fontWeight: 600, margin: '0 0 8px' }}>Iniciar sesión</h2>
         <p className="login-subtitle" style={{ textAlign: 'center', fontSize: 13, margin: '0 0 32px' }}>Ingresa tus credenciales para continuar</p>

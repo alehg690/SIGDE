@@ -32,12 +32,6 @@ html, body {
   min-height: 100vh;
 }
 
-.login-mobile-logo {
-  display: none;
-  text-align: center;
-  margin-bottom: 50px;
-  margin-top: 0;
-}
 @media (max-width: 768px) {
   .login-container {
     flex-direction: column;
