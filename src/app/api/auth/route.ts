@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   if (accion === 'login') {
     const { correo, contrasena, rolSeleccionado } = body;
     if (!correo || !contrasena) return NextResponse.json({ error: 'Correo y contraseña son requeridos' }, { status: 400 });
-    const r = login(correo, contrasena, rolSeleccionado);
+    const r = await login(correo, contrasena, rolSeleccionado);
     if ('error' in r) return NextResponse.json({ error: r.error }, { status: r.status });
     else return NextResponse.json({ mensaje: 'Login exitoso', usuario: r.data });
   }
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   if (accion === 'verificarCodigo') {
     const { correo, codigo } = body;
     if (!correo || !codigo) return NextResponse.json({ error: 'Todos los campos son requeridos' }, { status: 400 });
-    const r = verificarCodigo(correo, codigo);
+    const r = await verificarCodigo(correo, codigo);
     if ('error' in r) return NextResponse.json({ error: r.error }, { status: r.status });
     else return NextResponse.json(r.data);
   }
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (accion === 'cambiarContrasena') {
     const { correo, codigo, nuevaContrasena } = body;
     if (!correo || !codigo || !nuevaContrasena) return NextResponse.json({ error: 'Todos los campos son requeridos' }, { status: 400 });
-    const r = cambiarContrasena(correo, codigo, nuevaContrasena);
+    const r = await cambiarContrasena(correo, codigo, nuevaContrasena);
     if ('error' in r) return NextResponse.json({ error: r.error }, { status: r.status });
     else return NextResponse.json(r.data);
   }

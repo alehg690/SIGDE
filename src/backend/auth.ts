@@ -1,8 +1,10 @@
-import path from 'path';
-import Database from 'better-sqlite3';
+import { createClient } from '@libsql/client';
 import nodemailer from 'nodemailer';
 
-const dbPath = path.join(process.cwd(), 'dev.db');
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL!,
+  authToken: process.env.TURSO_AUTH_TOKEN!,
+});
 
 type Usuario = {
   id: number;
@@ -23,10 +25,13 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export function login(correo: string, contrasena: string, rolSeleccionado?: string) {
-  const db = new Database(dbPath);
-  const usuario = db.prepare('SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?)').get(correo) as Usuario | undefined;
-  db.close();
+export async function login(correo: string, contrasena: string, rolSeleccionado?: string) {
+  const result = await db.execute({
+    sql: 'SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?)',
+    args: [correo],
+  });
+
+  const usuario = result.rows[0] as unknown as Usuario | undefined;
 
   if (!usuario || usuario.contrasena !== contrasena) {
     return { error: 'Correo o contraseña incorrectos', status: 401 };
@@ -48,19 +53,24 @@ export function login(correo: string, contrasena: string, rolSeleccionado?: stri
 }
 
 export async function enviarCodigoRecuperacion(correo: string) {
-  const db = new Database(dbPath);
-  const usuario = db.prepare('SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?)').get(correo) as Usuario | undefined;
+  const result = await db.execute({
+    sql: 'SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?)',
+    args: [correo],
+  });
+
+  const usuario = result.rows[0] as unknown as Usuario | undefined;
 
   if (!usuario) {
-    db.close();
     return { error: 'No existe una cuenta con ese correo', status: 404 };
   }
 
   const codigo = Math.floor(100000 + Math.random() * 900000).toString();
   const expira = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-  db.prepare('UPDATE Usuario SET tokenRecuperacion = ?, tokenExpira = ? WHERE id = ?').run(codigo, expira, usuario.id);
-  db.close();
+  await db.execute({
+    sql: 'UPDATE Usuario SET tokenRecuperacion = ?, tokenExpira = ? WHERE id = ?',
+    args: [codigo, expira, usuario.id],
+  });
 
   await transporter.sendMail({
     from: `"no.reply-SIGDE" <${process.env.EMAIL_USER}>`,
@@ -82,40 +92,45 @@ export async function enviarCodigoRecuperacion(correo: string) {
   return { data: { mensaje: 'Código enviado correctamente' } };
 }
 
-export function cambiarContrasena(correo: string, codigo: string, nuevaContrasena: string) {
-  const db = new Database(dbPath);
-  const usuario = db.prepare('SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?)').get(correo) as Usuario | undefined;
+export async function verificarCodigo(correo: string, codigo: string) {
+  const result = await db.execute({
+    sql: 'SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?)',
+    args: [correo],
+  });
+
+  const usuario = result.rows[0] as unknown as Usuario | undefined;
 
   if (!usuario || usuario.tokenRecuperacion !== codigo) {
-    db.close();
     return { error: 'Código incorrecto', status: 400 };
   }
   if (new Date() > new Date(usuario.tokenExpira!)) {
-    db.close();
+    return { error: 'El código ha expirado', status: 400 };
+  }
+  return { data: { mensaje: 'Código válido' } };
+}
+
+export async function cambiarContrasena(correo: string, codigo: string, nuevaContrasena: string) {
+  const result = await db.execute({
+    sql: 'SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?)',
+    args: [correo],
+  });
+
+  const usuario = result.rows[0] as unknown as Usuario | undefined;
+
+  if (!usuario || usuario.tokenRecuperacion !== codigo) {
+    return { error: 'Código incorrecto', status: 400 };
+  }
+  if (new Date() > new Date(usuario.tokenExpira!)) {
     return { error: 'El código ha expirado', status: 400 };
   }
   if (usuario.contrasena === nuevaContrasena) {
-    db.close();
     return { error: 'La nueva contraseña no puede ser igual a la anterior', status: 400 };
   }
 
-  db.prepare('UPDATE Usuario SET contrasena = ?, tokenRecuperacion = NULL, tokenExpira = NULL WHERE id = ?').run(nuevaContrasena, usuario.id);
-  db.close();
+  await db.execute({
+    sql: 'UPDATE Usuario SET contrasena = ?, tokenRecuperacion = NULL, tokenExpira = NULL WHERE id = ?',
+    args: [nuevaContrasena, usuario.id],
+  });
 
   return { data: { mensaje: 'Contraseña actualizada correctamente' } };
-}
-export function verificarCodigo(correo: string, codigo: string) {
-  const db = new Database(dbPath);
-  const usuario = db.prepare('SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?)').get(correo) as Usuario | undefined;
-
-  if (!usuario || usuario.tokenRecuperacion !== codigo) {
-    db.close();
-    return { error: 'Código incorrecto', status: 400 };
-  }
-  if (new Date() > new Date(usuario.tokenExpira!)) {
-    db.close();
-    return { error: 'El código ha expirado', status: 400 };
-  }
-  db.close();
-  return { data: { mensaje: 'Código válido' } };
 }
