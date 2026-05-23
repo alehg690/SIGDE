@@ -9,7 +9,6 @@ type Vista = 'login' | 'recuperar' | 'codigo' | 'nueva-contrasena';
 export default function Home() {
   const router = useRouter();
   const [vista, setVista] = useState<Vista>('login');
-  const [rolSeleccionado, setRolSeleccionado] = useState('');
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [correoRecuperar, setCorreoRecuperar] = useState('');
@@ -33,7 +32,7 @@ export default function Home() {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accion: 'login', correo, contrasena, rolSeleccionado }),
+        body: JSON.stringify({ accion: 'login', correo, contrasena }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -41,14 +40,6 @@ export default function Home() {
         setCorreo('');
         setContrasena('');
       } else {
-        if (data.usuario.rol.toLowerCase() === 'admin') {
-          router.replace('/dashboard');
-          return;
-        }
-        if (!rolSeleccionado) {
-          setError('Por favor selecciona un perfil');
-          return;
-        }
         router.replace('/dashboard');
       }
     } catch {
@@ -57,7 +48,6 @@ export default function Home() {
       setCargando(false);
     }
   }
-
   async function handleRecuperar() {
     resetear();
     setCargando(true);
@@ -137,93 +127,85 @@ export default function Home() {
   const panelDerecho = () => {
     if (vista === 'login') return (
       <>
-      <div className="login-mobile-logo">
-  <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 52, fontWeight: 700, letterSpacing: '0.12em', color: '#e8f4fd' }}>
-    SI<span style={{ color: '#63b3ed' }}>G</span>DE
-  </span>
-  <p style={{ color: 'rgba(200,220,240,0.35)', fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', margin: '4px 0 0', textAlign: 'center' }}>
-    Sistema de Gestión Digital Escolar
-  </p>
-</div>
-        <h2 style={{ textAlign: 'center', color: '#0a1628', fontSize: 28, fontWeight: 600, margin: '0 0 6px' }}>Bienvenido</h2>
-        <p style={{ textAlign: 'center', color: '#7a90a8', fontSize: 14, margin: '0 0 36px', fontWeight: 700 }}>Selecciona tu perfil para iniciar sesion</p>
+        <div className="login-mobile-logo">
+          <span style={{
+            fontFamily: "'Inter', system-ui, sans-serif",
+            fontSize: 36,
+            fontWeight: 700,
+            letterSpacing: '0.15em',
+            color: '#e8f4fd',
+            display: 'block',
+          }}>
+            SI<span style={{ color: '#63b3ed' }}>G</span>DE
+          </span>
+        </div>
 
-        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#434747', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Perfil</label>
-        <select
-          value={rolSeleccionado}
-          onChange={e => { setRolSeleccionado(e.target.value); resetear(); }}
-          style={{ width: '100%', boxSizing: 'border-box', padding: '13px 16px', marginBottom: 20, border: '1px solid #d4dde8', borderRadius: 8, fontSize: 14, color: '#0a1628', background: '#fff', outline: 'none', cursor: 'pointer' }}
-        >
-          <option value="" disabled>Selecciona un perfil</option>
-          <option value="Docente">Docente</option>
-          <option value="Coordinador">Coordinador</option>
-        </select>
+        <h2 className="login-title" style={{ textAlign: 'center', fontSize: 22, fontWeight: 600, margin: '0 0 8px' }}>Iniciar sesión</h2>
+        <p className="login-subtitle" style={{ textAlign: 'center', fontSize: 13, margin: '0 0 32px' }}>Ingresa tus credenciales para continuar</p>
 
-        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#434747', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Correo</label>
         <input
-          type="email" placeholder="Example@gmail.com" value={correo}
-          onChange={e => setCorreo(e.target.value)}
-          style={{ width: '100%', boxSizing: 'border-box', padding: '13px 16px', marginBottom: 20, border: '1px solid #d4dde8', borderRadius: 8, fontSize: 14, color: '#0a1628', background: '#fff', outline: 'none' }}
-        />
+  type="email" placeholder="Correo electrónico" value={correo}
+  onChange={e => setCorreo(e.target.value)}
+  className="input-field"
+  style={{}}
+/>
 
-        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#434747', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Contraseña</label>
-<div style={{ position: 'relative' }}>
-  <input
-    type={mostrarContrasena ? 'text' : 'password'}
-    placeholder="••••••••"
-    value={contrasena}
-    onChange={e => setContrasena(e.target.value)}
-    onKeyDown={e => e.key === 'Enter' && handleLogin()}
-    style={{ width: '100%', boxSizing: 'border-box', padding: '13px 48px 13px 16px', marginBottom: 8, border: '1px solid #d4dde8', borderRadius: 8, fontSize: 14, color: '#0a1628', background: '#fff', outline: 'none' }}
-  />
-  <button
-    onMouseDown={() => setMostrarContrasena(true)}
-    onMouseUp={() => setMostrarContrasena(false)}
-    onMouseLeave={() => setMostrarContrasena(false)}
-    onTouchStart={() => setMostrarContrasena(true)}
-    onTouchEnd={() => setMostrarContrasena(false)}
-    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-60%)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#7a90a8' }}
-  >
-    {mostrarContrasena ? (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-        <line x1="1" y1="1" x2="23" y2="23"/>
-      </svg>
-    ) : (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-        <circle cx="12" cy="12" r="3"/>
-      </svg>
-    )}
-  </button>
-</div>
+        <div style={{ position: 'relative', marginBottom: 8 }}>
+          <input
+  type={mostrarContrasena ? 'text' : 'password'}
+  placeholder="Contraseña"
+  value={contrasena}
+  onChange={e => setContrasena(e.target.value)}
+  onKeyDown={e => e.key === 'Enter' && handleLogin()}
+  className="input-field-password"
+  style={{}}
+/>
+          <button
+            onMouseDown={() => setMostrarContrasena(true)}
+            onMouseUp={() => setMostrarContrasena(false)}
+            onMouseLeave={() => setMostrarContrasena(false)}
+            onTouchStart={() => setMostrarContrasena(true)}
+            onTouchEnd={() => setMostrarContrasena(false)}
+            style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'rgba(200,220,240,0.5)' }}
+          >
+            {mostrarContrasena ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            )}
+          </button>
+        </div>
 
-        {error && <p style={{ color: '#e53e3e', fontSize: 13, margin: '0 0 16px' }}>{error}</p>}
+        {error && <p style={{ color: '#fc8181', fontSize: 13, margin: '8px 0 16px' }}>{error}</p>}
 
         <button
-  onClick={!rolSeleccionado || !correo || !contrasena ? () => setError('Por favor completa todos los campos') : handleLogin}
-  disabled={cargando}
-  style={{
-    width: '100%', padding: 15,
-    background: cargando ? '#4a6280' : (!rolSeleccionado || !correo || !contrasena) ? '#4a6280' : '#63b3ed',
-    color: '#e8f4fd',
-    opacity: (!rolSeleccionado || !correo || !contrasena) ? 0.5 : 1,
-    border: 'none',
-    borderRadius: 8,
-    fontSize: 14, fontWeight: 500,
-    cursor: 'pointer',
-    marginBottom: 20, marginTop: 12,
-    transition: 'all 0.2s',
-  }}
->
-  {cargando ? 'Verificando...' : 'Ingresar al sistema'}
-</button>
+          onClick={!correo || !contrasena ? () => setError('Por favor completa todos los campos') : handleLogin}
+          disabled={cargando}
+          style={{
+            width: '100%', padding: 15,
+            background: cargando ? '#4a6280' : (!correo || !contrasena) ? '#4a6280' : '#63b3ed',
+            color: '#e8f4fd',
+            opacity: !contrasena || !correo ? 0.5 : 1,
+            border: 'none', borderRadius: 10,
+            fontSize: 14, fontWeight: 600,
+            cursor: 'pointer',
+            marginTop: 8, marginBottom: 20,
+            transition: 'all 0.2s',
+          }}
+        >
+          {cargando ? 'Verificando...' : 'Ingresar al sistema'}
+        </button>
 
-
-        <p style={{ textAlign: 'center', fontSize: 12, color: '#7a90a8', margin: 0 }}>
+        <p style={{ textAlign: 'center', fontSize: 12, color: '#4a6280', margin: 0 }}>
           ¿Olvidaste tu contraseña?{' '}
-          <a href="#" onClick={e => { e.preventDefault(); setVista('recuperar'); resetear(); }} style={{ color: '#185fa5', fontWeight: 700, textDecoration: 'none' }}>
+          <a href="#" onClick={e => { e.preventDefault(); setVista('recuperar'); resetear(); }} style={{ color: '#63b3ed', fontWeight: 600, textDecoration: 'none' }}>
             Cambiar contraseña
           </a>
         </p>
@@ -246,9 +228,24 @@ export default function Home() {
         {error && <p style={{ color: '#e53e3e', fontSize: 13, margin: '0 0 16px' }}>{error}</p>}
         {mensaje && <p style={{ color: '#2f855a', fontSize: 13, margin: '0 0 16px' }}>{mensaje}</p>}
 
-        <button onClick={handleRecuperar} disabled={cargando} style={{ width: '100%', padding: 15, background: cargando ? '#4a6280' : '#0a1628', color: '#e8f4fd', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: cargando ? 'not-allowed' : 'pointer', marginBottom: 20, marginTop: 12 }}>
-          {cargando ? 'Enviando...' : 'Enviar código'}
-        </button>
+        <button 
+  onClick={!correoRecuperar ? () => setError('Ingresa tu correo') : handleRecuperar} 
+  disabled={cargando}
+  style={{
+    width: '100%', padding: 15,
+    background: cargando ? '#4a6280' : !correoRecuperar ? '#4a6280' : '#63b3ed',
+    color: '#e8f4fd',
+    opacity: !correoRecuperar ? 0.5 : 1,
+    border: 'none',
+    borderRadius: 8,
+    fontSize: 14, fontWeight: 500,
+    cursor: 'pointer',
+    marginBottom: 20, marginTop: 12,
+    transition: 'all 0.2s',
+  }}
+>
+  {cargando ? 'Enviando...' : 'Enviar código'}
+</button>
 
         <p style={{ textAlign: 'center', fontSize: 12, color: '#7a90a8', margin: 0 }}>
           <a href="#" onClick={e => { e.preventDefault(); setVista('login'); resetear(); }} style={{ color: '#185fa5', fontWeight: 700, textDecoration: 'none' }}>

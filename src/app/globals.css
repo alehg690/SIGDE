@@ -35,9 +35,9 @@ html, body {
 .login-mobile-logo {
   display: none;
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 50px;
+  margin-top: 0;
 }
-
 @media (max-width: 768px) {
   .login-container {
     flex-direction: column;
@@ -56,7 +56,7 @@ html, body {
     width: 100%;
     min-width: unset;
     background: #0a1628;
-    padding: 48px 28px;
+    padding: 0px 36px 48px;
     min-height: 100vh;
     justify-content: center;
   }
@@ -75,5 +75,58 @@ html, body {
 
   .login-mobile-logo {
     display: block;
+  }
+}
+.input-field, .input-field-password {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 16px;
+  border: 1px solid #d4dde8;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #0a1628;
+  background: #fff;
+  outline: none;
+  margin-bottom: 16px;
+}
+
+.input-field-password {
+  padding: 13px 48px 13px 16px;
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .input-field {
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: #e8f4fd;
+    background: rgba(255,255,255,0.07);
+  }
+
+  .input-field-password {
+    padding: 14px 48px 14px 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: #e8f4fd;
+    background: rgba(255,255,255,0.07);
+  }
+}
+.login-title {
+  color: #0a1628;
+}
+
+.login-subtitle {
+  color: #7a90a8;
+}
+
+@media (max-width: 768px) {
+  .login-title {
+    color: #e8f4fd !important;
+  }
+
+  .login-subtitle {
+    color: rgba(200,220,240,0.5) !important;
   }
 }

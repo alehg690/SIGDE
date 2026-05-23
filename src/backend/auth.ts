@@ -25,7 +25,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export async function login(correo: string, contrasena: string, rolSeleccionado?: string) {
+export async function login(correo: string, contrasena: string) {
   const result = await db.execute({
     sql: 'SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?)',
     args: [correo],
@@ -38,9 +38,6 @@ export async function login(correo: string, contrasena: string, rolSeleccionado?
   }
   if (!usuario.activo) {
     return { error: 'Usuario inactivo', status: 403 };
-  }
-  if (rolSeleccionado && usuario.rol.toLowerCase() !== 'admin' && usuario.rol.toLowerCase() !== rolSeleccionado.toLowerCase()) {
-    return { error: 'El perfil seleccionado no corresponde a este usuario', status: 403 };
   }
   return {
     data: {
