@@ -165,6 +165,7 @@ export default function Home() {
     alt="SIGDE Logo"
     width={200}
     height={200}
+    loading="eager"
   />
 </div>
 </div>

@@ -1,6 +1,19 @@
 import { createClient } from '@libsql/client';
 import nodemailer from 'nodemailer';
+import bcrypt from 'bcryptjs';
 
+export async function hashPassword(
+  contrasena: string
+) {
+  return bcrypt.hash(contrasena, 10);
+}
+
+export async function verificarPassword(
+  contrasena: string,
+  hash: string
+) {
+  return bcrypt.compare(contrasena, hash);
+}
 
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL!,
@@ -34,9 +47,24 @@ export async function login(correo: string, contrasena: string) {
 
   const usuario = result.rows[0] as unknown as Usuario | undefined;
 
-  if (!usuario || usuario.contrasena !== contrasena) {
-    return { error: 'Correo o contraseña incorrectos', status: 401 };
-  }
+ if (!usuario) {
+  return {
+    error: 'Correo o contraseña incorrectos',
+    status: 401,
+  };
+}
+
+const passwordValida = await verificarPassword(
+  contrasena,
+  usuario.contrasena
+);
+
+if (!passwordValida) {
+  return {
+    error: 'Correo o contraseña incorrectos',
+    status: 401,
+  };
+}
   if (!usuario.activo) {
     return { error: 'Usuario inactivo', status: 403 };
   }
@@ -107,7 +135,11 @@ export async function verificarCodigo(correo: string, codigo: string) {
   return { data: { mensaje: 'Código válido' } };
 }
 
-export async function cambiarContrasena(correo: string, codigo: string, nuevaContrasena: string) {
+export async function cambiarContrasena(
+  correo: string,
+  codigo: string,
+  nuevaContrasena: string
+) {
   const result = await db.execute({
     sql: 'SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?)',
     args: [correo],
@@ -118,17 +150,27 @@ export async function cambiarContrasena(correo: string, codigo: string, nuevaCon
   if (!usuario || usuario.tokenRecuperacion !== codigo) {
     return { error: 'Código incorrecto', status: 400 };
   }
+
   if (new Date() > new Date(usuario.tokenExpira!)) {
     return { error: 'El código ha expirado', status: 400 };
   }
-  if (usuario.contrasena === nuevaContrasena) {
-    return { error: 'La nueva contraseña no puede ser igual a la anterior', status: 400 };
-  }
+
+  const hash = await hashPassword(nuevaContrasena);
 
   await db.execute({
-    sql: 'UPDATE Usuario SET contrasena = ?, tokenRecuperacion = NULL, tokenExpira = NULL WHERE id = ?',
-    args: [nuevaContrasena, usuario.id],
+    sql: `
+      UPDATE Usuario
+      SET contrasena = ?,
+          tokenRecuperacion = NULL,
+          tokenExpira = NULL
+      WHERE id = ?
+    `,
+    args: [hash, usuario.id],
   });
 
-  return { data: { mensaje: 'Contraseña actualizada correctamente' } };
+  return {
+    data: {
+      mensaje: 'Contraseña actualizada correctamente',
+    },
+  };
 }
