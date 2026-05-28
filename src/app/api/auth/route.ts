@@ -3,7 +3,7 @@ import { login, enviarCodigoRecuperacion, cambiarContrasena, verificarCodigo, }
 from '@/backend/auth';
 
 import { cookies } from 'next/headers';
-import { crearToken } from '@/backend/jwt';
+import { crearToken } from '@/lib/jwt';
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
