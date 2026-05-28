@@ -161,7 +161,7 @@ export default function Home() {
   }}
 >
   <Image
-    src="/Logo.png"
+    src="/public/Logo.png"
     alt="SIGDE Logo"
     width={200}
     height={200}
