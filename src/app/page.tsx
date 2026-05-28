@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import LoginPanel from '@/frontend/components/LoginPanel';
+import Image from "next/image";
 
 type Vista = 'login' | 'recuperar' | 'codigo' | 'nueva-contrasena';
 
@@ -19,6 +20,19 @@ export default function Home() {
   const [mensaje, setMensaje] = useState('');
   const [cargando, setCargando] = useState(false);
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
+  const [recordarUsuario, setRecordarUsuario] = useState(false);
+
+  useEffect(() => {
+  const correoGuardado = localStorage.getItem('sigde_correo');
+
+  if (correoGuardado) {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCorreo(correoGuardado);
+
+    setRecordarUsuario(true);
+  }
+}, []);
+
 
   function resetear() {
     setError('');
@@ -34,6 +48,11 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accion: 'login', correo, contrasena }),
       });
+      if (recordarUsuario) {
+  localStorage.setItem('sigde_correo', correo);
+} else {
+  localStorage.removeItem('sigde_correo');
+}
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || 'Error al iniciar sesión');
@@ -127,7 +146,28 @@ export default function Home() {
   const panelDerecho = () => {
     if (vista === 'login') return (
       <>
-
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+  <div
+  style={{
+    width: 200,
+    height: 200,
+    borderRadius: "50%",
+    background: "#fff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+    marginBottom: 20,
+  }}
+>
+  <Image
+    src="/logo.png"
+    alt="SIGDE Logo"
+    width={200}
+    height={200}
+  />
+</div>
+</div>
         <h2 className="login-title" style={{ textAlign: 'center', fontSize: 22, fontWeight: 600, margin: '0 0 8px' }}>Iniciar sesión</h2>
         <p className="login-subtitle" style={{ textAlign: 'center', fontSize: 13, margin: '0 0 32px' }}>Ingresa tus credenciales para continuar</p>
 
@@ -172,7 +212,21 @@ export default function Home() {
         </div>
 
         {error && <p style={{ color: '#fc8181', fontSize: 13, margin: '8px 0 16px' }}>{error}</p>}
-
+<div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0 4px' }}>
+  <input
+    type="checkbox"
+    id="recordar"
+    checked={recordarUsuario}
+    onChange={e => {
+      setRecordarUsuario(e.target.checked);
+      if (!e.target.checked) localStorage.removeItem('sigde_correo');
+    }}
+    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#63b3ed' }}
+  />
+  <label htmlFor="recordar" style={{ fontSize: 13, cursor: 'pointer' }} className="login-subtitle">
+    Recordar usuario
+  </label>
+</div>
         <button
           onClick={!correo || !contrasena ? () => setError('Por favor completa todos los campos') : handleLogin}
           disabled={cargando}
@@ -187,16 +241,15 @@ export default function Home() {
             marginTop: 8, marginBottom: 20,
             transition: 'all 0.2s',
           }}
+          
         >
+          
           {cargando ? 'Verificando...' : 'Ingresar al sistema'}
         </button>
 
-        <p style={{ textAlign: 'center', fontSize: 12, color: '#4a6280', margin: 0 }}>
-          ¿Olvidaste tu contraseña?{' '}
-          <a href="#" onClick={e => { e.preventDefault(); setVista('recuperar'); resetear(); }} style={{ color: '#63b3ed', fontWeight: 600, textDecoration: 'none' }}>
-            Cambiar contraseña
+          <a href="#" onClick={e => { e.preventDefault(); setVista('recuperar'); resetear(); }} style={{ color: '#63b3ed', textAlign: 'center', fontSize: 12, margin: 0 }}>
+            ¿Olvidaste tu Contraseña?
           </a>
-        </p>
       </>
     );
 
