@@ -1,19 +1,27 @@
+import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  login,
-  enviarCodigoRecuperacion,
   cambiarContrasena,
+  enviarCodigoRecuperacion,
+  login,
   verificarCodigo,
-} from '@/backend/auth';
-import { cookies } from 'next/headers';
+} from '@/features/auth/services/auth.service';
 import { crearToken } from '@/lib/jwt';
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { accion } = body;
+  let body: Record<string, unknown>;
+
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Solicitud inválida' }, { status: 400 });
+  }
+
+  const accion = body.accion;
 
   if (accion === 'login') {
-    const { correo, contrasena } = body;
+    const correo = String(body.correo || '').trim().toLowerCase();
+    const contrasena = String(body.contrasena || '');
 
     if (!correo || !contrasena) {
       return NextResponse.json(
@@ -29,7 +37,11 @@ export async function POST(req: NextRequest) {
     }
 
     const usuario = r.data;
-    const token = crearToken({ id: usuario.id, correo: usuario.correo });
+    const token = crearToken({
+      id: usuario.id,
+      correo: usuario.correo,
+      rol: usuario.rol,
+    });
 
     const cookieStore = await cookies();
     cookieStore.set('token', token, {
@@ -50,7 +62,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (accion === 'recuperar') {
-    const { correo } = body;
+    const correo = String(body.correo || '').trim().toLowerCase();
 
     if (!correo) {
       return NextResponse.json(
@@ -69,7 +81,8 @@ export async function POST(req: NextRequest) {
   }
 
   if (accion === 'verificarCodigo') {
-    const { correo, codigo } = body;
+    const correo = String(body.correo || '').trim().toLowerCase();
+    const codigo = String(body.codigo || '').trim();
 
     if (!correo || !codigo) {
       return NextResponse.json(
@@ -88,7 +101,9 @@ export async function POST(req: NextRequest) {
   }
 
   if (accion === 'cambiarContrasena') {
-    const { correo, codigo, nuevaContrasena } = body;
+    const correo = String(body.correo || '').trim().toLowerCase();
+    const codigo = String(body.codigo || '').trim();
+    const nuevaContrasena = String(body.nuevaContrasena || '');
 
     if (!correo || !codigo || !nuevaContrasena) {
       return NextResponse.json(

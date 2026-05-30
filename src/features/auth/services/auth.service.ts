@@ -1,26 +1,9 @@
-import { createClient } from '@libsql/client';
-import nodemailer from 'nodemailer';
+import { randomInt } from 'crypto';
 import bcrypt from 'bcryptjs';
+import { db } from '@/lib/db';
+import { emailTransporter } from '@/lib/email';
 
-export async function hashPassword(
-  contrasena: string
-) {
-  return bcrypt.hash(contrasena, 10);
-}
-
-export async function verificarPassword(
-  contrasena: string,
-  hash: string
-) {
-  return bcrypt.compare(contrasena, hash);
-}
-
-const db = createClient({
-  url: process.env.TURSO_DATABASE_URL!,
-  authToken: process.env.TURSO_AUTH_TOKEN!,
-});
-
-type Usuario = {
+type UsuarioAuthRow = {
   id: number;
   nombre: string;
   correo: string;
@@ -31,66 +14,64 @@ type Usuario = {
   tokenExpira: string | null;
 };
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+export async function hashPassword(contrasena: string) {
+  return bcrypt.hash(contrasena, 10);
+}
 
-export async function login(correo: string, contrasena: string) {
+export async function verificarPassword(contrasena: string, hash: string) {
+  return bcrypt.compare(contrasena, hash);
+}
+
+async function buscarUsuarioPorCorreo(correo: string) {
   const result = await db.execute({
-    sql: 'SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?)',
+    sql: 'SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?) LIMIT 1',
     args: [correo],
   });
 
-  const usuario = result.rows[0] as unknown as Usuario | undefined;
-
- if (!usuario) {
-  return {
-    error: 'Correo o contraseña incorrectos',
-    status: 401,
-  };
+  return result.rows[0] as unknown as UsuarioAuthRow | undefined;
 }
 
-const passwordValida = await verificarPassword(
-  contrasena,
-  usuario.contrasena
-);
+export async function login(correo: string, contrasena: string) {
+  const usuario = await buscarUsuarioPorCorreo(correo);
 
-if (!passwordValida) {
-  return {
-    error: 'Correo o contraseña incorrectos',
-    status: 401,
-  };
-}
+  if (!usuario) {
+    return {
+      error: 'Correo o contraseña incorrectos',
+      status: 401,
+    };
+  }
+
+  const passwordValida = await verificarPassword(contrasena, usuario.contrasena);
+
+  if (!passwordValida) {
+    return {
+      error: 'Correo o contraseña incorrectos',
+      status: 401,
+    };
+  }
+
   if (!usuario.activo) {
     return { error: 'Usuario inactivo', status: 403 };
   }
+
   return {
     data: {
       id: usuario.id,
       nombre: usuario.nombre,
       correo: usuario.correo,
       rol: usuario.rol,
-    }
+    },
   };
 }
 
 export async function enviarCodigoRecuperacion(correo: string) {
-  const result = await db.execute({
-    sql: 'SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?)',
-    args: [correo],
-  });
-
-  const usuario = result.rows[0] as unknown as Usuario | undefined;
+  const usuario = await buscarUsuarioPorCorreo(correo);
 
   if (!usuario) {
     return { error: 'No existe una cuenta con ese correo', status: 404 };
   }
 
-  const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+  const codigo = randomInt(100000, 1000000).toString();
   const expira = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
   await db.execute({
@@ -98,7 +79,7 @@ export async function enviarCodigoRecuperacion(correo: string) {
     args: [codigo, expira, usuario.id],
   });
 
-  await transporter.sendMail({
+  await emailTransporter.sendMail({
     from: `"no.reply-SIGDE" <${process.env.EMAIL_USER}>`,
     to: correo,
     subject: 'Código de verificación - SIGDE',
@@ -119,19 +100,16 @@ export async function enviarCodigoRecuperacion(correo: string) {
 }
 
 export async function verificarCodigo(correo: string, codigo: string) {
-  const result = await db.execute({
-    sql: 'SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?)',
-    args: [correo],
-  });
-
-  const usuario = result.rows[0] as unknown as Usuario | undefined;
+  const usuario = await buscarUsuarioPorCorreo(correo);
 
   if (!usuario || usuario.tokenRecuperacion !== codigo) {
     return { error: 'Código incorrecto', status: 400 };
   }
-  if (new Date() > new Date(usuario.tokenExpira!)) {
+
+  if (!usuario.tokenExpira || new Date() > new Date(usuario.tokenExpira)) {
     return { error: 'El código ha expirado', status: 400 };
   }
+
   return { data: { mensaje: 'Código válido' } };
 }
 
@@ -140,18 +118,13 @@ export async function cambiarContrasena(
   codigo: string,
   nuevaContrasena: string
 ) {
-  const result = await db.execute({
-    sql: 'SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?)',
-    args: [correo],
-  });
-
-  const usuario = result.rows[0] as unknown as Usuario | undefined;
+  const usuario = await buscarUsuarioPorCorreo(correo);
 
   if (!usuario || usuario.tokenRecuperacion !== codigo) {
     return { error: 'Código incorrecto', status: 400 };
   }
 
-  if (new Date() > new Date(usuario.tokenExpira!)) {
+  if (!usuario.tokenExpira || new Date() > new Date(usuario.tokenExpira)) {
     return { error: 'El código ha expirado', status: 400 };
   }
 
