@@ -32,6 +32,16 @@ html, body {
   min-height: 100vh;
 }
 
+/* Variables CSS para que las vistas de recuperación hereden el tema correcto */
+.login-form-panel {
+  --input-border: #d4dde8;
+  --input-color: #0a1628;
+  --input-bg: #fff;
+  --titulo-color: #0a1628;
+  --subtitulo-color: #7a90a8;
+  --label-color: #434747;
+}
+
 @media (max-width: 768px) {
   .login-container {
     flex-direction: column;
@@ -53,6 +63,14 @@ html, body {
     padding: 0px 36px 48px;
     min-height: 100vh;
     justify-content: center;
+
+    /* Fix 7: variables sobreescritas en móvil para que todas las vistas hereden el tema oscuro */
+    --input-border: rgba(255,255,255,0.1);
+    --input-color: #e8f4fd;
+    --input-bg: rgba(255,255,255,0.07);
+    --titulo-color: #e8f4fd;
+    --subtitulo-color: rgba(200,220,240,0.5);
+    --label-color: #7a90a8;
   }
 
   .login-form-panel h2 {
@@ -67,10 +85,12 @@ html, body {
     color: #7a90a8 !important;
   }
 
+  /* Fix 7: logo móvil visible en todas las vistas */
   .login-mobile-logo {
-    display: block;
+    display: flex !important;
   }
 }
+
 .input-field, .input-field-password {
   width: 100%;
   box-sizing: border-box;
@@ -107,6 +127,7 @@ html, body {
     background: rgba(255,255,255,0.07);
   }
 }
+
 .login-title {
   color: #0a1628;
 }

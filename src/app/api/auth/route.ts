@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { login, enviarCodigoRecuperacion, cambiarContrasena, verificarCodigo, } 
-from '@/backend/auth';
-
+import {
+  login,
+  enviarCodigoRecuperacion,
+  cambiarContrasena,
+  verificarCodigo,
+} from '@/backend/auth';
 import { cookies } from 'next/headers';
 import { crearToken } from '@/lib/jwt';
 
@@ -9,7 +12,6 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { accion } = body;
 
-  // LOGIN
   if (accion === 'login') {
     const { correo, contrasena } = body;
 
@@ -23,21 +25,13 @@ export async function POST(req: NextRequest) {
     const r = await login(correo, contrasena);
 
     if ('error' in r) {
-      return NextResponse.json(
-        { error: r.error },
-        { status: r.status }
-      );
+      return NextResponse.json({ error: r.error }, { status: r.status });
     }
 
     const usuario = r.data;
-
-    const token = crearToken({
-      id: usuario.id,
-      correo: usuario.correo,
-    });
+    const token = crearToken({ id: usuario.id, correo: usuario.correo });
 
     const cookieStore = await cookies();
-
     cookieStore.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -46,13 +40,15 @@ export async function POST(req: NextRequest) {
       path: '/',
     });
 
-    return NextResponse.json({
-      mensaje: 'Login exitoso',
-      usuario,
-    });
+    return NextResponse.json({ mensaje: 'Login exitoso', usuario });
   }
 
-  // RECUPERAR
+  if (accion === 'logout') {
+    const cookieStore = await cookies();
+    cookieStore.delete('token');
+    return NextResponse.json({ mensaje: 'Sesión cerrada' });
+  }
+
   if (accion === 'recuperar') {
     const { correo } = body;
 
@@ -66,16 +62,12 @@ export async function POST(req: NextRequest) {
     const r = await enviarCodigoRecuperacion(correo);
 
     if ('error' in r) {
-      return NextResponse.json(
-        { error: r.error },
-        { status: r.status }
-      );
+      return NextResponse.json({ error: r.error }, { status: r.status });
     }
 
     return NextResponse.json(r.data);
   }
 
-  // VERIFICAR CÓDIGO
   if (accion === 'verificarCodigo') {
     const { correo, codigo } = body;
 
@@ -89,16 +81,12 @@ export async function POST(req: NextRequest) {
     const r = await verificarCodigo(correo, codigo);
 
     if ('error' in r) {
-      return NextResponse.json(
-        { error: r.error },
-        { status: r.status }
-      );
+      return NextResponse.json({ error: r.error }, { status: r.status });
     }
 
     return NextResponse.json(r.data);
   }
 
-  // CAMBIAR CONTRASEÑA
   if (accion === 'cambiarContrasena') {
     const { correo, codigo, nuevaContrasena } = body;
 
@@ -109,24 +97,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const r = await cambiarContrasena(
-      correo,
-      codigo,
-      nuevaContrasena
-    );
+    if (nuevaContrasena.length < 8) {
+      return NextResponse.json(
+        { error: 'La contraseña debe tener al menos 8 caracteres' },
+        { status: 400 }
+      );
+    }
+
+    const r = await cambiarContrasena(correo, codigo, nuevaContrasena);
 
     if ('error' in r) {
-      return NextResponse.json(
-        { error: r.error },
-        { status: r.status }
-      );
+      return NextResponse.json({ error: r.error }, { status: r.status });
     }
 
     return NextResponse.json(r.data);
   }
 
-  return NextResponse.json(
-    { error: 'Acción no válida' },
-    { status: 400 }
-  );
+  return NextResponse.json({ error: 'Acción no válida' }, { status: 400 });
 }
