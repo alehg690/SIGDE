@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useMemo, useState, useSyncExternalStore } from 'react';
+import { FormEvent, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import LoginPanel from '@/components/auth/LoginPanel';
 import type { Vista } from '@/types/auth';
 
@@ -19,6 +19,8 @@ type Fortaleza = {
 };
 
 const EMAIL_STORAGE_KEY = 'sigde_correo';
+const PRIMER_REENVIO_SEGUNDOS = 60;
+const INCREMENTO_REENVIO_SEGUNDOS = 5 * 60;
 
 function subscribeCorreoGuardado(callback: () => void) {
   window.addEventListener('storage', callback);
@@ -44,6 +46,17 @@ function calcularFortaleza(pass: string): Fortaleza {
   return { nivel: 5, texto: 'Muy fuerte', color: '#2f855a' };
 }
 
+function obtenerSegundosEspera(numeroEnvio: number) {
+  if (numeroEnvio <= 1) return PRIMER_REENVIO_SEGUNDOS;
+  return (numeroEnvio - 1) * INCREMENTO_REENVIO_SEGUNDOS;
+}
+
+function formatearTiempo(segundos: number) {
+  const minutos = Math.floor(segundos / 60);
+  const resto = segundos % 60;
+  return `${minutos}:${resto.toString().padStart(2, '0')}`;
+}
+
 async function leerRespuesta<T>(res: Response): Promise<ApiResponse<T>> {
   try {
     return await res.json();
@@ -67,6 +80,9 @@ export default function LoginExperience() {
   const [cargando, setCargando] = useState(false);
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
   const [recordarManual, setRecordarManual] = useState<boolean | null>(null);
+  const [enviosCodigo, setEnviosCodigo] = useState(0);
+  const [reenviarDisponibleEn, setReenviarDisponibleEn] = useState(0);
+  const [segundosReenvio, setSegundosReenvio] = useState(0);
 
   const correo = correoManual ?? correoGuardado;
   const recordarUsuario = recordarManual ?? Boolean(correoGuardado);
@@ -76,6 +92,17 @@ export default function LoginExperience() {
     [nuevaContrasena]
   );
 
+  useEffect(() => {
+    if (!reenviarDisponibleEn) return;
+
+    const timer = window.setInterval(() => {
+      const restantes = Math.max(0, Math.ceil((reenviarDisponibleEn - Date.now()) / 1000));
+      setSegundosReenvio(restantes);
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [reenviarDisponibleEn]);
+
   function resetearMensajes() {
     setError('');
     setMensaje('');
@@ -84,6 +111,22 @@ export default function LoginExperience() {
   function cambiarVista(siguiente: Vista) {
     resetearMensajes();
     setVista(siguiente);
+  }
+
+  function iniciarTemporizadorReenvio(numeroEnvio: number) {
+    const segundos = obtenerSegundosEspera(numeroEnvio);
+    setReenviarDisponibleEn(Date.now() + segundos * 1000);
+    setSegundosReenvio(segundos);
+  }
+
+  function reiniciarRecuperacion(correoInicial = '') {
+    setCorreoRecuperar(correoInicial);
+    setCodigo('');
+    setNuevaContrasena('');
+    setConfirmarContrasena('');
+    setEnviosCodigo(0);
+    setReenviarDisponibleEn(0);
+    setSegundosReenvio(0);
   }
 
   async function handleLogin(event?: FormEvent<HTMLFormElement>) {
@@ -150,8 +193,52 @@ export default function LoginExperience() {
       }
 
       setCorreoRecuperar(correoLimpio);
+      setCodigo('');
+      setNuevaContrasena('');
+      setConfirmarContrasena('');
       setMensaje(data.mensaje || 'Código enviado a tu correo.');
+      setEnviosCodigo(1);
+      iniciarTemporizadorReenvio(1);
       setVista('codigo');
+    } catch {
+      setError('No hay conexión con el servidor. Intenta nuevamente.');
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  async function handleReenviarCodigo() {
+    resetearMensajes();
+
+    const correoLimpio = correoRecuperar.trim().toLowerCase();
+    if (!correoLimpio) {
+      setError('Ingresa tu correo institucional.');
+      setVista('recuperar');
+      return;
+    }
+
+    if (segundosReenvio > 0) return;
+
+    setCargando(true);
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'recuperar', correo: correoLimpio }),
+      });
+      const data = await leerRespuesta(res);
+
+      if (!res.ok) {
+        setError(data.error || 'No pudimos reenviar el código.');
+        return;
+      }
+
+      const siguienteEnvio = enviosCodigo + 1;
+      setCodigo('');
+      setCorreoRecuperar(correoLimpio);
+      setMensaje(data.mensaje || 'Código reenviado. Revisa tu correo.');
+      setEnviosCodigo(siguienteEnvio);
+      iniciarTemporizadorReenvio(siguienteEnvio);
     } catch {
       setError('No hay conexión con el servidor. Intenta nuevamente.');
     } finally {
@@ -295,7 +382,7 @@ export default function LoginExperience() {
                 className="link-button"
                 type="button"
                 onClick={() => {
-                  setCorreoRecuperar(correo.trim().toLowerCase());
+                  reiniciarRecuperacion(correo.trim().toLowerCase());
                   cambiarVista('recuperar');
                 }}
               >
@@ -350,8 +437,15 @@ export default function LoginExperience() {
               <button className="primary-button" type="submit" disabled={cargando || codigo.length !== 6}>
                 {cargando ? 'Verificando...' : 'Verificar código'}
               </button>
-              <button className="link-button muted" type="button" onClick={() => cambiarVista('recuperar')}>
-                Reenviar código
+              <button
+                className="link-button muted"
+                type="button"
+                disabled={cargando || segundosReenvio > 0}
+                onClick={handleReenviarCodigo}
+              >
+                {segundosReenvio > 0
+                  ? `Reenviar código en ${formatearTiempo(segundosReenvio)}`
+                  : 'Reenviar código'}
               </button>
             </form>
           )}

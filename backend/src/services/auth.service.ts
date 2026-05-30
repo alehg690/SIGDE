@@ -14,6 +14,48 @@ type UsuarioAuthRow = {
   tokenExpira: string | null;
 };
 
+type RecuperacionThrottle = {
+  envios: number;
+  disponibleEn: number;
+};
+
+const MENSAJE_CODIGO_ENVIADO = 'Código enviado correctamente';
+const PRIMER_REENVIO_MS = 60 * 1000;
+const INCREMENTO_REENVIO_MS = 5 * 60 * 1000;
+const throttlesRecuperacion = new Map<string, RecuperacionThrottle>();
+
+function obtenerEsperaMs(numeroEnvio: number) {
+  if (numeroEnvio <= 1) return PRIMER_REENVIO_MS;
+  return (numeroEnvio - 1) * INCREMENTO_REENVIO_MS;
+}
+
+function formatearEspera(ms: number) {
+  const segundos = Math.ceil(ms / 1000);
+  const minutos = Math.floor(segundos / 60);
+  const resto = segundos % 60;
+  return minutos > 0 ? `${minutos}m ${resto}s` : `${resto}s`;
+}
+
+function validarThrottleRecuperacion(correo: string) {
+  const ahora = Date.now();
+  const throttle = throttlesRecuperacion.get(correo);
+
+  if (throttle && throttle.disponibleEn > ahora) {
+    return {
+      error: `Espera ${formatearEspera(throttle.disponibleEn - ahora)} antes de solicitar otro código`,
+      status: 429,
+    };
+  }
+
+  const envios = (throttle?.envios ?? 0) + 1;
+  throttlesRecuperacion.set(correo, {
+    envios,
+    disponibleEn: ahora + obtenerEsperaMs(envios),
+  });
+
+  return null;
+}
+
 export async function hashPassword(contrasena: string) {
   return bcrypt.hash(contrasena, 10);
 }
@@ -59,18 +101,25 @@ export async function login(correo: string, contrasena: string) {
 }
 
 export async function enviarCodigoRecuperacion(correo: string) {
+  const throttle = validarThrottleRecuperacion(correo);
+
+  if (throttle) {
+    return throttle;
+  }
+
   const usuario = await buscarUsuarioPorCorreo(correo);
 
   if (!usuario) {
-    return { error: 'No existe una cuenta con ese correo', status: 404 };
+    return { data: { mensaje: MENSAJE_CODIGO_ENVIADO } };
   }
 
   const codigo = randomInt(100000, 1000000).toString();
+  const codigoHash = await hashPassword(codigo);
   const expira = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
   await db.execute({
     sql: 'UPDATE Usuario SET tokenRecuperacion = ?, tokenExpira = ? WHERE id = ?',
-    args: [codigo, expira, usuario.id],
+    args: [codigoHash, expira, usuario.id],
   });
 
   await emailTransporter.sendMail({
@@ -90,13 +139,17 @@ export async function enviarCodigoRecuperacion(correo: string) {
     `,
   });
 
-  return { data: { mensaje: 'Código enviado correctamente' } };
+  return { data: { mensaje: MENSAJE_CODIGO_ENVIADO } };
 }
 
 export async function verificarCodigo(correo: string, codigo: string) {
   const usuario = await buscarUsuarioPorCorreo(correo);
 
-  if (!usuario || usuario.tokenRecuperacion !== codigo) {
+  const codigoValido = usuario?.tokenRecuperacion
+    ? await verificarPassword(codigo, usuario.tokenRecuperacion)
+    : false;
+
+  if (!usuario || !codigoValido) {
     return { error: 'Código incorrecto', status: 400 };
   }
 
@@ -114,7 +167,11 @@ export async function cambiarContrasena(
 ) {
   const usuario = await buscarUsuarioPorCorreo(correo);
 
-  if (!usuario || usuario.tokenRecuperacion !== codigo) {
+  const codigoValido = usuario?.tokenRecuperacion
+    ? await verificarPassword(codigo, usuario.tokenRecuperacion)
+    : false;
+
+  if (!usuario || !codigoValido) {
     return { error: 'Código incorrecto', status: 400 };
   }
 

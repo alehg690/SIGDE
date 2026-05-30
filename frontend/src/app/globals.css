@@ -334,6 +334,12 @@ button {
   outline: none;
 }
 
+.link-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  text-decoration: none;
+}
+
 .link-button.muted {
   color: #4c6480;
 }
