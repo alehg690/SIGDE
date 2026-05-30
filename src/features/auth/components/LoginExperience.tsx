@@ -259,7 +259,7 @@ export default function LoginExperience() {
                 label="Correo electrónico"
                 type="email"
                 autoComplete="email"
-                placeholder="correo@institucion.edu"
+                placeholder="Maestro@gmail.com"
                 value={correo}
                 onChange={setCorreoManual}
               />
@@ -329,7 +329,7 @@ export default function LoginExperience() {
                 label="Correo"
                 type="email"
                 autoComplete="email"
-                placeholder="correo@institucion.edu"
+                placeholder="Maestro@gmail.com"
                 value={correoRecuperar}
                 onChange={setCorreoRecuperar}
               />
