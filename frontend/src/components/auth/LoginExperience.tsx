@@ -20,6 +20,8 @@ type Fortaleza = {
 const EMAIL_STORAGE_KEY = 'sigde_correo';
 const PRIMER_REENVIO_SEGUNDOS = 60;
 const INCREMENTO_REENVIO_SEGUNDOS = 5 * 60;
+const MENSAJE_SESION_CERRADA = 'Sesion cerrada correctamente.';
+const DURACION_MENSAJE_SESION_CERRADA_MS = 8000;
 
 function subscribeCorreoGuardado(callback: () => void) {
   window.addEventListener('storage', callback);
@@ -75,6 +77,7 @@ export default function LoginExperience() {
   const [confirmarContrasena, setConfirmarContrasena] = useState('');
   const [error, setError] = useState('');
   const [mensaje, setMensaje] = useState('');
+  const [mensajeSesionCerrada, setMensajeSesionCerrada] = useState('');
   const [cargando, setCargando] = useState(false);
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
   const [recordarManual, setRecordarManual] = useState<boolean | null>(null);
@@ -102,9 +105,20 @@ export default function LoginExperience() {
     return () => window.clearInterval(timer);
   }, [reenviarDisponibleEn]);
 
+  useEffect(() => {
+    if (!mensajeSesionCerrada) return;
+
+    const timer = window.setTimeout(() => {
+      setMensajeSesionCerrada('');
+    }, DURACION_MENSAJE_SESION_CERRADA_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [mensajeSesionCerrada]);
+
   function resetearMensajes() {
     setError('');
     setMensaje('');
+    setMensajeSesionCerrada('');
   }
 
   function cambiarVista(siguiente: Vista) {
@@ -331,7 +345,7 @@ export default function LoginExperience() {
       });
       setSesionIniciada(false);
       setVista('login');
-      setMensaje('Sesion cerrada correctamente.');
+      setMensajeSesionCerrada(MENSAJE_SESION_CERRADA);
     } catch {
       setError('No pudimos cerrar la sesion. Intenta nuevamente.');
     } finally {
@@ -372,7 +386,10 @@ export default function LoginExperience() {
                 autoComplete="email"
                 placeholder="correo@institucion.edu"
                 value={correo}
-                onChange={setCorreoManual}
+                onChange={(value) => {
+                  resetearMensajes();
+                  setCorreoManual(value);
+                }}
                 maxLength={254}
               />
 
@@ -386,7 +403,10 @@ export default function LoginExperience() {
                     placeholder="Tu contraseña"
                     value={contrasena}
                     maxLength={128}
-                    onChange={(event) => setContrasena(event.target.value)}
+                    onChange={(event) => {
+                      resetearMensajes();
+                      setContrasena(event.target.value);
+                    }}
                   />
                   <button
                     type="button"
@@ -409,7 +429,7 @@ export default function LoginExperience() {
                 <span>Recordar usuario</span>
               </label>
 
-              <Feedback error={error} mensaje={mensaje} />
+              <Feedback error={error} mensaje={mensajeSesionCerrada || mensaje} />
 
               <button className="primary-button" type="submit" disabled={cargando}>
                 {cargando ? 'Verificando...' : 'Ingresar al sistema'}

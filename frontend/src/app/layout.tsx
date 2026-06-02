@@ -10,6 +10,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'SIGDE - Sistema de Gestión Digital Escolar',
   description: 'Sistema de gestión de convivencia escolar',
+  icons: {
+    icon: '/Logo-login.png',
+    shortcut: '/Logo-login.png',
+    apple: '/Logo-login.png',
+  },
 };
 
 export default function RootLayout({
