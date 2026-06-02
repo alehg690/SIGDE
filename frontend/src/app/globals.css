@@ -157,6 +157,14 @@ button {
   flex-direction: column;
 }
 
+.session-card {
+  text-align: center;
+}
+
+.session-card .feedback {
+  margin-top: 0;
+}
+
 .form-header {
   margin-bottom: 26px;
   text-align: center;
@@ -428,7 +436,7 @@ button {
 
   .login-logo img {
     width: 150px;
-    filter: drop-shadow(0 16px 30px rgba(0, 0, 0, 0.22));
+    filter: brightness(1.14) saturate(1.08) drop-shadow(0 16px 30px rgba(0, 0, 0, 0.22));
   }
 
   .form-header h1 {
@@ -473,6 +481,10 @@ button {
   .primary-button,
   .link-button {
     border-radius: 10px;
+  }
+
+  .link-button {
+    color: #69b8ff;
   }
 
   .primary-button {

@@ -4,9 +4,18 @@ import {
   cambiarContrasena,
   enviarCodigoRecuperacion,
   login,
+  validarContrasenaSegura,
   verificarCodigo,
 } from '@backend/services/auth.service';
 import { crearToken } from '@backend/utils/jwt';
+
+const EMAIL_MAX_LENGTH = 254;
+const PASSWORD_MAX_LENGTH = 128;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function correoValido(correo: string) {
+  return correo.length <= EMAIL_MAX_LENGTH && EMAIL_PATTERN.test(correo);
+}
 
 export async function POST(req: NextRequest) {
   let body: Record<string, unknown>;
@@ -30,6 +39,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!correoValido(correo) || contrasena.length > PASSWORD_MAX_LENGTH) {
+      return NextResponse.json(
+        { error: 'Correo o contraseña incorrectos' },
+        { status: 401 }
+      );
+    }
+
     const r = await login(correo, contrasena);
 
     if ('error' in r) {
@@ -50,6 +66,7 @@ export async function POST(req: NextRequest) {
       sameSite: 'strict',
       maxAge: 60 * 60 * 24 * 7,
       path: '/',
+      priority: 'high',
     });
 
     return NextResponse.json({ mensaje: 'Login exitoso', usuario });
@@ -71,6 +88,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!correoValido(correo)) {
+      return NextResponse.json(
+        { error: 'Ingresa un correo valido' },
+        { status: 400 }
+      );
+    }
+
     const r = await enviarCodigoRecuperacion(correo);
 
     if ('error' in r) {
@@ -87,6 +111,13 @@ export async function POST(req: NextRequest) {
     if (!correo || !codigo) {
       return NextResponse.json(
         { error: 'Todos los campos son requeridos' },
+        { status: 400 }
+      );
+    }
+
+    if (!correoValido(correo) || !/^\d{6}$/.test(codigo)) {
+      return NextResponse.json(
+        { error: 'Codigo incorrecto' },
         { status: 400 }
       );
     }
@@ -112,11 +143,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (nuevaContrasena.length < 8) {
+    if (!correoValido(correo) || !/^\d{6}$/.test(codigo)) {
       return NextResponse.json(
-        { error: 'La contraseña debe tener al menos 8 caracteres' },
+        { error: 'Codigo incorrecto' },
         { status: 400 }
       );
+    }
+
+    const errorContrasena = validarContrasenaSegura(nuevaContrasena);
+
+    if (errorContrasena) {
+      return NextResponse.json({ error: errorContrasena }, { status: 400 });
     }
 
     const r = await cambiarContrasena(correo, codigo, nuevaContrasena);

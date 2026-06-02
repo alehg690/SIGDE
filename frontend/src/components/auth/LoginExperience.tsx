@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import LoginPanel from '@/components/auth/LoginPanel';
 import type { Vista } from '@/types/auth';
@@ -66,7 +65,6 @@ async function leerRespuesta<T>(res: Response): Promise<ApiResponse<T>> {
 }
 
 export default function LoginExperience() {
-  const router = useRouter();
   const [vista, setVista] = useState<Vista>('login');
   const correoGuardado = useSyncExternalStore(subscribeCorreoGuardado, getCorreoGuardado, () => '');
   const [correoManual, setCorreoManual] = useState<string | null>(null);
@@ -83,6 +81,7 @@ export default function LoginExperience() {
   const [enviosCodigo, setEnviosCodigo] = useState(0);
   const [reenviarDisponibleEn, setReenviarDisponibleEn] = useState(0);
   const [segundosReenvio, setSegundosReenvio] = useState(0);
+  const [sesionIniciada, setSesionIniciada] = useState(false);
 
   const correo = correoManual ?? correoGuardado;
   const recordarUsuario = recordarManual ?? Boolean(correoGuardado);
@@ -110,6 +109,7 @@ export default function LoginExperience() {
 
   function cambiarVista(siguiente: Vista) {
     resetearMensajes();
+    setSesionIniciada(false);
     setVista(siguiente);
   }
 
@@ -160,7 +160,9 @@ export default function LoginExperience() {
         localStorage.removeItem(EMAIL_STORAGE_KEY);
       }
 
-      router.replace('/dashboard');
+      setContrasena('');
+      setMensaje(data.mensaje || 'Sesion iniciada correctamente.');
+      setSesionIniciada(true);
     } catch {
       setError('No hay conexión con el servidor. Revisa tu red e intenta otra vez.');
     } finally {
@@ -317,6 +319,26 @@ export default function LoginExperience() {
     }
   }
 
+  async function handleLogout() {
+    resetearMensajes();
+    setCargando(true);
+
+    try {
+      await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'logout' }),
+      });
+      setSesionIniciada(false);
+      setVista('login');
+      setMensaje('Sesion cerrada correctamente.');
+    } catch {
+      setError('No pudimos cerrar la sesion. Intenta nuevamente.');
+    } finally {
+      setCargando(false);
+    }
+  }
+
   return (
     <main className="login-shell">
       <LoginPanel />
@@ -326,7 +348,20 @@ export default function LoginExperience() {
             <Image src="/Logo-login.png" alt="" width={128} height={136} priority />
           </div>
 
-          {vista === 'login' && (
+          {sesionIniciada && (
+            <div className="auth-form session-card">
+              <Header
+                title="Sesion iniciada"
+                subtitle="El acceso funciona correctamente. El dashboard queda pendiente para construirlo con calma."
+              />
+              <Feedback error={error} mensaje={mensaje} />
+              <button className="primary-button" type="button" disabled={cargando} onClick={handleLogout}>
+                {cargando ? 'Cerrando...' : 'Cerrar sesion'}
+              </button>
+            </div>
+          )}
+
+          {!sesionIniciada && vista === 'login' && (
             <form className="auth-form" onSubmit={handleLogin}>
               <Header title="Iniciar sesión" subtitle="Ingresa tus credenciales para continuar" />
 
@@ -338,6 +373,7 @@ export default function LoginExperience() {
                 placeholder="correo@institucion.edu"
                 value={correo}
                 onChange={setCorreoManual}
+                maxLength={254}
               />
 
               <div className="field-group">
@@ -349,6 +385,7 @@ export default function LoginExperience() {
                     autoComplete="current-password"
                     placeholder="Tu contraseña"
                     value={contrasena}
+                    maxLength={128}
                     onChange={(event) => setContrasena(event.target.value)}
                   />
                   <button
@@ -391,7 +428,7 @@ export default function LoginExperience() {
             </form>
           )}
 
-          {vista === 'recuperar' && (
+          {!sesionIniciada && vista === 'recuperar' && (
             <form className="auth-form" onSubmit={handleRecuperar}>
               <Header
                 title="Recuperar contraseña"
@@ -405,6 +442,7 @@ export default function LoginExperience() {
                 placeholder="correo@institucion.edu"
                 value={correoRecuperar}
                 onChange={setCorreoRecuperar}
+                maxLength={254}
               />
               <Feedback error={error} mensaje={mensaje} />
               <button className="primary-button" type="submit" disabled={cargando}>
@@ -416,7 +454,7 @@ export default function LoginExperience() {
             </form>
           )}
 
-          {vista === 'codigo' && (
+          {!sesionIniciada && vista === 'codigo' && (
             <form className="auth-form" onSubmit={handleVerificarCodigo}>
               <Header title="Verificar código" subtitle="Ingresa los 6 dígitos que enviamos a tu correo." />
               <div className="field-group">
@@ -450,7 +488,7 @@ export default function LoginExperience() {
             </form>
           )}
 
-          {vista === 'nueva-contrasena' && (
+          {!sesionIniciada && vista === 'nueva-contrasena' && (
             <form className="auth-form" onSubmit={handleCambiarContrasena}>
               <Header title="Nueva contraseña" subtitle="Crea una contraseña segura para tu cuenta." />
               <Field
@@ -461,6 +499,7 @@ export default function LoginExperience() {
                 placeholder="Mínimo 8 caracteres"
                 value={nuevaContrasena}
                 onChange={setNuevaContrasena}
+                maxLength={128}
               />
               {fortaleza && <PasswordStrength fortaleza={fortaleza} />}
               <Field
@@ -471,6 +510,7 @@ export default function LoginExperience() {
                 placeholder="Repite tu contraseña"
                 value={confirmarContrasena}
                 onChange={setConfirmarContrasena}
+                maxLength={128}
               />
               <Feedback error={error} mensaje={mensaje} />
               <button
@@ -508,6 +548,7 @@ function Field({
   placeholder,
   value,
   onChange,
+  maxLength,
 }: {
   id: string;
   label: string;
@@ -516,6 +557,7 @@ function Field({
   placeholder: string;
   value: string;
   onChange: (value: string) => void;
+  maxLength?: number;
 }) {
   return (
     <div className="field-group">
@@ -526,6 +568,7 @@ function Field({
         autoComplete={autoComplete}
         placeholder={placeholder}
         value={value}
+        maxLength={maxLength}
         onChange={(event) => onChange(event.target.value)}
       />
     </div>

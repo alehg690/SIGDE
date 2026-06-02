@@ -56,6 +56,16 @@ function validarThrottleRecuperacion(correo: string) {
   return null;
 }
 
+export function validarContrasenaSegura(contrasena: string) {
+  if (contrasena.length < 8) return 'La contraseña debe tener al menos 8 caracteres';
+  if (contrasena.length > 128) return 'La contraseña no puede superar 128 caracteres';
+  if (!/[A-Za-zÁÉÍÓÚÑáéíóúñ]/.test(contrasena) || !/[0-9]/.test(contrasena)) {
+    return 'La contraseña debe combinar letras y numeros';
+  }
+
+  return null;
+}
+
 export async function hashPassword(contrasena: string) {
   return bcrypt.hash(contrasena, 10);
 }
@@ -165,6 +175,12 @@ export async function cambiarContrasena(
   codigo: string,
   nuevaContrasena: string
 ) {
+  const errorContrasena = validarContrasenaSegura(nuevaContrasena);
+
+  if (errorContrasena) {
+    return { error: errorContrasena, status: 400 };
+  }
+
   const usuario = await buscarUsuarioPorCorreo(correo);
 
   const codigoValido = usuario?.tokenRecuperacion
