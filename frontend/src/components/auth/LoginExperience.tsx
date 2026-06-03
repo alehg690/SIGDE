@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import LoginPanel from '@/components/auth/LoginPanel';
 import type { Vista } from '@/types/auth';
@@ -67,6 +68,7 @@ async function leerRespuesta<T>(res: Response): Promise<ApiResponse<T>> {
 }
 
 export default function LoginExperience() {
+  const router = useRouter();
   const [vista, setVista] = useState<Vista>('login');
   const correoGuardado = useSyncExternalStore(subscribeCorreoGuardado, getCorreoGuardado, () => '');
   const [correoManual, setCorreoManual] = useState<string | null>(null);
@@ -114,6 +116,33 @@ export default function LoginExperience() {
 
     return () => window.clearTimeout(timer);
   }, [mensajeSesionCerrada]);
+
+  useEffect(() => {
+    let activo = true;
+
+    async function verificarSesionActiva() {
+      try {
+        const res = await fetch('/api/auth', { cache: 'no-store' });
+        if (activo && res.ok) {
+          router.replace('/dashboard');
+        }
+      } catch {
+        // El login sigue disponible si no se puede verificar la sesión.
+      }
+    }
+
+    verificarSesionActiva();
+
+    const logoutMessage = sessionStorage.getItem('sigde_logout_message');
+    if (logoutMessage) {
+      sessionStorage.removeItem('sigde_logout_message');
+      window.setTimeout(() => setMensajeSesionCerrada(logoutMessage), 0);
+    }
+
+    return () => {
+      activo = false;
+    };
+  }, [router]);
 
   function resetearMensajes() {
     setError('');
@@ -175,8 +204,7 @@ export default function LoginExperience() {
       }
 
       setContrasena('');
-      setMensaje(data.mensaje || 'Sesion iniciada correctamente.');
-      setSesionIniciada(true);
+      router.replace('/dashboard');
     } catch {
       setError('No hay conexión con el servidor. Revisa tu red e intenta otra vez.');
     } finally {

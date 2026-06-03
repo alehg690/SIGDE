@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import { jwtVerify } from 'jose';
 import {
   cambiarContrasena,
   enviarCodigoRecuperacion,
@@ -13,8 +14,68 @@ const EMAIL_MAX_LENGTH = 254;
 const PASSWORD_MAX_LENGTH = 128;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+type SessionPayload = {
+  id?: number;
+  correo?: string;
+  rol?: string;
+  exp?: number;
+};
+
 function correoValido(correo: string) {
   return correo.length <= EMAIL_MAX_LENGTH && EMAIL_PATTERN.test(correo);
+}
+
+function obtenerJwtSecret() {
+  const secret = process.env.JWT_SECRET;
+
+  if (!secret || secret.length < 24) {
+    throw new Error('JWT_SECRET debe existir y tener al menos 24 caracteres');
+  }
+
+  return new TextEncoder().encode(secret);
+}
+
+async function leerSesion() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('token')?.value;
+
+  if (!token) return null;
+
+  const { payload } = await jwtVerify(token, obtenerJwtSecret());
+  const session = payload as SessionPayload;
+
+  if (!session.id || !session.correo || !session.rol || !session.exp) {
+    return null;
+  }
+
+  return {
+    usuario: {
+      id: session.id,
+      correo: session.correo,
+      rol: session.rol,
+    },
+    expiraEn: session.exp,
+    expiraEnMs: Math.max(0, session.exp * 1000 - Date.now()),
+  };
+}
+
+export async function GET() {
+  try {
+    const sesion = await leerSesion();
+
+    if (!sesion) {
+      return NextResponse.json({ autenticado: false }, { status: 401 });
+    }
+
+    return NextResponse.json({ autenticado: true, ...sesion });
+  } catch {
+    const response = NextResponse.json(
+      { autenticado: false, error: 'Sesion expirada' },
+      { status: 401 }
+    );
+    response.cookies.delete('token');
+    return response;
+  }
 }
 
 export async function POST(req: NextRequest) {
