@@ -1,0 +1,512 @@
+HISTORIAS DE USUARIO
+
+Sistema de Control Disciplinario Escolar
+
+
+
+ID
+
+ROL
+
+FUNCIONALIDAD / RESULTADO
+
+CRITERIOS DE ACEPTACIÓN
+
+PERMISOS DEL USUARIO
+
+PRIO.
+
+HU-01
+
+Docente
+
+Como Docente, quiero:
+
+Registrar reportes disciplinarios de los estudiantes
+
+ 
+
+Para:
+
+Llevar un control organizado de su comportamiento
+
+El docente puede crear un reporte con nombre del estudiante, descripción y tipo de falta.
+
+El reporte queda guardado en la base de datos.
+
+El sistema muestra el reporte en el historial del estudiante.
+
+Crear reporte disciplinario
+
+Ingresar nombre del estudiante
+
+Seleccionar tipo de falta (leve, grave, gravísima)
+
+Agregar descripción detallada del incidente
+
+Adjuntar evidencias opcionales (imágenes o documentos)
+
+Consultar reportes propios
+
+Ver listado de reportes creados por él mismo
+
+Filtrar por fecha, tipo de falta o estudiante
+
+Editar reporte (solo dentro de 24h)
+
+Modificar descripción o tipo de falta antes de que sea revisado por coordinación
+
+Sin acceso a
+
+Reportes de otros docentes
+
+Módulo administrativo
+
+Gestión de usuarios
+
+Alta
+
+HU-02
+
+Coordinador
+
+Como Coordinador, quiero:
+
+Consultar el historial disciplinario de un estudiante
+
+ 
+
+Para:
+
+Tomar decisiones informadas sobre su comportamiento
+
+Se puede buscar un estudiante por nombre.
+
+Se visualizan todos sus reportes ordenados por fecha.
+
+Se identifican fácilmente los tipos de faltas registradas.
+
+Consultar historial completo
+
+Acceder al historial de cualquier estudiante
+
+Ver reportes de todos los docentes
+
+Filtrar por rango de fechas, tipo de falta o docente que reportó
+
+Gestionar reportes
+
+Aprobar, rechazar o escalar reportes disciplinarios
+
+Agregar observaciones o anotaciones sobre un reporte
+
+Generar sanciones asociadas al reporte
+
+Generar informes
+
+Exportar historial en PDF o Excel
+
+Ver estadísticas de comportamiento por grado o grupo
+
+Recibir y gestionar alertas
+
+Ver lista de estudiantes con comportamiento recurrente
+
+Marcar alertas como atendidas o en seguimiento
+
+Sin acceso a
+
+Creación o eliminación de cuentas de usuario
+
+Configuración general del sistema
+
+Alta
+
+HU-03
+
+Padre de Familia / Acudiente
+
+Como Padre de Familia / Acudiente, quiero:
+
+Recibir notificaciones cuando su hijo tenga un reporte disciplinario
+
+ 
+
+Para:
+
+Estar informado y poder intervenir a tiempo
+
+El sistema envía una notificación al acudiente cuando se registra un reporte.
+
+La notificación incluye información básica de la falta.
+
+El mensaje se envía en tiempo real o de forma inmediata.
+
+Recibir notificaciones
+
+Notificación automática vía correo electrónico y/o app móvil
+
+Notificaciones solo de su(s) hijo(s) registrado(s) en el sistema
+
+Consultar reportes de su hijo
+
+Ver el historial disciplinario de su acudido
+
+Acceder al detalle del reporte: fecha, tipo de falta y descripción
+
+Confirmar lectura
+
+Marcar notificación como leída para confirmar recepción al sistema
+
+Sin acceso a
+
+Reportes de otros estudiantes
+
+Módulos de gestión o administración
+
+Datos de otros acudientes o docentes
+
+Alta
+
+HU-04
+
+Docente
+
+Como Docente, quiero:
+
+Ver el historial de comportamiento de un estudiante antes de reportarlo
+
+ 
+
+Para:
+
+Tener contexto sobre su conducta
+
+El docente puede acceder al historial del estudiante desde el sistema.
+
+Se muestran reportes anteriores con fecha y descripción.
+
+La información es clara y organizada.
+
+Consultar historial del estudiante (solo lectura)
+
+Ver reportes anteriores del estudiante antes de crear uno nuevo
+
+Ver fecha, tipo de falta y descripción de cada reporte
+
+Acceso restringido: solo puede ver, no modificar ni eliminar
+
+Filtrar historial
+
+Ordenar reportes por fecha más reciente
+
+Filtrar por tipo de falta
+
+Sin acceso a
+
+Historiales de estudiantes de otros grupos (si aplica restricción por grupo)
+
+Datos personales de los acudientes
+
+Reportes confidenciales marcados por coordinación
+
+Media
+
+HU-05
+
+Sistema (Módulo Automático)
+
+Como Sistema (Módulo Automático), quiero:
+
+Analizar los reportes registrados
+
+ 
+
+Para:
+
+Identificar estudiantes con conductas recurrentes
+
+El sistema cuenta la cantidad de reportes por estudiante.
+
+Se generan alertas cuando un estudiante supera un límite de reportes.
+
+Las alertas son visibles en el sistema.
+
+Lectura masiva de reportes
+
+Acceder a todos los reportes del sistema para análisis automático
+
+Ejecutar conteos y estadísticas por estudiante, grupo y periodo
+
+Generar alertas automáticas
+
+Crear alertas internas cuando un estudiante supera el umbral definido
+
+Enviar notificaciones a coordinadores y directivos
+
+Escritura limitada
+
+Solo puede crear alertas, no puede modificar reportes existentes
+
+No puede eliminar registros
+
+Sin acceso directo de usuario
+
+Este rol es ejecutado por el motor del sistema, no por una persona
+
+Solo los administradores pueden configurar sus parámetros (umbrales, frecuencia)
+
+Alta
+
+HU-06
+
+Coordinador
+
+Como Coordinador, quiero:
+
+Recibir alertas sobre estudiantes con múltiples reportes
+
+ 
+
+Para:
+
+Tomar acciones preventivas
+
+El sistema muestra una lista de estudiantes en riesgo.
+
+Se indica el número de reportes acumulados.
+
+Las alertas son visibles en el panel principal.
+
+Ver panel de alertas
+
+Acceder al panel principal con listado de estudiantes en riesgo
+
+Ver número de reportes acumulados por estudiante
+
+Filtrar por grado, grupo o tipo de falta predominante
+
+Gestionar alertas
+
+Marcar una alerta como 'en seguimiento' o 'resuelta'
+
+Agregar notas de intervención o acción tomada
+
+Escalar alerta a rectoría si es necesario
+
+Notificar a partes involucradas
+
+Enviar comunicado al docente del grupo
+
+Iniciar proceso de citación al acudiente desde el sistema
+
+Sin acceso a
+
+Configurar los umbrales de alerta (eso es del Administrador)
+
+Eliminar alertas permanentemente
+
+Alta
+
+HU-07
+
+Personal de Portería
+
+Como Personal de Portería, quiero:
+
+Registrar la salida de un estudiante de forma digital
+
+ 
+
+Para:
+
+Agilizar el proceso en casos de urgencia
+
+Se puede registrar la salida con datos del estudiante y acudiente.
+
+El sistema guarda el registro de salida.
+
+Se notifica a los responsables correspondientes.
+
+Registrar salida de estudiante
+
+Buscar al estudiante por nombre o código
+
+Registrar hora de salida, motivo y datos del acudiente que lo retira
+
+Indicar si la salida es autorizada, de urgencia o sin autorización previa
+
+Consultar registros del día
+
+Ver el listado de salidas registradas durante su turno
+
+Verificar si un estudiante ya tiene autorización previa de salida
+
+Sin acceso a
+
+Historial disciplinario completo del estudiante
+
+Módulos de reportes o gestión académica
+
+Datos de otros usuarios del sistema
+
+Salidas de días anteriores (acceso solo al día actual)
+
+Media
+
+HU-08
+
+Institución Educativa (Rol Directivo / Rector)
+
+Como Institución Educativa (Rol Directivo / Rector), quiero:
+
+Digitalizar el proceso disciplinario
+
+ 
+
+Para:
+
+Mejorar la organización y eficiencia administrativa
+
+Toda la información se almacena digitalmente.
+
+Los usuarios autorizados pueden acceder al sistema.
+
+Se reduce el uso de procesos manuales.
+
+Acceso de solo lectura a todo el sistema
+
+Consultar reportes, historiales, alertas y estadísticas generales
+
+Ver informes consolidados por periodo, grado o tipo de falta
+
+Validar y firmar documentos digitales
+
+Aprobar comunicados oficiales generados por coordinación
+
+Validar actas disciplinarias antes de enviarlas a acudientes
+
+Configuración institucional
+
+Definir el reglamento disciplinario base dentro del sistema
+
+Establecer periodos académicos y umbrales de alerta institucionales
+
+Sin acceso directo a operaciones
+
+No crea ni edita reportes individuales (esa es función del docente)
+
+No gestiona alertas individuales (esa es función del coordinador)
+
+Alta
+
+HU-09
+
+Usuario del Sistema (Todos los roles)
+
+Como Usuario del Sistema (Todos los roles), quiero:
+
+Acceder a la plataforma desde cualquier dispositivo
+
+ 
+
+Para:
+
+Utilizar el sistema de manera flexible
+
+El sistema funciona en navegador web.
+
+Es accesible desde computador, tablet o celular.
+
+La interfaz es responsive.
+
+Autenticación segura
+
+Iniciar sesión con usuario y contraseña propios
+
+Soporte para autenticación en dos pasos (2FA) opcional
+
+Cierre de sesión automático por inactividad
+
+Acceso según rol asignado
+
+Cada usuario ve únicamente los módulos habilitados para su rol
+
+El menú de navegación se adapta según los permisos del usuario
+
+Compatibilidad de dispositivos
+
+Navegador web en escritorio (Chrome, Firefox, Edge)
+
+Tablet y celular con interfaz responsive
+
+Sin necesidad de instalar aplicación nativa (solo acceso web)
+
+Sin acceso a
+
+Funciones o datos de otros roles sin autorización
+
+Configuración del sistema desde dispositivos móviles (solo administrador en escritorio)
+
+Media
+
+HU-10
+
+Administrador
+
+Como Administrador, quiero:
+
+Gestionar la información de estudiantes
+
+ 
+
+Para:
+
+Mantener actualizados los datos del sistema
+
+Se pueden crear, editar y eliminar estudiantes.
+
+Los cambios se reflejan en tiempo real.
+
+La información se guarda correctamente en la base de datos.
+
+Gestión completa de estudiantes (CRUD)
+
+Crear nuevos registros de estudiantes con datos personales completos
+
+Editar información existente (nombre, grado, grupo, acudiente, contacto)
+
+Eliminar o archivar registros de estudiantes inactivos o egresados
+
+Gestión de usuarios del sistema
+
+Crear, editar y desactivar cuentas de docentes, coordinadores y portería
+
+Asignar y revocar roles y permisos por usuario
+
+Restablecer contraseñas de usuarios
+
+Configuración del sistema
+
+Definir umbrales de alertas disciplinarias
+
+Configurar tipos de faltas y sus descripciones
+
+Gestionar periodos académicos activos
+
+Auditoría y seguridad
+
+Consultar logs de actividad del sistema
+
+Ver quién accedió, qué modificó y en qué fecha
+
+Exportar reportes de auditoría
+
+Acceso total
+
+Puede acceder a todos los módulos del sistema sin restricción
+
+Alta
+
+Total historias: 10  |  Alta: 7  |  Media: 3
+
