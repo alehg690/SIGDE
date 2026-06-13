@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import RouteLoadingOverlay from '@/components/ui/RouteLoadingOverlay';
 import './globals.css';
 
 const inter = Inter({
@@ -24,7 +25,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <RouteLoadingOverlay />
+        {children}
+      </body>
     </html>
   );
 }

@@ -7,7 +7,7 @@ import {
   validarContrasenaSegura,
   verificarCodigo,
 } from '@backend/services/auth.service';
-import { crearToken } from '@backend/utils/jwt';
+import { crearToken, verificarToken } from '@backend/utils/jwt';
 
 const EMAIL_MAX_LENGTH = 254;
 const PASSWORD_MAX_LENGTH = 128;
@@ -15,6 +15,23 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function correoValido(correo: string) {
   return correo.length <= EMAIL_MAX_LENGTH && EMAIL_PATTERN.test(correo);
+}
+
+/** GET /api/auth — verifica si hay sesión activa leyendo la cookie */
+export async function GET() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('token')?.value;
+
+  if (!token) {
+    return NextResponse.json({ autenticado: false }, { status: 401 });
+  }
+
+  try {
+    const payload = await verificarToken(token);
+    return NextResponse.json({ autenticado: true, usuario: payload });
+  } catch {
+    return NextResponse.json({ autenticado: false }, { status: 401 });
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -53,7 +70,7 @@ export async function POST(req: NextRequest) {
     }
 
     const usuario = r.data;
-    const token = crearToken({
+    const token = await crearToken({
       id: usuario.id,
       correo: usuario.correo,
       rol: usuario.rol,

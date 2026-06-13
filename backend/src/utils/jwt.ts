@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
 
 function obtenerJwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -7,12 +7,18 @@ function obtenerJwtSecret() {
     throw new Error('JWT_SECRET debe existir y tener al menos 24 caracteres');
   }
 
-  return secret;
+  return new TextEncoder().encode(secret);
 }
 
-export function crearToken(payload: object) {
-  return jwt.sign(payload, obtenerJwtSecret(), {
-    expiresIn: '7d',
-    algorithm: 'HS256',
-  });
+export async function crearToken(payload: Record<string, unknown>) {
+  return new SignJWT(payload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('7d')
+    .sign(obtenerJwtSecret());
+}
+
+export async function verificarToken(token: string): Promise<JWTPayload> {
+  const { payload } = await jwtVerify(token, obtenerJwtSecret());
+  return payload;
 }

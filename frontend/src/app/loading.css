@@ -1,0 +1,113 @@
+.sigde-loading,
+.route-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #0c1c26;
+  color: #edf7ff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.sigde-loading--visible,
+.route-loading--visible {
+  opacity: 1;
+}
+
+.sigde-loading::before,
+.route-loading::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(99, 179, 237, 0.16), transparent 24%),
+    radial-gradient(circle at 50% 55%, rgba(37, 122, 79, 0.08), transparent 26%);
+}
+
+.sigde-loading__card,
+.route-loading__card {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 18px 20px;
+  min-width: 180px;
+}
+
+.sigde-loading__spinner,
+.route-loading__spinner {
+  position: relative;
+  width: 92px;
+  height: 92px;
+}
+
+.sigde-loading__spinner-ring,
+.route-loading__spinner-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: rgba(99, 179, 237, 0.95);
+  border-right-color: rgba(99, 179, 237, 0.42);
+  animation: sigde-spin 1.15s linear infinite;
+}
+
+.sigde-loading__spinner-ring--middle,
+.route-loading__spinner-ring--middle {
+  inset: 12px;
+  border-top-color: rgba(255, 255, 255, 0.84);
+  border-right-color: rgba(142, 208, 255, 0.32);
+  animation-duration: 1.8s;
+  animation-direction: reverse;
+}
+
+.sigde-loading__spinner-ring--inner,
+.route-loading__spinner-ring--inner {
+  inset: 24px;
+  border-top-color: rgba(142, 208, 255, 0.84);
+  border-right-color: rgba(142, 208, 255, 0.22);
+  animation-duration: 2.4s;
+}
+
+.sigde-loading__spinner-core,
+.route-loading__spinner-core {
+  position: absolute;
+  inset: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(12, 28, 38, 0.98);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.sigde-loading__label,
+.route-loading__label {
+  margin: 0;
+  color: #8ed0ff;
+  font-size: 0.72rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.sigde-loading__text,
+.route-loading__text {
+  margin: 0;
+  color: rgba(237, 247, 255, 0.74);
+  font-size: 0.92rem;
+}
+
+@keyframes sigde-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
