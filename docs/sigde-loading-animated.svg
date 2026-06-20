@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Pantalla de carga de SIGDE</title>
+  <desc id="desc">Animacion de carga con anillos giratorios, marca SIGDE y texto de carga.</desc>
+  <defs>
+    <radialGradient id="halo" cx="50%" cy="46%" r="38%">
+      <stop offset="0%" stop-color="#63b3ed" stop-opacity="0.22" />
+      <stop offset="58%" stop-color="#257a4f" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#0c1c26" stop-opacity="0" />
+    </radialGradient>
+    <filter id="softShadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#000000" flood-opacity="0.28" />
+    </filter>
+    <style>
+      .bg { fill: #0c1c26; }
+      .halo { fill: url(#halo); }
+      .ring { fill: none; stroke-linecap: round; transform-origin: 540px 500px; }
+      .outer {
+        stroke: #63b3ed;
+        stroke-width: 11;
+        stroke-dasharray: 235 475;
+        animation: spin 1.15s linear infinite;
+      }
+      .middle {
+        stroke: rgba(255, 255, 255, 0.84);
+        stroke-width: 9;
+        stroke-dasharray: 160 360;
+        animation: spinReverse 1.8s linear infinite;
+      }
+      .inner {
+        stroke: #8ed0ff;
+        stroke-width: 8;
+        stroke-dasharray: 108 270;
+        animation: spin 2.4s linear infinite;
+      }
+      .core { fill: #0c1c26; filter: url(#softShadow); stroke: rgba(255, 255, 255, 0.08); stroke-width: 2; }
+      .mark { fill: #edf7ff; font-family: Arial, Helvetica, sans-serif; font-weight: 800; letter-spacing: 2px; }
+      .label { fill: #8ed0ff; font-family: Arial, Helvetica, sans-serif; font-size: 32px; font-weight: 700; letter-spacing: 18px; }
+      .text { fill: rgba(237, 247, 255, 0.76); font-family: Arial, Helvetica, sans-serif; font-size: 30px; }
+      .pulse { animation: pulse 1.65s ease-in-out infinite; transform-origin: 540px 500px; }
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      @keyframes spinReverse {
+        from { transform: rotate(360deg); }
+        to { transform: rotate(0deg); }
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 0.82; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.035); }
+      }
+    </style>
+  </defs>
+  <rect class="bg" width="1080" height="1080" />
+  <circle class="halo" cx="540" cy="500" r="410" />
+  <g class="pulse">
+    <circle class="ring outer" cx="540" cy="500" r="126" />
+    <circle class="ring middle" cx="540" cy="500" r="96" />
+    <circle class="ring inner" cx="540" cy="500" r="66" />
+    <circle class="core" cx="540" cy="500" r="48" />
+    <text class="mark" x="540" y="514" text-anchor="middle" font-size="34">S</text>
+  </g>
+  <text class="label" x="549" y="680" text-anchor="middle">SIGDE</text>
+  <text class="text" x="540" y="735" text-anchor="middle">Cargando experiencia segura...</text>
+</svg>

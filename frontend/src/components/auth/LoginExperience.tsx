@@ -20,7 +20,7 @@ type Fortaleza = {
 const EMAIL_STORAGE_KEY = 'sigde_correo';
 const PRIMER_REENVIO_SEGUNDOS = 60;
 const INCREMENTO_REENVIO_SEGUNDOS = 5 * 60;
-const MENSAJE_SESION_CERRADA = 'Sesion cerrada correctamente.';
+const MENSAJE_SESION_CERRADA = 'Sesión cerrada correctamente.';
 const DURACION_MENSAJE_SESION_CERRADA_MS = 8000;
 
 function subscribeCorreoGuardado(callback: () => void) {
@@ -354,7 +354,7 @@ export default function LoginExperience() {
       setVista('login');
       setMensajeSesionCerrada(MENSAJE_SESION_CERRADA);
     } catch {
-      setError('No pudimos cerrar la sesion. Intenta nuevamente.');
+      setError('No pudimos cerrar la sesión. Intenta nuevamente.');
     } finally {
       setCargando(false);
     }
@@ -372,12 +372,12 @@ export default function LoginExperience() {
           {sesionIniciada && (
             <div className="auth-form session-card">
               <Header
-                title="Sesion iniciada"
-                subtitle="El acceso funciona correctamente. Puedes cerrar sesion cuando termines."
+                title="Sesión iniciada"
+                subtitle="El acceso funciona correctamente. Puedes cerrar sesión cuando termines."
               />
               <Feedback error={error} mensaje={mensaje} />
               <button className="primary-button" type="button" disabled={cargando} onClick={handleLogout}>
-                {cargando ? 'Cerrando...' : 'Cerrar sesion'}
+                {cargando ? 'Cerrando...' : 'Cerrar sesión'}
               </button>
             </div>
           )}
@@ -475,8 +475,8 @@ export default function LoginExperience() {
               <button className="primary-button" type="submit" disabled={cargando}>
                 {cargando ? 'Enviando...' : 'Enviar código'}
               </button>
-              <button className="link-button muted" type="button" onClick={() => cambiarVista('login')}>
-                Volver al inicio de sesión
+              <button className="secondary-button" type="button" onClick={() => cambiarVista('login')}>
+                Regresar
               </button>
             </form>
           )}
@@ -511,6 +511,9 @@ export default function LoginExperience() {
                 {segundosReenvio > 0
                   ? `Reenviar código en ${formatearTiempo(segundosReenvio)}`
                   : 'Reenviar código'}
+              </button>
+              <button className="secondary-button" type="button" onClick={() => cambiarVista('recuperar')}>
+                Regresar
               </button>
             </form>
           )}
@@ -547,8 +550,8 @@ export default function LoginExperience() {
               >
                 {cargando ? 'Guardando...' : 'Guardar contraseña'}
               </button>
-              <button className="link-button muted" type="button" onClick={() => cambiarVista('login')}>
-                Volver al inicio de sesión
+              <button className="secondary-button" type="button" onClick={() => cambiarVista('codigo')}>
+                Regresar
               </button>
             </form>
           )}

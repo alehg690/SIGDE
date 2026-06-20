@@ -60,7 +60,7 @@ export function validarContrasenaSegura(contrasena: string) {
   if (contrasena.length < 8) return 'La contraseña debe tener al menos 8 caracteres';
   if (contrasena.length > 128) return 'La contraseña no puede superar 128 caracteres';
   if (!/[A-Za-zÁÉÍÓÚÑáéíóúñ]/.test(contrasena) || !/[0-9]/.test(contrasena)) {
-    return 'La contraseña debe combinar letras y numeros';
+    return 'La contraseña debe combinar letras y números';
   }
 
   return null;
@@ -111,16 +111,19 @@ export async function login(correo: string, contrasena: string) {
 }
 
 export async function enviarCodigoRecuperacion(correo: string) {
+  const usuario = await buscarUsuarioPorCorreo(correo);
+
+  if (!usuario) {
+    return {
+      error: 'Cuenta no encontrada. Revisa el correo institucional e intenta nuevamente.',
+      status: 404,
+    };
+  }
+
   const throttle = validarThrottleRecuperacion(correo);
 
   if (throttle) {
     return throttle;
-  }
-
-  const usuario = await buscarUsuarioPorCorreo(correo);
-
-  if (!usuario) {
-    return { data: { mensaje: MENSAJE_CODIGO_ENVIADO } };
   }
 
   const codigo = randomInt(100000, 1000000).toString();

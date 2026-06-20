@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     if (!correo || !contrasena) {
       return NextResponse.json(
-        { error: 'Correo y contraseña son requeridos' },
+        { error: 'Correo y contraseña son obligatorios' },
         { status: 400 }
       );
     }
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
       priority: 'high',
     });
 
-    return NextResponse.json({ mensaje: 'Login exitoso', usuario });
+    return NextResponse.json({ mensaje: 'Inicio de sesión exitoso', usuario });
   }
 
   if (accion === 'logout') {
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
 
     if (!correoValido(correo)) {
       return NextResponse.json(
-        { error: 'Ingresa un correo valido' },
+        { error: 'Ingresa un correo válido' },
         { status: 400 }
       );
     }
@@ -127,14 +127,14 @@ export async function POST(req: NextRequest) {
 
     if (!correo || !codigo) {
       return NextResponse.json(
-        { error: 'Todos los campos son requeridos' },
+        { error: 'Todos los campos son obligatorios' },
         { status: 400 }
       );
     }
 
     if (!correoValido(correo) || !/^\d{6}$/.test(codigo)) {
       return NextResponse.json(
-        { error: 'Codigo incorrecto' },
+        { error: 'Código incorrecto' },
         { status: 400 }
       );
     }
@@ -155,14 +155,14 @@ export async function POST(req: NextRequest) {
 
     if (!correo || !codigo || !nuevaContrasena) {
       return NextResponse.json(
-        { error: 'Todos los campos son requeridos' },
+        { error: 'Todos los campos son obligatorios' },
         { status: 400 }
       );
     }
 
     if (!correoValido(correo) || !/^\d{6}$/.test(codigo)) {
       return NextResponse.json(
-        { error: 'Codigo incorrecto' },
+        { error: 'Código incorrecto' },
         { status: 400 }
       );
     }
