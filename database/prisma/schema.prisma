@@ -6,14 +6,195 @@ datasource db {
   provider = "sqlite"
 }
 
+enum RolUsuario {
+  Admin
+  Coordinador
+  Docente
+  Porteria
+}
+
+enum TipoFalta {
+  TIPO_I
+  TIPO_II
+  TIPO_III
+}
+
+enum EstadoReporte {
+  Pendiente
+  EnRevision
+  Cerrado
+  Anulado
+}
+
+enum EstadoAlerta {
+  activa
+  en_seguimiento
+  resuelta
+}
+
+enum TipoSalida {
+  ordinaria
+  urgente
+}
+
+enum EstadoSalida {
+  pendiente
+  autorizada
+  rechazada
+  completada
+  cancelada
+}
+
+enum CanalNotificacion {
+  email
+  app
+}
+
 model Usuario {
   id                Int       @id @default(autoincrement())
   nombre            String
   correo            String    @unique
   contrasena        String
-  rol               String
+  rol               RolUsuario
   activo            Boolean   @default(true)
   creadoEn          DateTime  @default(now())
   tokenRecuperacion String?
   tokenExpira       DateTime?
+  reportes          Reporte[]
+  observaciones     ObservacionReporte[]
+  auditLogs         AuditLog[]
+  salidasRegistradas Salida[] @relation("SalidaRegistrador")
+}
+
+model Acudiente {
+  id             Int            @id @default(autoincrement())
+  nombre         String
+  contacto       String
+  correo         String?
+  telefono       String?
+  documento      String?
+  creadoEn       DateTime       @default(now())
+  estudiantes    Estudiante[]
+  notificaciones Notificacion[]
+  salidas        Salida[]
+}
+
+model Estudiante {
+  id             Int       @id @default(autoincrement())
+  nombre         String
+  documento      String?
+  grado          String
+  grupo          String
+  estado         String    @default("Activo")
+  activo         Boolean   @default(true)
+  archivado      Boolean   @default(false)
+  creadoEn       DateTime  @default(now())
+  actualizadoEn  DateTime  @default(now())
+  acudienteId    Int
+  acudiente      Acudiente @relation(fields: [acudienteId], references: [id])
+  reportes       Reporte[]
+  alertas        Alerta[]
+  salidas        Salida[]
+}
+
+model Reporte {
+  id             Int       @id @default(autoincrement())
+  estudianteId   Int
+  docenteId      Int
+  tipoFalta      TipoFalta
+  descripcion    String
+  evidenciaUrl   String?
+  observaciones  String?
+  fecha          DateTime  @default(now())
+  estado         EstadoReporte @default(Pendiente)
+  confidencial   Boolean   @default(false)
+  editableHasta  DateTime?
+  creadoEn       DateTime  @default(now())
+  actualizadoEn  DateTime  @default(now())
+  estudiante     Estudiante @relation(fields: [estudianteId], references: [id])
+  docente        Usuario    @relation(fields: [docenteId], references: [id])
+  evidencias     EvidenciaReporte[]
+  observacionesLista ObservacionReporte[]
+  notificaciones Notificacion[]
+}
+
+model Alerta {
+  id               Int      @id @default(autoincrement())
+  estudianteId     Int
+  cantidadReportes Int
+  estado           EstadoAlerta @default(activa)
+  notas            String?
+  creadoEn         DateTime @default(now())
+  actualizadoEn    DateTime @default(now())
+  estudiante       Estudiante @relation(fields: [estudianteId], references: [id])
+}
+
+model Salida {
+  id                 String       @id @default(uuid())
+  estudianteId       Int
+  acudienteId        Int
+  motivo             String
+  tipo               TipoSalida   @default(ordinaria)
+  urgencia           Boolean      @default(false)
+  estado             EstadoSalida @default(pendiente)
+  firmaDirector      Boolean      @default(false)
+  firmaDocente       Boolean      @default(false)
+  firmaCoordinacion  Boolean      @default(false)
+  firmaAcudiente     Boolean      @default(false)
+  registradoPorId    Int
+  creadoEn           DateTime     @default(now())
+  actualizadoEn      DateTime     @default(now())
+  estudiante         Estudiante   @relation(fields: [estudianteId], references: [id])
+  acudiente          Acudiente    @relation(fields: [acudienteId], references: [id])
+  registradoPor      Usuario      @relation("SalidaRegistrador", fields: [registradoPorId], references: [id])
+}
+
+model Notificacion {
+  id          Int       @id @default(autoincrement())
+  acudienteId Int
+  reporteId   Int?
+  canal       CanalNotificacion
+  asunto      String
+  mensaje     String
+  leida       Boolean   @default(false)
+  enviadoEn   DateTime  @default(now())
+  acudiente   Acudiente @relation(fields: [acudienteId], references: [id])
+  reporte     Reporte?  @relation(fields: [reporteId], references: [id])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  usuarioId Int
+  accion    String
+  entidad   String
+  entidadId String?
+  detalle   String?
+  creadoEn  DateTime @default(now())
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+}
+
+model ConfiguracionSistema {
+  clave        String   @id
+  valor        String
+  actualizadoEn DateTime @default(now())
+}
+
+model EvidenciaReporte {
+  id        Int      @id @default(autoincrement())
+  reporteId Int
+  nombre    String
+  tipo      String
+  url       String
+  creadoEn  DateTime @default(now())
+  reporte   Reporte  @relation(fields: [reporteId], references: [id], onDelete: Cascade)
+}
+
+model ObservacionReporte {
+  id        Int      @id @default(autoincrement())
+  reporteId Int
+  usuarioId Int
+  texto     String
+  creadoEn  DateTime @default(now())
+  reporte   Reporte  @relation(fields: [reporteId], references: [id], onDelete: Cascade)
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
 }

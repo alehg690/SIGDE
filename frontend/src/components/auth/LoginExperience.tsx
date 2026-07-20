@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import LoginPanel from '@/components/auth/LoginPanel';
 import type { Vista } from '@/types/auth';
@@ -9,6 +10,13 @@ type ApiResponse<T = unknown> = {
   error?: string;
   mensaje?: string;
   usuario?: T;
+};
+
+type UsuarioSesion = {
+  id: number;
+  nombre?: string;
+  correo: string;
+  rol: string;
 };
 
 type Fortaleza = {
@@ -20,7 +28,6 @@ type Fortaleza = {
 const EMAIL_STORAGE_KEY = 'sigde_correo';
 const PRIMER_REENVIO_SEGUNDOS = 60;
 const INCREMENTO_REENVIO_SEGUNDOS = 5 * 60;
-const MENSAJE_SESION_CERRADA = 'Sesión cerrada correctamente.';
 const DURACION_MENSAJE_SESION_CERRADA_MS = 8000;
 
 function subscribeCorreoGuardado(callback: () => void) {
@@ -67,6 +74,7 @@ async function leerRespuesta<T>(res: Response): Promise<ApiResponse<T>> {
 }
 
 export default function LoginExperience() {
+  const router = useRouter();
   const [vista, setVista] = useState<Vista>('login');
   const correoGuardado = useSyncExternalStore(subscribeCorreoGuardado, getCorreoGuardado, () => '');
   const [correoManual, setCorreoManual] = useState<string | null>(null);
@@ -168,7 +176,7 @@ export default function LoginExperience() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accion: 'login', correo: correoLimpio, contrasena }),
       });
-      const data = await leerRespuesta(res);
+      const data = await leerRespuesta<UsuarioSesion>(res);
 
       if (!res.ok) {
         setContrasena('');
@@ -184,6 +192,7 @@ export default function LoginExperience() {
 
       setContrasena('');
       setSesionIniciada(true);
+      router.push('/dashboard');
     } catch {
       setError('No hay conexión con el servidor. Revisa tu red e intenta otra vez.');
     } finally {
@@ -340,26 +349,6 @@ export default function LoginExperience() {
     }
   }
 
-  async function handleLogout() {
-    resetearMensajes();
-    setCargando(true);
-
-    try {
-      await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accion: 'logout' }),
-      });
-      setSesionIniciada(false);
-      setVista('login');
-      setMensajeSesionCerrada(MENSAJE_SESION_CERRADA);
-    } catch {
-      setError('No pudimos cerrar la sesión. Intenta nuevamente.');
-    } finally {
-      setCargando(false);
-    }
-  }
-
   return (
     <main className="login-shell">
       <LoginPanel />
@@ -373,11 +362,11 @@ export default function LoginExperience() {
             <div className="auth-form session-card">
               <Header
                 title="Sesión iniciada"
-                subtitle="El acceso funciona correctamente. Puedes cerrar sesión cuando termines."
+                subtitle="Estamos abriendo tu panel principal."
               />
-              <Feedback error={error} mensaje={mensaje} />
-              <button className="primary-button" type="button" disabled={cargando} onClick={handleLogout}>
-                {cargando ? 'Cerrando...' : 'Cerrar sesión'}
+              <Feedback error={error} mensaje="Redirigiendo al dashboard..." />
+              <button className="primary-button" type="button" disabled>
+                Cargando dashboard...
               </button>
             </div>
           )}
