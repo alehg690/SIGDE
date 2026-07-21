@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export type DashboardUser = {
   id: number;
@@ -13,6 +13,48 @@ export type DashboardUser = {
 type DashboardRole = 'administrador' | 'coordinador' | 'docente' | 'portero';
 type DashboardSection = 'inicio' | 'personas' | 'seguimiento' | 'reportes' | 'perfil';
 
+type DashboardStats = {
+  metricas: {
+    usuarios: number;
+    estudiantes: number;
+    reportes: number;
+    reportesPendientes: number;
+    convivenciaAbierta: number;
+    salidasPendientes: number;
+    alertasActivas: number;
+    notificacionesNoLeidas: number;
+  };
+  graficas: {
+    reportesPorTipo: Array<{ tipo: string; total: number }>;
+    salidasPorEstado: Array<{ estado: string; total: number }>;
+  };
+  tablas: {
+    ultimosReportes: Array<Record<string, unknown>>;
+    ultimasSalidas: Array<Record<string, unknown>>;
+  };
+};
+
+const EMPTY_STATS: DashboardStats = {
+  metricas: {
+    usuarios: 0,
+    estudiantes: 0,
+    reportes: 0,
+    reportesPendientes: 0,
+    convivenciaAbierta: 0,
+    salidasPendientes: 0,
+    alertasActivas: 0,
+    notificacionesNoLeidas: 0,
+  },
+  graficas: {
+    reportesPorTipo: [],
+    salidasPorEstado: [],
+  },
+  tablas: {
+    ultimosReportes: [],
+    ultimasSalidas: [],
+  },
+};
+
 const ROLE_LABELS: Record<DashboardRole, string> = {
   administrador: 'Administrador',
   coordinador: 'Coordinador',
@@ -23,47 +65,26 @@ const ROLE_LABELS: Record<DashboardRole, string> = {
 const ROLE_CONFIG: Record<DashboardRole, {
   headline: string;
   summary: string;
-  metrics: Array<{ label: string; value: string }>;
   actions: string[];
 }> = {
   administrador: {
     headline: 'Vista general institucional',
     summary: 'Control de usuarios, módulos, reportes y configuración del sistema.',
-    metrics: [
-      { label: 'Usuarios activos', value: '4' },
-      { label: 'Roles configurados', value: '4' },
-      { label: 'Módulos', value: '5' },
-    ],
     actions: ['Crear usuario', 'Asignar roles', 'Auditar actividad'],
   },
   coordinador: {
     headline: 'Seguimiento de convivencia',
     summary: 'Priorización de casos, alertas académicas y acompañamiento escolar.',
-    metrics: [
-      { label: 'Casos abiertos', value: '0' },
-      { label: 'Alertas nuevas', value: '0' },
-      { label: 'Reportes del mes', value: '0' },
-    ],
     actions: ['Revisar casos', 'Generar reporte', 'Programar seguimiento'],
   },
   docente: {
     headline: 'Registro docente',
     summary: 'Acceso rápido para registrar novedades y consultar estudiantes asignados.',
-    metrics: [
-      { label: 'Cursos asignados', value: '0' },
-      { label: 'Novedades', value: '0' },
-      { label: 'Pendientes', value: '0' },
-    ],
     actions: ['Registrar novedad', 'Consultar estudiante', 'Ver historial'],
   },
   portero: {
     headline: 'Control de ingreso',
     summary: 'Herramientas para registrar entradas, salidas y novedades de portería.',
-    metrics: [
-      { label: 'Ingresos hoy', value: '0' },
-      { label: 'Salidas hoy', value: '0' },
-      { label: 'Visitantes', value: '0' },
-    ],
     actions: ['Registrar entrada', 'Registrar salida', 'Validar visitante'],
   },
 };
@@ -85,12 +106,79 @@ function normalizeRole(rol: string): DashboardRole {
   return 'docente';
 }
 
+function metricasPorRol(role: DashboardRole, stats: DashboardStats) {
+  if (role === 'administrador') {
+    return [
+      { label: 'Usuarios activos', value: stats.metricas.usuarios },
+      { label: 'Estudiantes activos', value: stats.metricas.estudiantes },
+      { label: 'Reportes registrados', value: stats.metricas.reportes },
+    ];
+  }
+  if (role === 'coordinador') {
+    return [
+      { label: 'Reportes pendientes', value: stats.metricas.reportesPendientes },
+      { label: 'Alertas activas', value: stats.metricas.alertasActivas },
+      { label: 'Salidas pendientes', value: stats.metricas.salidasPendientes },
+    ];
+  }
+  if (role === 'docente') {
+    return [
+      { label: 'Estudiantes activos', value: stats.metricas.estudiantes },
+      { label: 'Reportes registrados', value: stats.metricas.reportes },
+      { label: 'Pendientes', value: stats.metricas.reportesPendientes },
+    ];
+  }
+  return [
+    { label: 'Estudiantes activos', value: stats.metricas.estudiantes },
+    { label: 'Salidas pendientes', value: stats.metricas.salidasPendientes },
+    { label: 'Notificaciones', value: stats.metricas.notificacionesNoLeidas },
+  ];
+}
+
+function texto(valor: unknown) {
+  if (valor == null) return '';
+  if (typeof valor === 'boolean') return valor ? 'Sí' : 'No';
+  return String(valor);
+}
+
 export default function DashboardExperience({ usuario }: { usuario: DashboardUser }) {
   const router = useRouter();
   const [section, setSection] = useState<DashboardSection>('inicio');
   const [closing, setClosing] = useState(false);
+  const [stats, setStats] = useState<DashboardStats>(EMPTY_STATS);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
   const role = useMemo(() => normalizeRole(usuario.rol), [usuario.rol]);
   const config = ROLE_CONFIG[role];
+
+  useEffect(() => {
+    let activo = true;
+
+    async function cargarEstadisticas() {
+      setLoadingStats(true);
+      setStatsError(null);
+
+      try {
+        const res = await fetch('/api/dashboard/estadisticas', { cache: 'no-store' });
+        if (!res.ok) throw new Error('No se pudieron cargar las estadísticas');
+        const data = await res.json();
+        if (activo) setStats({ ...EMPTY_STATS, ...data });
+      } catch (error) {
+        if (activo) {
+          setStats(EMPTY_STATS);
+          setStatsError(error instanceof Error ? error.message : 'Error cargando estadísticas');
+        }
+      } finally {
+        if (activo) setLoadingStats(false);
+      }
+    }
+
+    cargarEstadisticas();
+
+    return () => {
+      activo = false;
+    };
+  }, []);
 
   async function handleLogout() {
     setClosing(true);
@@ -136,7 +224,15 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
           </button>
         </header>
 
-        <DashboardContent section={section} usuario={usuario} role={role} config={config} />
+        {statsError && <p className="feedback error">{statsError}</p>}
+        <DashboardContent
+          section={section}
+          usuario={usuario}
+          role={role}
+          config={config}
+          stats={stats}
+          loadingStats={loadingStats}
+        />
       </section>
     </main>
   );
@@ -147,12 +243,18 @@ function DashboardContent({
   usuario,
   role,
   config,
+  stats,
+  loadingStats,
 }: {
   section: DashboardSection;
   usuario: DashboardUser;
   role: DashboardRole;
   config: typeof ROLE_CONFIG[DashboardRole];
+  stats: DashboardStats;
+  loadingStats: boolean;
 }) {
+  const metrics = metricasPorRol(role, stats);
+
   if (section === 'perfil') {
     return (
       <section className="workspace-panel">
@@ -169,12 +271,11 @@ function DashboardContent({
   if (section === 'personas') {
     return (
       <section className="workspace-panel">
-        <SectionTitle title="Personas" subtitle="Acceso según el rol a usuarios, estudiantes o visitantes." />
-        <div className="table-preview">
-          {role === 'administrador' && <Row title="Usuarios del sistema" text="Crear, editar y activar cuentas." />}
-          {role === 'coordinador' && <Row title="Estudiantes en seguimiento" text="Consultar casos activos por curso." />}
-          {role === 'docente' && <Row title="Mis estudiantes" text="Vista de grupo asignado y novedades." />}
-          {role === 'portero' && <Row title="Visitantes" text="Registro rápido de ingreso y salida." />}
+        <SectionTitle title="Personas" subtitle="Datos institucionales conectados al backend." />
+        <div className="metric-grid">
+          <Metric label="Usuarios activos" value={stats.metricas.usuarios} loading={loadingStats} />
+          <Metric label="Estudiantes activos" value={stats.metricas.estudiantes} loading={loadingStats} />
+          <Metric label="Alertas activas" value={stats.metricas.alertasActivas} loading={loadingStats} />
         </div>
       </section>
     );
@@ -187,6 +288,7 @@ function DashboardContent({
         <div className="action-grid">
           {config.actions.map((action) => <button key={action} type="button">{action}</button>)}
         </div>
+        <DataList title="Últimos reportes" rows={stats.tablas.ultimosReportes} loading={loadingStats} />
       </section>
     );
   }
@@ -194,10 +296,12 @@ function DashboardContent({
   if (section === 'reportes') {
     return (
       <section className="workspace-panel">
-        <SectionTitle title="Reportes" subtitle="Indicadores listos para conectar con datos reales." />
+        <SectionTitle title="Reportes" subtitle="Indicadores calculados desde reportes y salidas reales." />
         <div className="metric-grid">
-          {config.metrics.map((metric) => <Metric key={metric.label} {...metric} />)}
+          {metrics.map((metric) => <Metric key={metric.label} {...metric} loading={loadingStats} />)}
         </div>
+        <Chart title="Reportes por tipo" data={stats.graficas.reportesPorTipo.map((item) => ({ label: item.tipo, value: Number(item.total) }))} />
+        <Chart title="Salidas por estado" data={stats.graficas.salidasPorEstado.map((item) => ({ label: item.estado, value: Number(item.total) }))} />
       </section>
     );
   }
@@ -206,12 +310,9 @@ function DashboardContent({
     <section className="workspace-panel">
       <SectionTitle title="Inicio" subtitle="Resumen de trabajo y accesos rápidos." />
       <div className="metric-grid">
-        {config.metrics.map((metric) => <Metric key={metric.label} {...metric} />)}
+        {metrics.map((metric) => <Metric key={metric.label} {...metric} loading={loadingStats} />)}
       </div>
-      <div className="activity-list">
-        <span>Sesión iniciada como {ROLE_LABELS[role]}.</span>
-        <span>Dashboard preparado para personalizar permisos y módulos por rol.</span>
-      </div>
+      <DataList title="Últimas salidas" rows={stats.tablas.ultimasSalidas} loading={loadingStats} />
     </section>
   );
 }
@@ -225,11 +326,50 @@ function SectionTitle({ title, subtitle }: { title: string; subtitle: string }) 
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({ label, value, loading }: { label: string; value: number; loading: boolean }) {
   return (
     <div className="mini-metric">
-      <strong>{value}</strong>
+      <strong>{loading ? '...' : value.toLocaleString('es-CO')}</strong>
       <span>{label}</span>
+    </div>
+  );
+}
+
+function Chart({ title, data }: { title: string; data: Array<{ label: string; value: number }> }) {
+  const max = Math.max(...data.map((item) => item.value), 1);
+
+  return (
+    <div className="table-preview">
+      <Row title={title} text={data.length ? 'Distribución actual' : 'Sin datos registrados'} />
+      {data.map((item) => (
+        <div key={item.label} className="chart-row">
+          <strong>{item.label}</strong>
+          <span>{item.value.toLocaleString('es-CO')}</span>
+          <div className="chart-bar" style={{ inlineSize: `${Math.max((item.value / max) * 100, 6)}%` }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DataList({ title, rows, loading }: { title: string; rows: Array<Record<string, unknown>>; loading: boolean }) {
+  if (loading) {
+    return (
+      <div className="activity-list">
+        <span>Cargando datos...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="table-preview">
+      <Row title={title} text={rows.length ? `${rows.length} registros recientes` : 'Sin registros'} />
+      {rows.map((row, index) => (
+        <div key={String(row.id ?? index)}>
+          <strong>{texto(row.estudiante || row.nombre || row.id || 'Registro')}</strong>
+          <span>{Object.entries(row).slice(1, 5).map(([, value]) => texto(value)).filter(Boolean).join(' · ')}</span>
+        </div>
+      ))}
     </div>
   );
 }

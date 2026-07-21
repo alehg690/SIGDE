@@ -6,19 +6,78 @@ async function contar(sql: string) {
   return Number(result.rows[0]?.total || 0);
 }
 
-export async function obtenerResumenDashboard(usuario: SesionUsuario) {
+async function tablaExiste(nombre: string) {
+  const result = await db.execute({
+    sql: "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1",
+    args: [nombre],
+  });
+
+  return result.rows.length > 0;
+}
+
+async function contarSiExiste(tabla: string, sql: string) {
+  if (!(await tablaExiste(tabla))) return 0;
+  return contar(sql);
+}
+
+async function consultar(sql: string) {
+  const result = await db.execute(sql);
+  return result.rows;
+}
+
+export async function obtenerEstadisticasDashboard(usuario: SesionUsuario) {
   const [
     usuarios,
     estudiantes,
+    reportes,
     reportesPendientes,
     convivenciaAbierta,
     salidasPendientes,
+    alertasActivas,
+    notificacionesNoLeidas,
+    reportesPorTipo,
+    salidasPorEstado,
+    ultimosReportes,
+    ultimasSalidas,
   ] = await Promise.all([
     contar('SELECT COUNT(*) AS total FROM Usuario WHERE activo = 1'),
     contar('SELECT COUNT(*) AS total FROM Estudiante WHERE archivado = 0'),
+    contar('SELECT COUNT(*) AS total FROM Reporte'),
     contar("SELECT COUNT(*) AS total FROM Reporte WHERE estado = 'Pendiente'"),
-    contar("SELECT COUNT(*) AS total FROM ConvivenciaReporte WHERE estado = 'abierto'"),
+    contarSiExiste('ConvivenciaReporte', "SELECT COUNT(*) AS total FROM ConvivenciaReporte WHERE estado = 'abierto'"),
     contar("SELECT COUNT(*) AS total FROM Salida WHERE estado = 'pendiente'"),
+    contar("SELECT COUNT(*) AS total FROM Alerta WHERE estado <> 'resuelta'"),
+    contar('SELECT COUNT(*) AS total FROM Notificacion WHERE leida = 0'),
+    consultar(`
+      SELECT tipoFalta AS tipo, COUNT(*) AS total
+      FROM Reporte
+      GROUP BY tipoFalta
+      ORDER BY total DESC
+    `),
+    consultar(`
+      SELECT estado, COUNT(*) AS total
+      FROM Salida
+      GROUP BY estado
+      ORDER BY total DESC
+    `),
+    consultar(`
+      SELECT r.id, r.tipoFalta, r.descripcion, r.estado, r.fecha,
+        e.nombre AS estudiante, e.grado, e.grupo, u.nombre AS docente
+      FROM Reporte r
+      INNER JOIN Estudiante e ON e.id = r.estudianteId
+      INNER JOIN Usuario u ON u.id = r.docenteId
+      ORDER BY r.fecha DESC
+      LIMIT 5
+    `),
+    consultar(`
+      SELECT s.id, s.motivo, s.estado, s.urgencia, s.creadoEn,
+        e.nombre AS estudiante, e.grado, a.nombre AS acudiente
+      FROM Salida s
+      INNER JOIN Estudiante e ON e.id = s.estudianteId
+      INNER JOIN Acudiente a ON a.id = s.acudienteId
+      ORDER BY s.creadoEn DESC
+      LIMIT 5
+    `),
   ]);
 
   return {
@@ -27,13 +86,28 @@ export async function obtenerResumenDashboard(usuario: SesionUsuario) {
       metricas: {
         usuarios,
         estudiantes,
+        reportes,
         reportesPendientes,
         convivenciaAbierta,
         salidasPendientes,
+        alertasActivas,
+        notificacionesNoLeidas,
+      },
+      graficas: {
+        reportesPorTipo,
+        salidasPorEstado,
+      },
+      tablas: {
+        ultimosReportes,
+        ultimasSalidas,
       },
       accesos: obtenerAccesosPorRol(usuario.rol),
     },
   };
+}
+
+export async function obtenerResumenDashboard(usuario: SesionUsuario) {
+  return obtenerEstadisticasDashboard(usuario);
 }
 
 function obtenerAccesosPorRol(rol: SesionUsuario['rol']) {

@@ -340,6 +340,26 @@ button {
   margin-bottom: 4px;
 }
 
+.chart-row {
+  position: relative;
+  overflow: hidden;
+}
+
+.chart-row strong,
+.chart-row span {
+  position: relative;
+  z-index: 1;
+}
+
+.chart-bar {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: rgba(31, 111, 184, 0.1);
+}
+
 .profile-list {
   margin-bottom: 0;
 }
