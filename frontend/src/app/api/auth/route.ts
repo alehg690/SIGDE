@@ -11,6 +11,7 @@ import { crearToken, verificarToken } from '@backend/utils/jwt';
 
 const EMAIL_MAX_LENGTH = 254;
 const PASSWORD_MAX_LENGTH = 128;
+const SESSION_MAX_AGE_SECONDS = 30 * 60;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function serializarSesion(payload: Awaited<ReturnType<typeof verificarToken>>) {
@@ -95,12 +96,44 @@ export async function POST(req: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: SESSION_MAX_AGE_SECONDS,
       path: '/',
       priority: 'high',
     });
 
     return NextResponse.json({ mensaje: 'Inicio de sesión exitoso', usuario });
+  }
+
+  if (accion === 'renovarSesion') {
+    const cookieStore = await cookies();
+    const tokenActual = cookieStore.get('token')?.value;
+
+    if (!tokenActual) {
+      return NextResponse.json({ autenticado: false }, { status: 401 });
+    }
+
+    try {
+      const payload = await verificarToken(tokenActual);
+      const token = await crearToken(serializarSesion(payload));
+      const sesion = await verificarToken(token);
+
+      cookieStore.set('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: SESSION_MAX_AGE_SECONDS,
+        path: '/',
+        priority: 'high',
+      });
+
+      return NextResponse.json({
+        autenticado: true,
+        usuario: serializarSesion(sesion),
+        expiraEn: typeof sesion.exp === 'number' ? sesion.exp : null,
+      });
+    } catch {
+      return NextResponse.json({ autenticado: false }, { status: 401 });
+    }
   }
 
   if (accion === 'logout') {

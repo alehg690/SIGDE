@@ -1,12 +1,14 @@
 'use client';
 
-import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError } from '@/services/api';
-import { getSession, logout, type SessionUser } from '@/services/auth.service';
+import { getSession, logout, renovarSesion, type SessionUser } from '@/services/auth.service';
 
 const INACTIVITY_LIMIT_MS = 30 * 60 * 1000;
+const ACTIVITY_REFRESH_INTERVAL_MS = 60 * 1000;
 const EXPIRATION_WARNING_MS = 5 * 60 * 1000;
 const SESSION_MESSAGE_KEY = 'sigde_logout_message';
+export const TAB_SESSION_KEY = 'sigde_tab_session';
 
 type AuthContextValue = {
   usuario: SessionUser | null;
@@ -24,10 +26,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [expiraEn, setExpiraEn] = useState<number | null>(null);
   const [cargando, setCargando] = useState(true);
   const [avisoSesion, setAvisoSesion] = useState('');
+  const ultimaRenovacionRef = useRef(0);
 
   const refrescarSesion = useCallback(async () => {
     setCargando(true);
     try {
+      if (!sessionStorage.getItem(TAB_SESSION_KEY)) {
+        await logout().catch(() => undefined);
+        setUsuario(null);
+        setExpiraEn(null);
+        return;
+      }
+
       const session = await getSession();
       setUsuario(session.autenticado ? session.usuario ?? null : null);
       setExpiraEn(session.autenticado ? session.expiraEn ?? null : null);
@@ -43,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const cerrarSesion = useCallback(async (message = 'Sesion cerrada correctamente.') => {
+    sessionStorage.removeItem(TAB_SESSION_KEY);
     await logout();
     setUsuario(null);
     setExpiraEn(null);
@@ -55,26 +66,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refrescarSesion]);
 
   useEffect(() => {
+    if (cargando || usuario || window.location.pathname === '/') return;
+    window.location.replace('/');
+  }, [cargando, usuario]);
+
+  useEffect(() => {
     if (!usuario) return;
 
     let inactivityTimer: number | undefined;
     const activityEvents = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'];
 
-    const scheduleInactivityLogout = () => {
+    const registrarActividad = () => {
       if (inactivityTimer) window.clearTimeout(inactivityTimer);
       inactivityTimer = window.setTimeout(() => {
         void cerrarSesion('Sesion cerrada por inactividad.');
       }, INACTIVITY_LIMIT_MS);
+
+      if (Date.now() - ultimaRenovacionRef.current < ACTIVITY_REFRESH_INTERVAL_MS) return;
+
+      ultimaRenovacionRef.current = Date.now();
+      void renovarSesion()
+        .then((session) => setExpiraEn(session.expiraEn ?? null))
+        .catch(() => void cerrarSesion('Sesion cerrada por inactividad.'));
     };
 
     activityEvents.forEach((eventName) => {
-      window.addEventListener(eventName, scheduleInactivityLogout, { passive: true });
+      window.addEventListener(eventName, registrarActividad, { passive: true });
     });
-    scheduleInactivityLogout();
+    registrarActividad();
 
     return () => {
       if (inactivityTimer) window.clearTimeout(inactivityTimer);
-      activityEvents.forEach((eventName) => window.removeEventListener(eventName, scheduleInactivityLogout));
+      activityEvents.forEach((eventName) => window.removeEventListener(eventName, registrarActividad));
     };
   }, [usuario, cerrarSesion]);
 

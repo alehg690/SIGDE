@@ -23,3 +23,10 @@ export async function logout() {
     body: JSON.stringify({ accion: 'logout' }),
   });
 }
+
+export async function renovarSesion() {
+  return apiRequest<SessionResponse>('/api/auth', {
+    method: 'POST',
+    body: JSON.stringify({ accion: 'renovarSesion' }),
+  });
+}
