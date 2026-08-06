@@ -199,6 +199,9 @@ const NAV_GROUPS: Array<{
   { label: 'GESTIÓN', gestion: true, items: [{ id: 'usuarios', label: 'Usuarios' }, { id: 'personas', label: 'Estudiantes' }, { id: 'configuracion', label: 'Configuración' }, { id: 'perfil', label: 'Perfil' }] },
 ];
 
+// Auditoría queda agrupada como módulo de gestión para los coordinadores.
+const SECURITY_NAV_GROUP = { label: 'SEGURIDAD', gestion: true, items: [{ id: 'auditoria' as DashboardSection, label: 'Auditoría' }] };
+
 type SidebarIconName = 'dashboard' | 'users' | 'graduation' | 'document' | 'door' | 'message' | 'calendar' | 'chart' | 'settings' | 'profile' | 'logout' | 'chevron' | 'chevronDown' | 'search' | 'sparkles';
 
 const ICON_BY_SECTION: Record<DashboardSection, SidebarIconName> = {
@@ -382,7 +385,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
           </button>
         </div>
         <nav className="app-nav">
-          {NAV_GROUPS.filter((group) => !group.gestion || role === 'coordinador').map((group) => (
+          {[...NAV_GROUPS, SECURITY_NAV_GROUP].filter((group) => !group.gestion || role === 'coordinador').map((group) => (
             <div className="app-nav-group" key={group.label}>
               <span className="app-nav-group-label">{group.label}</span>
               {group.items.map((item) => (
@@ -429,9 +432,10 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
             <DashboardMetricCards stats={dashboardSnapshot} />
             <DashboardAnalytics stats={dashboardSnapshot} />
           </section>
-        ) : (
+        ) : (<>
+          <DashboardContent section={section} usuario={usuario} role={role} config={ROLE_CONFIG[role]} stats={dashboardSnapshot ?? EMPTY_STATS} loadingStats={dashboardSnapshot === null && !dashboardError} onCurrentUserUpdated={() => router.refresh()} />
           <section className="dashboard-empty-canvas" aria-label="Área de trabajo vacía" />
-        )}
+        </>)}
       </section>
     </main>
   );
@@ -716,12 +720,16 @@ function DashboardContent({
     return <ControlSalidasWorkspace />;
   }
 
-  if (section === 'comunicaciones' || section === 'calendario') {
+  if (['comunicaciones', 'calendario', 'seguimiento', 'estadisticas', 'reportes'].includes(section)) {
+    return <ModuleWireframe section={section as Extract<DashboardSection, 'comunicaciones' | 'calendario' | 'seguimiento' | 'estadisticas' | 'reportes'>} onNavigate={() => undefined} />;
+  }
+
+  if (false && (section === 'comunicaciones' || section === 'calendario')) {
     const titles = {
       comunicaciones: ['Comunicaciones', 'Envía y consulta comunicados vinculados a estudiantes y acudientes.'],
       calendario: ['Calendario', 'Consulta reuniones, citaciones y actividades institucionales.'],
     } as const;
-    const [title, subtitle] = titles[section];
+    const [title, subtitle] = titles[section as 'comunicaciones' | 'calendario'];
     return <section className="workspace-panel"><SectionTitle title={title} subtitle={subtitle} /><div className="empty-state"><span aria-hidden="true">◌</span><strong>Módulo listo para conectar</strong><p>La estructura visual está preparada para integrar los registros reales del sistema.</p></div></section>;
   }
 
@@ -807,6 +815,45 @@ function DashboardContent({
         {metrics.map((metric) => <Metric key={metric.label} {...metric} loading={loadingStats} />)}
       </div>
       <DataList title="Últimas salidas" rows={stats.tablas.ultimasSalidas} loading={loadingStats} />
+    </section>
+  );
+}
+
+function ModuleWireframe({ section, onNavigate }: { section: Extract<DashboardSection, 'comunicaciones' | 'calendario' | 'seguimiento' | 'estadisticas' | 'reportes'>; onNavigate: () => void }) {
+  const content = {
+    reportes: {
+      title: 'Reportes disciplinarios', subtitle: 'Registra, revisa y da trazabilidad a cada situación de convivencia.', action: 'Crear reporte',
+      columns: ['Estudiante', 'Tipo de reporte', 'Estado', 'Fecha'], rows: [['Juan David Martínez', 'Tipo II · Convivencia', 'Pendiente', 'Hoy, 9:40 a. m.'], ['Valentina Gómez', 'Tipo I · Aula', 'En seguimiento', 'Ayer, 2:15 p. m.']],
+    },
+    seguimiento: {
+      title: 'Seguimiento de casos', subtitle: 'Organiza compromisos, observaciones y próximos pasos con cada estudiante.', action: 'Programar seguimiento',
+      columns: ['Estudiante', 'Compromiso actual', 'Responsable', 'Próxima fecha'], rows: [['Mateo Rodríguez', 'Citación con acudiente', 'Coordinación', '12 ago.'], ['Sara López', 'Observación docente', 'Docente titular', '14 ago.']],
+    },
+    estadisticas: {
+      title: 'Estadísticas institucionales', subtitle: 'Visualiza tendencias para acompañar decisiones de convivencia.', action: 'Exportar informe',
+      columns: ['Indicador', 'Periodo', 'Resultado', 'Variación'], rows: [['Reportes registrados', 'Semana actual', '24', '+ 3'], ['Salidas autorizadas', 'Semana actual', '18', '− 2']],
+    },
+    comunicaciones: {
+      title: 'Comunicaciones', subtitle: 'Prepara mensajes claros para estudiantes, acudientes y equipo institucional.', action: 'Nuevo comunicado',
+      columns: ['Asunto', 'Destinatarios', 'Canal', 'Estado'], rows: [['Citación a acudiente', 'Familia de Juan David', 'Correo', 'Borrador'], ['Recordatorio de reunión', 'Docentes de grado 11', 'Plataforma', 'Programado']],
+    },
+    calendario: {
+      title: 'Calendario institucional', subtitle: 'Consulta citaciones, seguimientos y actividades próximas en un solo lugar.', action: 'Agendar actividad',
+      columns: ['Actividad', 'Fecha', 'Participantes', 'Estado'], rows: [['Reunión de seguimiento', '12 ago. · 10:00 a. m.', 'Acudiente y coordinación', 'Confirmada'], ['Cierre de observaciones', '14 ago. · 4:00 p. m.', 'Docentes', 'Pendiente']],
+    },
+  }[section];
+
+  return (
+    <section className="workspace-panel module-wireframe">
+      <div className="module-wireframe-heading"><SectionTitle title={content.title} subtitle={content.subtitle} /><button type="button" className="module-primary-action" onClick={onNavigate}>{content.action}</button></div>
+      <div className="module-wireframe-summary" aria-label="Resumen del módulo">
+        <article><span>Por atender</span><strong>{section === 'comunicaciones' ? '3' : '8'}</strong><small>Registros que requieren acción.</small></article>
+        <article><span>Esta semana</span><strong>{section === 'estadisticas' ? '24' : '12'}</strong><small>Actividad registrada en SIGDE.</small></article>
+        <article><span>Próximo paso</span><strong>{section === 'calendario' ? 'Hoy' : '2 días'}</strong><small>Revisión sugerida para el equipo.</small></article>
+      </div>
+      <div className="module-wireframe-toolbar"><label><span className="sr-only">Buscar en {content.title}</span><input type="search" placeholder={`Buscar en ${content.title.toLowerCase()}...`} /></label><button type="button">Filtros</button></div>
+      <div className="module-wireframe-table-wrap"><table className="module-wireframe-table"><thead><tr>{content.columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{content.rows.map((row) => <tr key={row[0]}>{row.map((cell, index) => <td key={`${cell}-${index}`}>{index === 2 && section !== 'estadisticas' ? <span className="wireframe-status">{cell}</span> : cell}</td>)}</tr>)}</tbody></table></div>
+      <p className="wireframe-note">Wireframe listo: la estructura visual queda preparada para conectar los datos y acciones reales del módulo.</p>
     </section>
   );
 }

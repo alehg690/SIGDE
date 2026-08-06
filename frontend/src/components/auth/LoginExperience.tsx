@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { FormEvent, MouseEvent, TouchEvent, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import LoginPanel from '@/components/auth/LoginPanel';
 import { ApiError } from '@/services/api';
 import { getSession } from '@/services/auth.service';
@@ -168,6 +168,21 @@ export default function LoginExperience() {
     resetearMensajes();
     setSesionIniciada(false);
     setVista(siguiente);
+  }
+
+  function manejarToqueBoton(event: MouseEvent<HTMLButtonElement> | TouchEvent<HTMLButtonElement>) {
+    if (event.type === 'touchend') event.preventDefault();
+  }
+
+  function alternarVisibilidadContrasena(event: MouseEvent<HTMLButtonElement> | TouchEvent<HTMLButtonElement>) {
+    manejarToqueBoton(event);
+    setMostrarContrasena((actual) => !actual);
+  }
+
+  function abrirRecuperacion(event: MouseEvent<HTMLButtonElement> | TouchEvent<HTMLButtonElement>) {
+    manejarToqueBoton(event);
+    reiniciarRecuperacion(correo.trim().toLowerCase());
+    cambiarVista('recuperar');
   }
 
   function iniciarTemporizadorReenvio(numeroEnvio: number) {
@@ -434,7 +449,8 @@ export default function LoginExperience() {
                   <button
                     type="button"
                     className="icon-button"
-                    onClick={() => setMostrarContrasena((actual) => !actual)}
+                    onClick={alternarVisibilidadContrasena}
+                    onTouchEnd={alternarVisibilidadContrasena}
                     aria-label={mostrarContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   >
                     {mostrarContrasena ? <EyeOffIcon /> : <EyeIcon />}
@@ -461,10 +477,8 @@ export default function LoginExperience() {
               <button
                 className="link-button"
                 type="button"
-                onClick={() => {
-                  reiniciarRecuperacion(correo.trim().toLowerCase());
-                  cambiarVista('recuperar');
-                }}
+                onClick={abrirRecuperacion}
+                onTouchEnd={abrirRecuperacion}
               >
                 ¿Olvidaste tu contraseña?
               </button>
