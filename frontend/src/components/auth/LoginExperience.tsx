@@ -1,9 +1,12 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import LoginPanel from '@/components/auth/LoginPanel';
+import { ApiError } from '@/services/api';
+import { getSession } from '@/services/auth.service';
 import type { Vista } from '@/types/auth';
 
 type ApiResponse<T = unknown> = {
@@ -122,6 +125,30 @@ export default function LoginExperience() {
 
     return () => window.clearTimeout(timer);
   }, [mensajeSesionCerrada]);
+
+  useEffect(() => {
+    let activo = true;
+
+    async function redirigirSiHaySesion() {
+      try {
+        const session = await getSession();
+        if (activo && session.autenticado) {
+          setSesionIniciada(true);
+          router.replace('/dashboard');
+        }
+      } catch (error) {
+        if (!(error instanceof ApiError) || error.status !== 401) {
+          console.error(error);
+        }
+      }
+    }
+
+    void redirigirSiHaySesion();
+
+    return () => {
+      activo = false;
+    };
+  }, [router]);
 
   useEffect(() => {
     const logoutMessage = sessionStorage.getItem('sigde_logout_message');
@@ -441,6 +468,9 @@ export default function LoginExperience() {
               >
                 ¿Olvidaste tu contraseña?
               </button>
+              <p className="legal-login-copy">
+                Al ingresar aceptas los <Link href="/terminos">Términos y Condiciones</Link> y la <Link href="/politica-datos">Política de Tratamiento de Datos</Link>.
+              </p>
             </form>
           )}
 

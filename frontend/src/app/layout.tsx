@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import ClientProviders from '@/components/ui/ClientProviders';
 import RouteLoadingOverlay from '@/components/ui/RouteLoadingOverlay';
 import './globals.css';
 
@@ -26,8 +27,10 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={inter.className}>
-        <RouteLoadingOverlay />
-        {children}
+        <ClientProviders>
+          <RouteLoadingOverlay />
+          {children}
+        </ClientProviders>
       </body>
     </html>
   );

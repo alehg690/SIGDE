@@ -12,7 +12,7 @@ function parseId(id: string) {
 }
 
 export async function GET(_req: NextRequest, { params }: Params) {
-  const auth = await requerirSesion(['Admin', 'Coordinador', 'Docente', 'Porteria']);
+  const auth = await requerirSesion(['Coordinador', 'Docente']);
   if (esErrorAuth(auth)) return auth.response;
 
   const { id } = await params;
@@ -25,7 +25,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 }
 
 export async function PUT(req: NextRequest, { params }: Params) {
-  const auth = await requerirSesion(['Admin', 'Coordinador']);
+  const auth = await requerirSesion(['Coordinador']);
   if (esErrorAuth(auth)) return auth.response;
 
   const { id } = await params;
@@ -51,7 +51,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
-  const auth = await requerirSesion(['Admin', 'Coordinador']);
+  const auth = await requerirSesion(['Coordinador']);
   if (esErrorAuth(auth)) return auth.response;
 
   const { id } = await params;

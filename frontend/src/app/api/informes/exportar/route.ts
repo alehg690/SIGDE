@@ -3,7 +3,7 @@ import { exportarInforme } from '@backend/services/informe.service';
 import { esErrorAuth, requerirSesion } from '@/app/api/_utils/session';
 
 export async function GET(req: NextRequest) {
-  const auth = await requerirSesion(['Admin', 'Coordinador']);
+  const auth = await requerirSesion(['Coordinador']);
   if (esErrorAuth(auth)) return auth.response;
 
   const searchParams = req.nextUrl.searchParams;

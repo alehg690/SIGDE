@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import DashboardExperience, { type DashboardUser } from '@/components/dashboard/DashboardExperience';
+import { obtenerUsuarioPorId } from '@backend/services/usuarios.service';
 import { verificarToken } from '@backend/utils/jwt';
 
 export default async function DashboardPage() {
@@ -15,11 +16,17 @@ export default async function DashboardPage() {
 
   try {
     const payload = await verificarToken(token);
+    const usuarioActual = await obtenerUsuarioPorId(Number(payload.id));
+
+    if (!usuarioActual || !usuarioActual.activo) {
+      redirect('/');
+    }
+
     usuario = {
-      id: Number(payload.id),
-      nombre: String(payload.nombre || 'Usuario SIGDE'),
-      correo: String(payload.correo || ''),
-      rol: String(payload.rol || 'Usuario'),
+      id: usuarioActual.id,
+      nombre: usuarioActual.nombre,
+      correo: usuarioActual.correo,
+      rol: usuarioActual.rol,
     };
   } catch {
     redirect('/');

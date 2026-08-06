@@ -7,7 +7,7 @@ type Params = {
 };
 
 export async function PUT(req: NextRequest, { params }: Params) {
-  const auth = await requerirSesion(['Admin']);
+  const auth = await requerirSesion(['Coordinador']);
   if (esErrorAuth(auth)) return auth.response;
 
   const { id } = await params;
@@ -35,7 +35,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {
-  const auth = await requerirSesion(['Admin']);
+  const auth = await requerirSesion(['Coordinador']);
   if (esErrorAuth(auth)) return auth.response;
 
   const { id } = await params;

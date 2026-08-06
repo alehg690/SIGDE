@@ -13,6 +13,15 @@ const EMAIL_MAX_LENGTH = 254;
 const PASSWORD_MAX_LENGTH = 128;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function serializarSesion(payload: Awaited<ReturnType<typeof verificarToken>>) {
+  return {
+    id: Number(payload.id),
+    nombre: String(payload.nombre || 'Usuario SIGDE'),
+    correo: String(payload.correo || ''),
+    rol: String(payload.rol || ''),
+  };
+}
+
 function correoValido(correo: string) {
   return correo.length <= EMAIL_MAX_LENGTH && EMAIL_PATTERN.test(correo);
 }
@@ -28,7 +37,11 @@ export async function GET() {
 
   try {
     const payload = await verificarToken(token);
-    return NextResponse.json({ autenticado: true, usuario: payload });
+    return NextResponse.json({
+      autenticado: true,
+      usuario: serializarSesion(payload),
+      expiraEn: typeof payload.exp === 'number' ? payload.exp : null,
+    });
   } catch {
     return NextResponse.json({ autenticado: false }, { status: 401 });
   }

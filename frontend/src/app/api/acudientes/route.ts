@@ -3,7 +3,7 @@ import { crearAcudiente, listarAcudientesPorEstudiante } from '@backend/services
 import { esErrorAuth, requerirSesion } from '@/app/api/_utils/session';
 
 export async function GET(req: NextRequest) {
-  const auth = await requerirSesion(['Admin', 'Coordinador', 'Docente']);
+  const auth = await requerirSesion(['Coordinador', 'Docente']);
   if (esErrorAuth(auth)) return auth.response;
 
   const estudianteId = Number(req.nextUrl.searchParams.get('estudianteId'));
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requerirSesion(['Admin', 'Coordinador']);
+  const auth = await requerirSesion(['Coordinador']);
   if (esErrorAuth(auth)) return auth.response;
 
   const body = await req.json().catch(() => null);

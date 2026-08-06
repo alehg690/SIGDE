@@ -7,7 +7,6 @@ datasource db {
 }
 
 enum RolUsuario {
-  Admin
   Coordinador
   Docente
   Porteria
@@ -177,6 +176,20 @@ model ConfiguracionSistema {
   clave        String   @id
   valor        String
   actualizadoEn DateTime @default(now())
+}
+
+model Evento {
+  id            Int      @id @default(autoincrement())
+  titulo        String
+  descripcion   String?
+  ubicacion     String?
+  iniciaEn      DateTime
+  finalizaEn    DateTime?
+  activo        Boolean  @default(true)
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @default(now())
+
+  @@index([iniciaEn, activo])
 }
 
 model EvidenciaReporte {

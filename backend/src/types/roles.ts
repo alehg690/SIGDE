@@ -1,4 +1,4 @@
-export type RolUsuario = 'Admin' | 'Coordinador' | 'Docente' | 'Porteria';
+export type RolUsuario = 'Coordinador' | 'Docente' | 'Porteria';
 
 export type SesionUsuario = {
   id: number;
@@ -7,12 +7,14 @@ export type SesionUsuario = {
   rol: RolUsuario;
 };
 
-const ROLES_VALIDOS: RolUsuario[] = ['Admin', 'Coordinador', 'Docente', 'Porteria'];
+const ROLES_VALIDOS: RolUsuario[] = ['Coordinador', 'Docente', 'Porteria'];
 
 export function normalizarRol(rol: string): RolUsuario | null {
   const valor = rol.trim().toLowerCase();
 
-  if (valor === 'admin' || valor === 'administrador') return 'Admin';
+  // Compatibilidad temporal con sesiones emitidas antes de eliminar el rol Admin.
+  // Las cuentas en la base ya se migran a Coordinador.
+  if (valor === 'admin' || valor === 'administrador') return 'Coordinador';
   if (valor === 'coordinador' || valor === 'coordinadora') return 'Coordinador';
   if (valor === 'docente' || valor === 'profesor' || valor === 'maestro') return 'Docente';
   if (valor === 'porteria' || valor === 'portería' || valor === 'portero') return 'Porteria';

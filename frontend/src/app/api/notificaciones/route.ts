@@ -3,7 +3,7 @@ import { listarNotificacionesPorAcudiente } from '@backend/services/notificacion
 import { esErrorAuth, requerirSesion } from '@/app/api/_utils/session';
 
 export async function GET(req: NextRequest) {
-  const auth = await requerirSesion(['Admin', 'Coordinador', 'Docente']);
+  const auth = await requerirSesion(['Coordinador', 'Docente']);
   if (esErrorAuth(auth)) return auth.response;
 
   const acudienteId = Number(req.nextUrl.searchParams.get('acudienteId'));

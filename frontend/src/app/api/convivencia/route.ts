@@ -3,7 +3,7 @@ import { crearConvivencia, listarConvivencia } from '@backend/services/reportes.
 import { esErrorAuth, requerirSesion } from '@/app/api/_utils/session';
 
 export async function GET() {
-  const auth = await requerirSesion(['Admin', 'Coordinador', 'Docente']);
+  const auth = await requerirSesion(['Coordinador', 'Docente']);
   if (esErrorAuth(auth)) return auth.response;
 
   const result = await listarConvivencia();
@@ -11,7 +11,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requerirSesion(['Admin', 'Coordinador', 'Docente']);
+  const auth = await requerirSesion(['Coordinador', 'Docente']);
   if (esErrorAuth(auth)) return auth.response;
 
   const body = await req.json().catch(() => null);

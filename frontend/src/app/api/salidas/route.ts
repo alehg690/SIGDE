@@ -3,7 +3,7 @@ import { crearSalida, listarSalidas } from '@backend/services/salidas.service';
 import { esErrorAuth, requerirSesion } from '@/app/api/_utils/session';
 
 export async function GET() {
-  const auth = await requerirSesion(['Admin', 'Coordinador', 'Porteria']);
+  const auth = await requerirSesion(['Coordinador', 'Porteria']);
   if (esErrorAuth(auth)) return auth.response;
 
   const result = await listarSalidas(auth.usuario);
@@ -11,7 +11,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requerirSesion(['Admin', 'Coordinador', 'Porteria']);
+  const auth = await requerirSesion(['Coordinador', 'Porteria']);
   if (esErrorAuth(auth)) return auth.response;
 
   const body = await req.json().catch(() => null);

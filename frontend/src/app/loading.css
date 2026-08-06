@@ -111,3 +111,26 @@
     transform: rotate(360deg);
   }
 }
+
+/* Las solicitudes dentro del dashboard no deben cubrir la interfaz. */
+.route-loading {
+  inset: 0 0 auto;
+  display: block;
+  height: 3px;
+  background: transparent;
+  transition: opacity 140ms ease;
+}
+
+.route-loading::before {
+  inset: 0;
+  background: linear-gradient(90deg, transparent, #1f6fb8 28%, #63b3ed 50%, #1f6fb8 72%, transparent);
+  transform: translateX(-55%);
+  animation: sigde-loading-progress 1s ease-in-out infinite;
+}
+
+.route-loading__card { display: none; }
+
+@keyframes sigde-loading-progress {
+  0% { transform: translateX(-55%); }
+  100% { transform: translateX(55%); }
+}

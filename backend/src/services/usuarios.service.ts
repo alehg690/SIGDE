@@ -60,6 +60,16 @@ export async function listarUsuarios() {
   return { data: result.rows.map((row) => mapUsuario(row as unknown as UsuarioRow)) };
 }
 
+export async function obtenerUsuarioPorId(id: number) {
+  const result = await db.execute({
+    sql: 'SELECT id, nombre, correo, rol, activo, creadoEn FROM Usuario WHERE id = ? LIMIT 1',
+    args: [id],
+  });
+
+  const usuario = result.rows[0] as unknown as UsuarioRow | undefined;
+  return usuario ? mapUsuario(usuario) : null;
+}
+
 export async function crearUsuario(input: UsuarioInput) {
   const validacion = validarDatosUsuario(input, true);
   if ('error' in validacion) return validacion;
