@@ -35,17 +35,28 @@ function validarReporte(input: ReporteInput) {
   if (!tipoFalta) {
     return { error: 'Selecciona un tipo de falta válido', status: 400 };
   }
-  if (!input.descripcion.trim()) {
-    return { error: 'La descripción es obligatoria', status: 400 };
+  const descripcion = input.descripcion.trim();
+  if (descripcion.length < 10 || descripcion.length > 1500) {
+    return { error: 'La descripción debe tener entre 10 y 1500 caracteres', status: 400 };
+  }
+
+  const evidenciaUrl = input.evidenciaUrl?.trim() || null;
+  if (evidenciaUrl) {
+    try {
+      const url = new URL(evidenciaUrl);
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error();
+    } catch {
+      return { error: 'El enlace de evidencia debe ser una dirección HTTP o HTTPS válida', status: 400 };
+    }
   }
 
   return {
     data: {
       estudianteId: input.estudianteId,
       tipoFalta,
-      descripcion: input.descripcion.trim(),
+      descripcion,
       confidencial: input.confidencial ? 1 : 0,
-      evidenciaUrl: input.evidenciaUrl?.trim() || null,
+      evidenciaUrl,
     },
   };
 }
@@ -112,6 +123,14 @@ export async function crearReporte(input: ReporteInput, usuario: SesionUsuario) 
   if ('error' in validacion) return validacion;
 
   const data = validacion.data;
+  const estudiante = await db.execute({
+    sql: 'SELECT id FROM Estudiante WHERE id = ? AND activo = 1 AND archivado = 0 LIMIT 1',
+    args: [data.estudianteId],
+  });
+  if (!estudiante.rows[0]) {
+    return { error: 'El estudiante no existe o no se encuentra activo', status: 404 };
+  }
+
   const editableHasta = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   const result = await db.execute({
     sql: `

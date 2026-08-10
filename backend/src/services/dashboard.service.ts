@@ -148,6 +148,26 @@ async function obtenerGraficasSemanales() {
   };
 }
 
+async function obtenerTendenciasMensuales() {
+  const [reportes, salidas] = await Promise.all([
+    db.execute(`SELECT strftime('%Y-%m', fecha) AS mes, COUNT(*) AS total FROM Reporte WHERE datetime(fecha) >= datetime('now', '-5 months', 'start of month') GROUP BY mes`),
+    db.execute(`SELECT strftime('%Y-%m', creadoEn) AS mes, COUNT(*) AS total FROM Salida WHERE datetime(creadoEn) >= datetime('now', '-5 months', 'start of month') GROUP BY mes`),
+  ]);
+  const reportesPorMes = new Map(reportes.rows.map((row) => [String(row.mes), Number(row.total || 0)]));
+  const salidasPorMes = new Map(salidas.rows.map((row) => [String(row.mes), Number(row.total || 0)]));
+  const hoy = new Date();
+
+  return Array.from({ length: 6 }, (_, index) => {
+    const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - (5 - index), 1);
+    const clave = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+    return {
+      mes: new Intl.DateTimeFormat('es-CO', { month: 'short' }).format(fecha).replace('.', ''),
+      reportes: reportesPorMes.get(clave) || 0,
+      salidas: salidasPorMes.get(clave) || 0,
+    };
+  });
+}
+
 export async function obtenerEstadisticasDashboard(usuario: SesionUsuario) {
   const rangoDia = obtenerRangosDiarios();
   const rangoSemana = obtenerRangosSemanales();
@@ -167,6 +187,8 @@ export async function obtenerEstadisticasDashboard(usuario: SesionUsuario) {
     salidasPorEstado,
     ultimosReportes,
     ultimasSalidas,
+    proximosEventos,
+    alertasRecientes,
   ] = await Promise.all([
     contar('SELECT COUNT(*) AS total FROM Usuario WHERE activo = 1'),
     contar('SELECT COUNT(*) AS total FROM Estudiante WHERE archivado = 0 AND activo = 1'),
@@ -193,7 +215,7 @@ export async function obtenerEstadisticasDashboard(usuario: SesionUsuario) {
       INNER JOIN Estudiante e ON e.id = r.estudianteId
       INNER JOIN Usuario u ON u.id = r.docenteId
       ORDER BY r.fecha DESC
-      LIMIT 5
+      LIMIT 6
     `),
     consultar(`
       SELECT s.id, s.motivo, s.estado, s.urgencia, s.creadoEn,
@@ -204,10 +226,27 @@ export async function obtenerEstadisticasDashboard(usuario: SesionUsuario) {
       ORDER BY s.creadoEn DESC
       LIMIT 5
     `),
+    consultar(`
+      SELECT id, titulo, iniciaEn
+      FROM Evento
+      WHERE activo = 1 AND datetime(iniciaEn) >= datetime('now')
+      ORDER BY datetime(iniciaEn) ASC
+      LIMIT 4
+    `),
+    consultar(`
+      SELECT a.id, a.cantidadReportes, a.estado, a.notas, a.creadoEn,
+        e.id AS estudianteId, e.nombre AS estudiante, e.grado, e.grupo
+      FROM Alerta a
+      INNER JOIN Estudiante e ON e.id = a.estudianteId
+      WHERE a.estado <> 'resuelta'
+      ORDER BY a.creadoEn DESC
+      LIMIT 5
+    `),
   ]);
-  const [resumenSemanal, graficasSemanales] = await Promise.all([
+  const [resumenSemanal, graficasSemanales, tendenciasMensuales] = await Promise.all([
     obtenerResumenSemanal(),
     obtenerGraficasSemanales(),
+    obtenerTendenciasMensuales(),
   ]);
 
   return {
@@ -233,10 +272,13 @@ export async function obtenerEstadisticasDashboard(usuario: SesionUsuario) {
         reportesPorTipo: graficasSemanales.reportesPorTipo,
         salidasSemanales: graficasSemanales.salidasSemanales,
         salidasPorEstado,
+        tendenciasMensuales,
       },
       tablas: {
         ultimosReportes,
         ultimasSalidas,
+        proximosEventos,
+        alertasRecientes,
       },
       accesos: obtenerAccesosPorRol(usuario.rol),
     },

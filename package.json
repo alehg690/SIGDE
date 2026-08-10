@@ -7,7 +7,9 @@
     "build": "next build frontend --webpack",
     "start": "next start frontend",
     "lint": "eslint frontend backend",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed:dashboard": "node --env-file=.env scripts/db/seed-dashboard-demo.mjs",
+    "seed:dashboard:clean": "node --env-file=.env scripts/db/seed-dashboard-demo.mjs --clean"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",
