@@ -16,6 +16,9 @@ type EstudianteRow = {
   acudienteId: number;
   acudienteNombre: string;
   acudienteContacto: string;
+  acudienteCorreo: string | null;
+  acudienteTelefono: string | null;
+  acudienteDocumento: string | null;
 };
 
 export type EstudianteInput = {
@@ -26,7 +29,10 @@ export type EstudianteInput = {
   documento?: string;
   activo?: boolean;
   acudienteNombre: string;
-  acudienteContacto: string;
+  acudienteContacto?: string;
+  acudienteCorreo?: string;
+  acudienteTelefono?: string;
+  acudienteDocumento?: string;
 };
 
 function mapEstudiante(row: EstudianteRow) {
@@ -45,6 +51,9 @@ function mapEstudiante(row: EstudianteRow) {
       id: row.acudienteId,
       nombre: row.acudienteNombre,
       contacto: row.acudienteContacto,
+      correo: row.acudienteCorreo,
+      telefono: row.acudienteTelefono,
+      documento: row.acudienteDocumento,
     },
   };
 }
@@ -57,22 +66,43 @@ function validarInput(input: EstudianteInput) {
   const documento = input.documento?.trim() || null;
   const activo = input.activo === false ? 0 : 1;
   const acudienteNombre = input.acudienteNombre.trim();
-  const acudienteContacto = input.acudienteContacto.trim();
+  const acudienteCorreo = input.acudienteCorreo?.trim().toLowerCase() || null;
+  const acudienteTelefono = input.acudienteTelefono?.trim() || input.acudienteContacto?.trim() || null;
+  const acudienteDocumento = input.acudienteDocumento?.trim() || null;
+  const acudienteContacto = acudienteTelefono || acudienteCorreo;
 
   if (!nombre) return { error: 'El nombre del estudiante es obligatorio', status: 400 };
   if (!grado) return { error: 'El grado es obligatorio', status: 400 };
   if (!grupo) return { error: 'El grupo es obligatorio', status: 400 };
   if (!acudienteNombre) return { error: 'El acudiente es obligatorio', status: 400 };
-  if (!acudienteContacto) return { error: 'El contacto del acudiente es obligatorio', status: 400 };
+  if (!acudienteContacto) return { error: 'Registra el teléfono o correo del acudiente', status: 400 };
+  if (acudienteCorreo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(acudienteCorreo)) {
+    return { error: 'El correo del acudiente no es válido', status: 400 };
+  }
 
-  return { data: { nombre, grado, grupo, estado, documento, activo, acudienteNombre, acudienteContacto } };
+  return {
+    data: {
+      nombre,
+      grado,
+      grupo,
+      estado,
+      documento,
+      activo,
+      acudienteNombre,
+      acudienteContacto,
+      acudienteCorreo,
+      acudienteTelefono,
+      acudienteDocumento,
+    },
+  };
 }
 
 export async function listarEstudiantes() {
   const result = await db.execute(`
     SELECT
       e.id, e.nombre, e.documento, e.grado, e.grupo, e.estado, e.activo, e.archivado, e.creadoEn, e.actualizadoEn,
-      a.id AS acudienteId, a.nombre AS acudienteNombre, a.contacto AS acudienteContacto
+      a.id AS acudienteId, a.nombre AS acudienteNombre, a.contacto AS acudienteContacto,
+      a.correo AS acudienteCorreo, a.telefono AS acudienteTelefono, a.documento AS acudienteDocumento
     FROM Estudiante e
     INNER JOIN Acudiente a ON a.id = e.acudienteId
     WHERE e.archivado = 0 AND e.activo = 1
@@ -91,8 +121,18 @@ export async function crearEstudiante(input: EstudianteInput, usuario?: SesionUs
   const result = await db.batch(
     [
       {
-        sql: 'INSERT INTO Acudiente (nombre, contacto) VALUES (?, ?) RETURNING id',
-        args: [data.acudienteNombre, data.acudienteContacto],
+        sql: `
+          INSERT INTO Acudiente (nombre, contacto, correo, telefono, documento)
+          VALUES (?, ?, ?, ?, ?)
+          RETURNING id
+        `,
+        args: [
+          data.acudienteNombre,
+          data.acudienteContacto,
+          data.acudienteCorreo,
+          data.acudienteTelefono,
+          data.acudienteDocumento,
+        ],
       },
       {
         sql: `
@@ -123,7 +163,8 @@ export async function obtenerEstudiante(id: number, status = 200) {
     sql: `
       SELECT
         e.id, e.nombre, e.documento, e.grado, e.grupo, e.estado, e.activo, e.archivado, e.creadoEn, e.actualizadoEn,
-        a.id AS acudienteId, a.nombre AS acudienteNombre, a.contacto AS acudienteContacto
+        a.id AS acudienteId, a.nombre AS acudienteNombre, a.contacto AS acudienteContacto,
+        a.correo AS acudienteCorreo, a.telefono AS acudienteTelefono, a.documento AS acudienteDocumento
       FROM Estudiante e
       INNER JOIN Acudiente a ON a.id = e.acudienteId
       WHERE e.id = ?
@@ -153,8 +194,19 @@ export async function actualizarEstudiante(id: number, input: EstudianteInput, u
   await db.batch(
     [
       {
-        sql: 'UPDATE Acudiente SET nombre = ?, contacto = ? WHERE id = ?',
-        args: [data.acudienteNombre, data.acudienteContacto, acudienteId],
+        sql: `
+          UPDATE Acudiente
+          SET nombre = ?, contacto = ?, correo = ?, telefono = ?, documento = ?
+          WHERE id = ?
+        `,
+        args: [
+          data.acudienteNombre,
+          data.acudienteContacto,
+          data.acudienteCorreo,
+          data.acudienteTelefono,
+          data.acudienteDocumento,
+          acudienteId,
+        ],
       },
       {
         sql: `

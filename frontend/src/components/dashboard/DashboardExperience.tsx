@@ -1,7 +1,9 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import StudentsWorkspace from '@/components/students/StudentsWorkspace';
+import ReportsWorkspace from '@/components/reports/ReportsWorkspace';
 
 export type DashboardUser = {
   id: number;
@@ -85,10 +87,23 @@ type DashboardStats = {
     reportesPorTipo: Array<{ tipo: string; total: number }>;
     salidasSemanales: number;
     salidasPorEstado: Array<{ estado: string; total: number }>;
+    tendenciasMensuales: Array<{ mes: string; reportes: number; salidas: number }>;
   };
   tablas: {
     ultimosReportes: Array<Record<string, unknown>>;
     ultimasSalidas: Array<Record<string, unknown>>;
+    proximosEventos: Array<{ id: number; titulo: string; iniciaEn: string }>;
+    alertasRecientes: Array<{
+      id: number;
+      cantidadReportes: number;
+      estado: string;
+      notas: string | null;
+      creadoEn: string;
+      estudianteId: number;
+      estudiante: string;
+      grado: string;
+      grupo: string;
+    }>;
   };
 };
 
@@ -142,10 +157,13 @@ const EMPTY_STATS: DashboardStats = {
     reportesPorTipo: [],
     salidasSemanales: 0,
     salidasPorEstado: [],
+    tendenciasMensuales: [],
   },
   tablas: {
     ultimosReportes: [],
     ultimasSalidas: [],
+    proximosEventos: [],
+    alertasRecientes: [],
   },
 };
 
@@ -164,6 +182,16 @@ const EMPTY_USER_FORM: UsuarioForm = {
   contrasena: '',
   activo: true,
 };
+
+type EventoSistema = { id: number; titulo: string; iniciaEn: string; ubicacion?: string | null };
+
+// Datos temporales para comprobar visualmente la tarjeta antes de que haya eventos creados.
+const EVENTOS_DE_PRUEBA: EventoSistema[] = [
+  { id: -1, titulo: 'Reunión de área — Matemáticas', iniciaEn: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() },
+  { id: -2, titulo: 'Entrega de boletines 2.º período', iniciaEn: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: -3, titulo: 'Reunión de padres — 6.º y 7.º', iniciaEn: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: -4, titulo: 'Izada de bandera institucional', iniciaEn: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString() },
+];
 
 const ROLE_CONFIG: Record<DashboardRole, {
   headline: string;
@@ -292,6 +320,26 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
   const [dashboardError, setDashboardError] = useState('');
   const role = useMemo(() => normalizeRole(usuario.rol), [usuario.rol]);
 
+  const cargarDashboard = useCallback(async () => {
+    try {
+      const response = await fetch('/api/dashboard/estadisticas', { cache: 'no-store' });
+      if (!response.ok) throw new Error('No se pudo cargar el resumen semanal');
+      const data = await response.json();
+      setDashboardSnapshot({
+        ...EMPTY_STATS,
+        ...data,
+        metricas: { ...EMPTY_STATS.metricas, ...data.metricas },
+        resumenSemanal: { ...EMPTY_STATS.resumenSemanal, ...data.resumenSemanal },
+        graficas: { ...EMPTY_STATS.graficas, ...data.graficas },
+        tablas: { ...EMPTY_STATS.tablas, ...data.tablas },
+      });
+      setDashboardError('');
+    } catch {
+      setDashboardSnapshot(null);
+      setDashboardError('No fue posible cargar los datos del dashboard. Verifica la conexión e inténtalo de nuevo.');
+    }
+  }, []);
+
   useEffect(() => {
     const legacySection = searchParams.get('dashboard');
 
@@ -327,33 +375,9 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
 
   useEffect(() => {
     if (section !== 'dashboard') return;
-    let activo = true;
-
-    fetch('/api/dashboard/estadisticas', { cache: 'no-store' })
-      .then(async (response) => {
-        if (!response.ok) throw new Error('No se pudo cargar el resumen semanal');
-        return response.json();
-      })
-      .then((data) => {
-        if (!activo) return;
-        setDashboardSnapshot({
-          ...EMPTY_STATS,
-          ...data,
-          metricas: { ...EMPTY_STATS.metricas, ...data.metricas },
-          resumenSemanal: { ...EMPTY_STATS.resumenSemanal, ...data.resumenSemanal },
-          graficas: { ...EMPTY_STATS.graficas, ...data.graficas },
-          tablas: { ...EMPTY_STATS.tablas, ...data.tablas },
-        });
-        setDashboardError('');
-      })
-      .catch(() => {
-        if (!activo) return;
-        setDashboardSnapshot(null);
-        setDashboardError('No fue posible cargar los datos del dashboard. Verifica la conexión e inténtalo de nuevo.');
-      });
-
-    return () => { activo = false; };
-  }, [section]);
+    const timer = window.setTimeout(() => void cargarDashboard(), 0);
+    return () => window.clearTimeout(timer);
+  }, [section, cargarDashboard]);
 
   async function handleLogout() {
     setClosing(true);
@@ -430,10 +454,14 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
             {dashboardError && <p className="dashboard-data-error" role="alert">{dashboardError}</p>}
             <WeeklyInsightCard summary={dashboardSnapshot?.resumenSemanal ?? null} activeAlerts={dashboardSnapshot?.metricas.alertasActivas ?? 0} onViewAnalysis={() => seleccionarSeccion('estadisticas')} />
             <DashboardMetricCards stats={dashboardSnapshot} />
-            <DashboardAnalytics stats={dashboardSnapshot} />
+            <section className="dashboard-recent-grid" aria-label="Actividad y alertas recientes">
+              <RecentActivityCard reports={dashboardSnapshot?.tablas.ultimosReportes ?? []} onViewAll={() => seleccionarSeccion('reportes')} />
+              <IntelligentAlertsCard alerts={dashboardSnapshot?.tablas.alertasRecientes ?? []} onViewAll={() => seleccionarSeccion('seguimiento')} />
+            </section>
+            <DashboardAnalytics stats={dashboardSnapshot} onOpenCalendar={() => seleccionarSeccion('calendario')} />
           </section>
         ) : (<>
-          <DashboardContent section={section} usuario={usuario} role={role} config={ROLE_CONFIG[role]} stats={dashboardSnapshot ?? EMPTY_STATS} loadingStats={dashboardSnapshot === null && !dashboardError} onCurrentUserUpdated={() => router.refresh()} />
+          <DashboardContent section={section} usuario={usuario} role={role} config={ROLE_CONFIG[role]} stats={dashboardSnapshot ?? EMPTY_STATS} loadingStats={dashboardSnapshot === null && !dashboardError} onCurrentUserUpdated={() => router.refresh()} onDashboardRefresh={() => void cargarDashboard()} />
           <section className="dashboard-empty-canvas" aria-label="Área de trabajo vacía" />
         </>)}
       </section>
@@ -540,7 +568,7 @@ function noveltyColor(tipo: string) {
   return NOVELTY_TYPE_COLORS[tipo] || '#6f8ba8';
 }
 
-function DashboardAnalytics({ stats }: { stats: DashboardStats | null }) {
+function DashboardAnalytics({ stats, onOpenCalendar }: { stats: DashboardStats | null; onOpenCalendar: () => void }) {
   const actividad = stats?.graficas.actividadSemanal ?? EMPTY_STATS.graficas.actividadSemanal;
   const distribucion = [
     ...(stats?.graficas.reportesPorTipo ?? []),
@@ -549,10 +577,84 @@ function DashboardAnalytics({ stats }: { stats: DashboardStats | null }) {
 
   return (
     <section className="dashboard-analytics-grid" aria-label="Análisis semanal">
-      <WeeklyActivityChart data={actividad} loading={!stats} />
-      <DataDistributionChart data={distribucion} loading={!stats} />
+      <div className="dashboard-analytics-main"><WeeklyActivityChart data={actividad} loading={!stats} /><MonthlyTrendsChart data={stats?.graficas.tendenciasMensuales ?? []} loading={!stats} /></div>
+      <div className="dashboard-analytics-side"><DataDistributionChart data={distribucion} loading={!stats} /><UpcomingEventsCard events={stats?.tablas.proximosEventos ?? []} onOpenCalendar={onOpenCalendar} /></div>
     </section>
   );
+}
+
+function MonthlyTrendsChart({ data, loading }: { data: DashboardStats['graficas']['tendenciasMensuales']; loading: boolean }) {
+  const max = Math.max(1, ...data.flatMap((item) => [item.reportes, item.salidas]));
+  return <article className={loading ? 'dashboard-chart-card monthly-trends-card monthly-trends-card--loading' : 'dashboard-chart-card monthly-trends-card'}><header className="dashboard-chart-heading"><div><h2>Tendencias mensuales</h2><p>Reportes y salidas de los últimos seis meses</p></div><div className="dashboard-chart-legend"><span><i style={{ background: '#596ee8' }} />Reportes</span><span><i style={{ background: '#e9a22b' }} />Salidas</span></div></header>{data.length ? <div className="monthly-bars">{data.map((item) => <div className="monthly-bar-group" key={item.mes}><div className="monthly-bars"><i style={{ height: `${Math.max(8, (item.reportes / max) * 100)}%` }} /><i style={{ height: `${Math.max(8, (item.salidas / max) * 100)}%` }} /></div><span>{item.mes}</span></div>)}</div> : <p className="recent-activity-empty">Aún no hay registros suficientes para mostrar la tendencia mensual.</p>}</article>;
+}
+
+function UpcomingEventsCard({ events, onOpenCalendar }: { events: DashboardStats['tablas']['proximosEventos']; onOpenCalendar: () => void }) {
+  const eventosVisibles = events.length ? events : EVENTOS_DE_PRUEBA;
+  return <article className="dashboard-chart-card upcoming-events-card"><header className="dashboard-chart-heading"><div><h2>Próximos eventos</h2><p>{events.length ? 'Agenda institucional' : 'Vista previa de la agenda'}</p></div><button type="button" className="upcoming-events-calendar" aria-label="Abrir calendario" onClick={onOpenCalendar}><SidebarIcon name="calendar" /></button></header><div className="upcoming-events-list">{eventosVisibles.map((event, index) => <div className="upcoming-event" key={event.id}><i className={`upcoming-event-marker upcoming-event-marker--${index % 4}`} /><div><strong>{event.titulo}</strong><time dateTime={event.iniciaEn}>{new Date(event.iniciaEn).toLocaleString('es-CO', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</time></div></div>)}</div></article>;
+}
+
+function RecentActivityCard({ reports, onViewAll }: { reports: Array<Record<string, unknown>>; onViewAll: () => void }) {
+  return <article className="dashboard-chart-card recent-activity-card">
+    <header className="dashboard-panel-heading"><div><h2>Actividad reciente</h2><p>Últimos reportes registrados</p></div><button className="dashboard-view-all" type="button" onClick={onViewAll}>Ver todo <span aria-hidden="true">›</span></button></header>
+    <div className="recent-report-table">
+      <div className="recent-report-table-head" aria-hidden="true"><span>#</span><span>Estudiante</span><span>Tipo de falta</span><span>Hora</span></div>
+      <div className="recent-report-table-body">
+        {reports.length ? reports.slice(0, 6).map((report, index) => {
+          const tipo = texto(report.tipoFalta);
+          const fecha = texto(report.fecha);
+          return <button type="button" className="recent-report-row" onClick={onViewAll} key={texto(report.id)} aria-label={`Consultar reporte de ${texto(report.estudiante)}`}>
+            <span className="recent-report-number">{String(index + 1).padStart(2, '0')}</span>
+            <span className="recent-report-student"><strong>{texto(report.estudiante)}</strong><small>Grado {texto(report.grado)}° · {texto(report.docente)}</small></span>
+            <span className={`recent-report-type recent-report-type--${tipo.toLowerCase()}`}>{tipoReporte(tipo)}</span>
+            <time dateTime={fecha}>{formatearHora(fecha)}</time>
+          </button>;
+        }) : <p className="recent-activity-empty">Aún no hay reportes para mostrar.</p>}
+      </div>
+    </div>
+  </article>;
+}
+
+function IntelligentAlertsCard({ alerts, onViewAll }: { alerts: DashboardStats['tablas']['alertasRecientes']; onViewAll: () => void }) {
+  return <article className="dashboard-chart-card intelligent-alerts-card">
+    <header className="dashboard-panel-heading intelligent-alerts-heading">
+      <div><h2>Alertas IA</h2><p>Patrones detectados por reglas</p></div>
+      <div className="intelligent-alerts-actions"><span><i /> En vivo</span><button className="dashboard-view-all" type="button" onClick={onViewAll}>Ver todo <b aria-hidden="true">›</b></button></div>
+    </header>
+    <div className="intelligent-alerts-list">
+      {alerts.length ? alerts.map((alert) => {
+        const priority = alert.cantidadReportes >= 5 ? 'high' : alert.estado === 'en_seguimiento' ? 'tracking' : 'active';
+        const title = priority === 'high' ? 'Reincidencia prioritaria' : priority === 'tracking' ? 'Patrón en seguimiento' : 'Reincidencia detectada';
+        return <button type="button" className="intelligent-alert-row" onClick={onViewAll} key={alert.id}>
+          <span className={`intelligent-alert-icon intelligent-alert-icon--${priority}`}><SidebarIcon name="sparkles" /></span>
+          <span className="intelligent-alert-copy"><strong>{title}</strong><small>{alert.estudiante} · {alert.cantidadReportes} reportes. {alert.notas || `Grado ${alert.grado}${alert.grupo}.`}</small></span>
+          <span className="intelligent-alert-meta"><time dateTime={alert.creadoEn}>{formatearActividadReciente(alert.creadoEn)}</time><i /></span>
+        </button>;
+      }) : <p className="recent-activity-empty">No hay alertas activas en este momento.</p>}
+    </div>
+  </article>;
+}
+
+function tipoReporte(value: string) {
+  if (value === 'TIPO_I') return 'Tipo 1';
+  if (value === 'TIPO_II') return 'Tipo 2';
+  if (value === 'TIPO_III') return 'Tipo 3';
+  return value || 'Sin tipo';
+}
+
+function formatearHora(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '--:--';
+  return date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Bogota' });
+}
+
+function formatearActividadReciente(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Reciente';
+  const minutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000));
+  if (minutes < 1) return 'Ahora';
+  if (minutes < 60) return `Hace ${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  return hours < 24 ? `Hace ${hours} h` : date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
 }
 
 function smoothLinePath(points: Array<{ x: number; y: number }>) {
@@ -697,6 +799,7 @@ function DashboardContent({
   section,
   usuario,
   onCurrentUserUpdated,
+  onDashboardRefresh,
   role,
   config,
   stats,
@@ -705,6 +808,7 @@ function DashboardContent({
   section: DashboardSection;
   usuario: DashboardUser;
   onCurrentUserUpdated: () => void;
+  onDashboardRefresh: () => void;
   role: DashboardRole;
   config: typeof ROLE_CONFIG[DashboardRole];
   stats: DashboardStats;
@@ -712,16 +816,24 @@ function DashboardContent({
 }) {
   const metrics = metricasPorRol(role, stats);
 
-  if (role === 'coordinador' && section === 'personas') {
-    return <DirectoryManagementWorkspace entity="estudiantes" />;
+  if (section === 'personas') {
+    return <StudentsWorkspace canManage={role === 'coordinador'} />;
   }
 
   if (section === 'salidas') {
     return <ControlSalidasWorkspace />;
   }
 
-  if (['comunicaciones', 'calendario', 'seguimiento', 'estadisticas', 'reportes'].includes(section)) {
-    return <ModuleWireframe section={section as Extract<DashboardSection, 'comunicaciones' | 'calendario' | 'seguimiento' | 'estadisticas' | 'reportes'>} onNavigate={() => undefined} />;
+  if (section === 'calendario') {
+    return <CalendarWorkspace onEventCreated={onDashboardRefresh} />;
+  }
+
+  if (section === 'reportes') {
+    return <ReportsWorkspace />;
+  }
+
+  if (['comunicaciones', 'seguimiento', 'estadisticas'].includes(section)) {
+    return <ModuleWireframe section={section as Extract<DashboardSection, 'comunicaciones' | 'seguimiento' | 'estadisticas' | 'reportes'>} onNavigate={() => undefined} />;
   }
 
   if (false && (section === 'comunicaciones' || section === 'calendario')) {
@@ -742,19 +854,6 @@ function DashboardContent({
           <div><dt>Correo</dt><dd>{usuario.correo}</dd></div>
           <div><dt>Rol</dt><dd>{ROLE_LABELS[role]}</dd></div>
         </dl>
-      </section>
-    );
-  }
-
-  if (section === 'personas') {
-    return (
-      <section className="workspace-panel">
-        <SectionTitle title="Personas" subtitle="Datos institucionales conectados al backend." />
-        <div className="metric-grid">
-          <Metric label="Usuarios activos" value={stats.metricas.usuarios} loading={loadingStats} />
-          <Metric label="Estudiantes activos" value={stats.metricas.estudiantes} loading={loadingStats} />
-          <Metric label="Alertas activas" value={stats.metricas.alertasActivas} loading={loadingStats} />
-        </div>
       </section>
     );
   }
@@ -795,19 +894,6 @@ function DashboardContent({
     );
   }
 
-  if (section === 'reportes') {
-    return (
-      <section className="workspace-panel">
-        <SectionTitle title="Reportes" subtitle="Indicadores calculados desde reportes y salidas reales." />
-        <div className="metric-grid">
-          {metrics.map((metric) => <Metric key={metric.label} {...metric} loading={loadingStats} />)}
-        </div>
-        <Chart title="Reportes por tipo" data={stats.graficas.reportesPorTipo.map((item) => ({ label: item.tipo, value: Number(item.total) }))} />
-        <Chart title="Salidas por estado" data={stats.graficas.salidasPorEstado.map((item) => ({ label: item.estado, value: Number(item.total) }))} />
-      </section>
-    );
-  }
-
   return (
     <section className="workspace-panel">
       <SectionTitle title="Inicio" subtitle="Resumen de trabajo y accesos rápidos." />
@@ -819,7 +905,71 @@ function DashboardContent({
   );
 }
 
-function ModuleWireframe({ section, onNavigate }: { section: Extract<DashboardSection, 'comunicaciones' | 'calendario' | 'seguimiento' | 'estadisticas' | 'reportes'>; onNavigate: () => void }) {
+function CalendarWorkspace({ onEventCreated }: { onEventCreated: () => void }) {
+  const [eventos, setEventos] = useState<EventoSistema[]>([]);
+  const [titulo, setTitulo] = useState('');
+  const [iniciaEn, setIniciaEn] = useState('');
+  const [ubicacion, setUbicacion] = useState('');
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
+
+  const cargarEventos = useCallback(async () => {
+    setCargando(true);
+    try {
+      const response = await fetch('/api/eventos', { cache: 'no-store' });
+      if (!response.ok) throw new Error(await leerErrorApi(response, 'No se pudo cargar el calendario.'));
+      setEventos(await response.json() as EventoSistema[]);
+    } catch (error) {
+      setMensaje({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo cargar el calendario.' });
+    } finally {
+      setCargando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void cargarEventos(), 0);
+    return () => window.clearTimeout(timer);
+  }, [cargarEventos]);
+
+  async function crearEvento(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setGuardando(true);
+    setMensaje(null);
+    try {
+      const response = await fetch('/api/eventos', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo, iniciaEn, ubicacion }),
+      });
+      if (!response.ok) throw new Error(await leerErrorApi(response, 'No se pudo crear el evento.'));
+      setTitulo(''); setIniciaEn(''); setUbicacion('');
+      setMensaje({ tipo: 'success', texto: 'Evento creado. Ya aparece en el resumen del dashboard.' });
+      await cargarEventos();
+      onEventCreated();
+    } catch (error) {
+      setMensaje({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo crear el evento.' });
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return <section className="workspace-panel calendar-workspace">
+    <SectionTitle title="Calendario institucional" subtitle="Crea actividades y consulta los próximos eventos institucionales." />
+    <form className="calendar-event-form" onSubmit={crearEvento}>
+      <label><span>Título</span><input value={titulo} onChange={(event) => setTitulo(event.target.value)} placeholder="Ej. Reunión de padres" required /></label>
+      <label><span>Fecha y hora</span><input type="datetime-local" value={iniciaEn} onChange={(event) => setIniciaEn(event.target.value)} required /></label>
+      <label><span>Lugar (opcional)</span><input value={ubicacion} onChange={(event) => setUbicacion(event.target.value)} placeholder="Ej. Sala de docentes" /></label>
+      <button type="submit" className="module-primary-action" disabled={guardando}>{guardando ? 'Guardando...' : 'Crear evento'}</button>
+    </form>
+    {mensaje && <p className={mensaje.tipo === 'success' ? 'calendar-feedback calendar-feedback--success' : 'calendar-feedback calendar-feedback--error'} role="status">{mensaje.texto}</p>}
+    <div className="calendar-events-list">
+      <h2>Próximos eventos</h2>
+      {cargando ? <p className="recent-activity-empty">Cargando eventos...</p> : eventos.length ? eventos.map((evento) => <article key={evento.id}><SidebarIcon name="calendar" /><div><strong>{evento.titulo}</strong><time dateTime={evento.iniciaEn}>{new Date(evento.iniciaEn).toLocaleString('es-CO', { dateStyle: 'full', timeStyle: 'short' })}</time>{evento.ubicacion && <small>{evento.ubicacion}</small>}</div></article>) : <p className="recent-activity-empty">Aún no hay eventos creados. El dashboard muestra datos de prueba mientras agregas el primero.</p>}
+    </div>
+  </section>;
+}
+
+function ModuleWireframe({ section, onNavigate }: { section: Extract<DashboardSection, 'comunicaciones' | 'seguimiento' | 'estadisticas' | 'reportes'>; onNavigate: () => void }) {
   const content = {
     reportes: {
       title: 'Reportes disciplinarios', subtitle: 'Registra, revisa y da trazabilidad a cada situación de convivencia.', action: 'Crear reporte',
@@ -849,28 +999,11 @@ function ModuleWireframe({ section, onNavigate }: { section: Extract<DashboardSe
       <div className="module-wireframe-summary" aria-label="Resumen del módulo">
         <article><span>Por atender</span><strong>{section === 'comunicaciones' ? '3' : '8'}</strong><small>Registros que requieren acción.</small></article>
         <article><span>Esta semana</span><strong>{section === 'estadisticas' ? '24' : '12'}</strong><small>Actividad registrada en SIGDE.</small></article>
-        <article><span>Próximo paso</span><strong>{section === 'calendario' ? 'Hoy' : '2 días'}</strong><small>Revisión sugerida para el equipo.</small></article>
+        <article><span>Próximo paso</span><strong>2 días</strong><small>Revisión sugerida para el equipo.</small></article>
       </div>
       <div className="module-wireframe-toolbar"><label><span className="sr-only">Buscar en {content.title}</span><input type="search" placeholder={`Buscar en ${content.title.toLowerCase()}...`} /></label><button type="button">Filtros</button></div>
       <div className="module-wireframe-table-wrap"><table className="module-wireframe-table"><thead><tr>{content.columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{content.rows.map((row) => <tr key={row[0]}>{row.map((cell, index) => <td key={`${cell}-${index}`}>{index === 2 && section !== 'estadisticas' ? <span className="wireframe-status">{cell}</span> : cell}</td>)}</tr>)}</tbody></table></div>
       <p className="wireframe-note">Wireframe listo: la estructura visual queda preparada para conectar los datos y acciones reales del módulo.</p>
-    </section>
-  );
-}
-
-function DirectoryManagementWorkspace({ entity }: { entity: 'docentes' | 'estudiantes' }) {
-  const isDocente = entity === 'docentes';
-  const title = isDocente ? 'Docentes' : 'Estudiantes';
-  const records = isDocente
-    ? [['Laura Méndez', 'laura.mendez@institucion.edu.co', 'Matemáticas', 'Activo'], ['Carlos Rojas', 'carlos.rojas@institucion.edu.co', 'Ciencias sociales', 'Activo'], ['Diana Torres', 'diana.torres@institucion.edu.co', 'Lengua castellana', 'Inactivo']]
-    : [['Juan David Martínez', '11° - A', 'Acudiente registrado', 'Activo'], ['Valentina Gómez', '10° - B', 'Acudiente registrado', 'Activo'], ['Mateo Rodríguez', '8° - C', 'Acudiente pendiente', 'Activo']];
-
-  return (
-    <section className="workspace-panel directory-workspace">
-      <div className="directory-heading"><SectionTitle title={title} subtitle={`Administra la información, el acceso y el estado de los ${title.toLowerCase()} de la institución.`} /><button className="primary-button" type="button">＋ Crear {isDocente ? 'docente' : 'estudiante'}</button></div>
-      <div className="directory-toolbar"><label className="dashboard-search"><span className="sr-only">Buscar {title.toLowerCase()}</span><span aria-hidden="true">⌕</span><input placeholder={`Buscar ${title.toLowerCase()}...`} /></label><select aria-label={`Filtrar ${title.toLowerCase()} por estado`}><option>Todos los estados</option><option>Activos</option><option>Inactivos</option></select></div>
-      <div className="directory-action-grid">{['Crear', 'Editar', 'Eliminar', 'Activar', 'Desactivar', 'Cambiar contraseña'].map((action) => <button type="button" key={action} className={action === 'Eliminar' ? 'directory-action directory-action--danger' : 'directory-action'}><span aria-hidden="true">{action === 'Crear' ? '＋' : action === 'Editar' ? '✎' : action === 'Eliminar' ? '⌫' : action === 'Activar' ? '✓' : action === 'Desactivar' ? '◌' : '♢'}</span>{action}</button>)}</div>
-      <div className="directory-table-wrap"><table className="directory-table"><thead><tr><th>{isDocente ? 'Docente' : 'Estudiante'}</th><th>{isDocente ? 'Correo institucional' : 'Curso'}</th><th>{isDocente ? 'Área' : 'Acudiente'}</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>{records.map((record) => <tr key={record[0]}>{record.map((value, index) => index === 3 ? <td key={index}><span className={`status-badge ${value === 'Activo' ? 'status-badge--active' : 'status-badge--inactive'}`}>{value}</span></td> : <td key={index}>{value}</td>)}<td><button type="button" className="table-action">Gestionar</button></td></tr>)}</tbody></table></div>
     </section>
   );
 }
@@ -1226,23 +1359,6 @@ function Metric({ label, value, loading }: { label: string; value: number; loadi
     <div className="mini-metric">
       <strong>{loading ? '...' : value.toLocaleString('es-CO')}</strong>
       <span>{label}</span>
-    </div>
-  );
-}
-
-function Chart({ title, data }: { title: string; data: Array<{ label: string; value: number }> }) {
-  const max = Math.max(...data.map((item) => item.value), 1);
-
-  return (
-    <div className="table-preview">
-      <Row title={title} text={data.length ? 'Distribución actual' : 'Sin datos registrados'} />
-      {data.map((item) => (
-        <div key={item.label} className="chart-row">
-          <strong>{item.label}</strong>
-          <span>{item.value.toLocaleString('es-CO')}</span>
-          <div className="chart-bar" style={{ inlineSize: `${Math.max((item.value / max) * 100, 6)}%` }} />
-        </div>
-      ))}
     </div>
   );
 }

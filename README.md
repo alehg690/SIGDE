@@ -16,6 +16,27 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Datos de demostración del dashboard
+
+Para poblar el dashboard con información relacionada y distribuida entre la semana actual, la semana anterior y los últimos seis meses:
+
+```bash
+npm run seed:dashboard
+```
+
+El proceso es idempotente: reemplaza únicamente registros identificados como `DEMO` y no duplica información al ejecutarse de nuevo. Crea una cuenta de coordinación para recorrer todos los módulos:
+
+```text
+Correo: demo.coordinacion@sigde.local
+Contraseña: Demo2026
+```
+
+Para retirar exclusivamente los datos de demostración:
+
+```bash
+npm run seed:dashboard:clean
+```
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

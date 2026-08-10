@@ -43,7 +43,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
     estado: body.estado ? String(body.estado) : undefined,
     activo: body.activo !== false,
     acudienteNombre: String(body.acudienteNombre || ''),
-    acudienteContacto: String(body.acudienteContacto || ''),
+    acudienteCorreo: body.acudienteCorreo ? String(body.acudienteCorreo) : undefined,
+    acudienteTelefono: body.acudienteTelefono ? String(body.acudienteTelefono) : undefined,
+    acudienteDocumento: body.acudienteDocumento ? String(body.acudienteDocumento) : undefined,
   }, auth.usuario);
 
   if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });
