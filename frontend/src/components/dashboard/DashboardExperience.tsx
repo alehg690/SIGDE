@@ -1,7 +1,8 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import StudentsWorkspace from '@/components/students/StudentsWorkspace';
 
 export type DashboardUser = {
   id: number;
@@ -712,8 +713,8 @@ function DashboardContent({
 }) {
   const metrics = metricasPorRol(role, stats);
 
-  if (role === 'coordinador' && section === 'personas') {
-    return <DirectoryManagementWorkspace entity="estudiantes" />;
+  if (section === 'personas') {
+    return <StudentsWorkspace canManage={role === 'coordinador'} />;
   }
 
   if (section === 'salidas') {
@@ -742,19 +743,6 @@ function DashboardContent({
           <div><dt>Correo</dt><dd>{usuario.correo}</dd></div>
           <div><dt>Rol</dt><dd>{ROLE_LABELS[role]}</dd></div>
         </dl>
-      </section>
-    );
-  }
-
-  if (section === 'personas') {
-    return (
-      <section className="workspace-panel">
-        <SectionTitle title="Personas" subtitle="Datos institucionales conectados al backend." />
-        <div className="metric-grid">
-          <Metric label="Usuarios activos" value={stats.metricas.usuarios} loading={loadingStats} />
-          <Metric label="Estudiantes activos" value={stats.metricas.estudiantes} loading={loadingStats} />
-          <Metric label="Alertas activas" value={stats.metricas.alertasActivas} loading={loadingStats} />
-        </div>
       </section>
     );
   }
@@ -854,23 +842,6 @@ function ModuleWireframe({ section, onNavigate }: { section: Extract<DashboardSe
       <div className="module-wireframe-toolbar"><label><span className="sr-only">Buscar en {content.title}</span><input type="search" placeholder={`Buscar en ${content.title.toLowerCase()}...`} /></label><button type="button">Filtros</button></div>
       <div className="module-wireframe-table-wrap"><table className="module-wireframe-table"><thead><tr>{content.columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{content.rows.map((row) => <tr key={row[0]}>{row.map((cell, index) => <td key={`${cell}-${index}`}>{index === 2 && section !== 'estadisticas' ? <span className="wireframe-status">{cell}</span> : cell}</td>)}</tr>)}</tbody></table></div>
       <p className="wireframe-note">Wireframe listo: la estructura visual queda preparada para conectar los datos y acciones reales del módulo.</p>
-    </section>
-  );
-}
-
-function DirectoryManagementWorkspace({ entity }: { entity: 'docentes' | 'estudiantes' }) {
-  const isDocente = entity === 'docentes';
-  const title = isDocente ? 'Docentes' : 'Estudiantes';
-  const records = isDocente
-    ? [['Laura Méndez', 'laura.mendez@institucion.edu.co', 'Matemáticas', 'Activo'], ['Carlos Rojas', 'carlos.rojas@institucion.edu.co', 'Ciencias sociales', 'Activo'], ['Diana Torres', 'diana.torres@institucion.edu.co', 'Lengua castellana', 'Inactivo']]
-    : [['Juan David Martínez', '11° - A', 'Acudiente registrado', 'Activo'], ['Valentina Gómez', '10° - B', 'Acudiente registrado', 'Activo'], ['Mateo Rodríguez', '8° - C', 'Acudiente pendiente', 'Activo']];
-
-  return (
-    <section className="workspace-panel directory-workspace">
-      <div className="directory-heading"><SectionTitle title={title} subtitle={`Administra la información, el acceso y el estado de los ${title.toLowerCase()} de la institución.`} /><button className="primary-button" type="button">＋ Crear {isDocente ? 'docente' : 'estudiante'}</button></div>
-      <div className="directory-toolbar"><label className="dashboard-search"><span className="sr-only">Buscar {title.toLowerCase()}</span><span aria-hidden="true">⌕</span><input placeholder={`Buscar ${title.toLowerCase()}...`} /></label><select aria-label={`Filtrar ${title.toLowerCase()} por estado`}><option>Todos los estados</option><option>Activos</option><option>Inactivos</option></select></div>
-      <div className="directory-action-grid">{['Crear', 'Editar', 'Eliminar', 'Activar', 'Desactivar', 'Cambiar contraseña'].map((action) => <button type="button" key={action} className={action === 'Eliminar' ? 'directory-action directory-action--danger' : 'directory-action'}><span aria-hidden="true">{action === 'Crear' ? '＋' : action === 'Editar' ? '✎' : action === 'Eliminar' ? '⌫' : action === 'Activar' ? '✓' : action === 'Desactivar' ? '◌' : '♢'}</span>{action}</button>)}</div>
-      <div className="directory-table-wrap"><table className="directory-table"><thead><tr><th>{isDocente ? 'Docente' : 'Estudiante'}</th><th>{isDocente ? 'Correo institucional' : 'Curso'}</th><th>{isDocente ? 'Área' : 'Acudiente'}</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>{records.map((record) => <tr key={record[0]}>{record.map((value, index) => index === 3 ? <td key={index}><span className={`status-badge ${value === 'Activo' ? 'status-badge--active' : 'status-badge--inactive'}`}>{value}</span></td> : <td key={index}>{value}</td>)}<td><button type="button" className="table-action">Gestionar</button></td></tr>)}</tbody></table></div>
     </section>
   );
 }
