@@ -41,11 +41,11 @@ function obtenerRangosSemanales(reference = new Date()) {
   }).formatToParts(reference);
   const valor = (tipo: Intl.DateTimeFormatPartTypes) => Number(partes.find((parte) => parte.type === tipo)?.value);
   const fechaBogota = new Date(Date.UTC(valor('year'), valor('month') - 1, valor('day')));
-  const diasDesdeSabado = (fechaBogota.getUTCDay() + 1) % 7;
-  const sabado = new Date(fechaBogota);
-  sabado.setUTCDate(fechaBogota.getUTCDate() - diasDesdeSabado);
-  const lunes = new Date(sabado);
-  lunes.setUTCDate(sabado.getUTCDate() - 5);
+  const diasDesdeLunes = (fechaBogota.getUTCDay() + 6) % 7;
+  const lunes = new Date(fechaBogota);
+  lunes.setUTCDate(fechaBogota.getUTCDate() - diasDesdeLunes);
+  const sabado = new Date(lunes);
+  sabado.setUTCDate(lunes.getUTCDate() + 5);
   const lunesAnterior = new Date(lunes);
   lunesAnterior.setUTCDate(lunes.getUTCDate() - 7);
   const sabadoAnterior = new Date(sabado);
