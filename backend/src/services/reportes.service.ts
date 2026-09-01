@@ -102,8 +102,9 @@ function validarConvivencia(input: ConvivenciaInput) {
   return { data };
 }
 
-export async function listarReportes() {
-  const result = await db.execute(`
+export async function listarReportes(usuario: SesionUsuario) {
+  const result = await db.execute({
+    sql: `
     SELECT
       r.id, r.tipoFalta, r.descripcion, r.evidenciaUrl, r.observaciones, r.fecha, r.estado,
       r.confidencial, r.editableHasta, r.creadoEn, r.actualizadoEn,
@@ -112,8 +113,11 @@ export async function listarReportes() {
     FROM Reporte r
     INNER JOIN Estudiante e ON e.id = r.estudianteId
     INNER JOIN Usuario u ON u.id = r.docenteId
+    WHERE r.confidencial = 0 OR ? = 'Coordinador' OR r.docenteId = ?
     ORDER BY r.fecha DESC
-  `);
+    `,
+    args: [usuario.rol, usuario.id],
+  });
 
   return { data: result.rows };
 }
@@ -208,7 +212,8 @@ export async function editarReporte(id: number, docenteId: number, input: Partia
 
 export async function cambiarEstadoReporte(id: number, estado: string, observaciones: string | undefined, usuario: SesionUsuario) {
   const estadoLimpio = estado.trim();
-  if (!estadoLimpio) return { error: 'El estado es obligatorio', status: 400 };
+  const estadosValidos = new Set(['Pendiente', 'EnRevision', 'Cerrado', 'Anulado']);
+  if (!estadosValidos.has(estadoLimpio)) return { error: 'Selecciona un estado válido', status: 400 };
 
   const result = await db.execute({
     sql: `
@@ -276,6 +281,14 @@ export async function crearConvivencia(input: ConvivenciaInput, usuario: SesionU
       usuario.rol,
       data.evidencia,
     ],
+  });
+
+  await registrarAccion({
+    usuarioId: usuario.id,
+    accion: 'activar_ruta_convivencia',
+    entidad: 'ConvivenciaReporte',
+    entidadId: id,
+    detalle: { estudianteId: data.estudianteId, tipo: data.tipo, requiereSiuce: Boolean(data.requiereSiuce) },
   });
 
   return { data: result.rows[0], status: 201 };

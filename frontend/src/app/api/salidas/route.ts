@@ -20,12 +20,11 @@ export async function POST(req: NextRequest) {
   const result = await crearSalida(
     {
       estudianteId: String(body.estudianteId || ''),
-      estudiante: String(body.estudiante || ''),
-      grado: String(body.grado || ''),
-      acudiente: String(body.acudiente || ''),
-      motivo: String(body.motivo || ''),
-      urgencia: body.urgencia === true,
-      estado: body.estado ? String(body.estado) : undefined,
+      recogeNombre: String(body.recogeNombre || ''),
+      recogeApellido: String(body.recogeApellido || ''),
+      recogeCedula: String(body.recogeCedula || ''),
+      recogeParentesco: String(body.recogeParentesco || ''),
+      recogeCorreo: String(body.recogeCorreo || ''),
     },
     auth.usuario
   );

@@ -8,19 +8,30 @@ import {
   verificarCodigo,
 } from '@backend/services/auth.service';
 import { crearToken, verificarToken } from '@backend/utils/jwt';
+import { autorizarRoles, esErrorAutorizacion } from '@backend/middleware/rol.middleware';
+import type { SesionUsuario } from '@backend/types/roles';
 
 const EMAIL_MAX_LENGTH = 254;
 const PASSWORD_MAX_LENGTH = 128;
 const SESSION_MAX_AGE_SECONDS = 30 * 60;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function serializarSesion(payload: Awaited<ReturnType<typeof verificarToken>>) {
+function serializarSesion(usuario: SesionUsuario) {
   return {
-    id: Number(payload.id),
-    nombre: String(payload.nombre || 'Usuario SIGDE'),
-    correo: String(payload.correo || ''),
-    rol: String(payload.rol || ''),
+    id: usuario.id,
+    nombre: usuario.nombre || 'Usuario SIGDE',
+    correo: usuario.correo,
+    rol: usuario.rol,
+    versionSesion: usuario.versionSesion,
   };
+}
+
+function obtenerClienteId(req: NextRequest) {
+  const forwarded = req.headers.get('x-vercel-forwarded-for')
+    || req.headers.get('x-forwarded-for')
+    || req.headers.get('x-real-ip');
+  const ip = forwarded?.split(',')[0]?.trim();
+  return (ip || `sin-ip:${req.headers.get('user-agent') || 'desconocido'}`).slice(0, 256);
 }
 
 function correoValido(correo: string) {
@@ -38,9 +49,11 @@ export async function GET() {
 
   try {
     const payload = await verificarToken(token);
+    const auth = await autorizarRoles(token);
+    if (esErrorAutorizacion(auth)) return auth.response;
     return NextResponse.json({
       autenticado: true,
-      usuario: serializarSesion(payload),
+      usuario: serializarSesion(auth.usuario),
       expiraEn: typeof payload.exp === 'number' ? payload.exp : null,
     });
   } catch {
@@ -77,7 +90,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const r = await login(correo, contrasena);
+    const r = await login(correo, contrasena, obtenerClienteId(req));
 
     if ('error' in r) {
       return NextResponse.json({ error: r.error }, { status: r.status });
@@ -89,6 +102,7 @@ export async function POST(req: NextRequest) {
       nombre: usuario.nombre,
       correo: usuario.correo,
       rol: usuario.rol,
+      versionSesion: usuario.versionSesion,
     });
 
     const cookieStore = await cookies();
@@ -113,8 +127,9 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const payload = await verificarToken(tokenActual);
-      const token = await crearToken(serializarSesion(payload));
+      const auth = await autorizarRoles(tokenActual);
+      if (esErrorAutorizacion(auth)) return auth.response;
+      const token = await crearToken(serializarSesion(auth.usuario));
       const sesion = await verificarToken(token);
 
       cookieStore.set('token', token, {
@@ -128,7 +143,7 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({
         autenticado: true,
-        usuario: serializarSesion(sesion),
+        usuario: serializarSesion(auth.usuario),
         expiraEn: typeof sesion.exp === 'number' ? sesion.exp : null,
       });
     } catch {
@@ -159,7 +174,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const r = await enviarCodigoRecuperacion(correo);
+    const r = await enviarCodigoRecuperacion(correo, obtenerClienteId(req));
 
     if ('error' in r) {
       return NextResponse.json({ error: r.error }, { status: r.status });
@@ -186,7 +201,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const r = await verificarCodigo(correo, codigo);
+    const r = await verificarCodigo(correo, codigo, obtenerClienteId(req));
 
     if ('error' in r) {
       return NextResponse.json({ error: r.error }, { status: r.status });
@@ -220,7 +235,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: errorContrasena }, { status: 400 });
     }
 
-    const r = await cambiarContrasena(correo, codigo, nuevaContrasena);
+    const r = await cambiarContrasena(correo, codigo, nuevaContrasena, obtenerClienteId(req));
 
     if ('error' in r) {
       return NextResponse.json({ error: r.error }, { status: r.status });

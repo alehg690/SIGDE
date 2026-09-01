@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ApiError } from '@/services/api';
 import { getSession, logout, renovarSesion, type SessionUser } from '@/services/auth.service';
 
@@ -22,6 +23,7 @@ type AuthContextValue = {
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [usuario, setUsuario] = useState<SessionUser | null>(null);
   const [expiraEn, setExpiraEn] = useState<number | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -58,8 +60,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUsuario(null);
     setExpiraEn(null);
     sessionStorage.setItem(SESSION_MESSAGE_KEY, message);
-    window.location.assign('/');
-  }, []);
+    router.push('/');
+  }, [router]);
 
   useEffect(() => {
     void Promise.resolve().then(() => refrescarSesion());
@@ -67,8 +69,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (cargando || usuario || window.location.pathname === '/') return;
-    window.location.replace('/');
-  }, [cargando, usuario]);
+    router.replace('/');
+  }, [cargando, router, usuario]);
 
   useEffect(() => {
     if (!usuario) return;

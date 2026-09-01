@@ -2,6 +2,13 @@ import { randomInt } from 'crypto';
 import bcrypt from 'bcryptjs';
 import { db } from '@backend/config/database';
 import { emailTransporter } from '@backend/config/email';
+import {
+  consultarLimite,
+  crearClaveLimite,
+  LIMITES_AUTH,
+  limpiarLimite,
+  registrarIntento,
+} from '@backend/services/auth-rate-limit.service';
 
 type UsuarioAuthRow = {
   id: number;
@@ -10,50 +17,19 @@ type UsuarioAuthRow = {
   contrasena: string;
   rol: string;
   activo: number;
+  versionSesion: number;
   tokenRecuperacion: string | null;
   tokenExpira: string | null;
 };
 
-type RecuperacionThrottle = {
-  envios: number;
-  disponibleEn: number;
-};
+const MENSAJE_RECUPERACION = 'Si existe una cuenta asociada, recibirás un código de verificación.';
+const HASH_COMPARACION = bcrypt.hash('SIGDE-comparacion-segura-2026', 10);
 
-const MENSAJE_CODIGO_ENVIADO = 'Código enviado correctamente';
-const PRIMER_REENVIO_MS = 60 * 1000;
-const INCREMENTO_REENVIO_MS = 5 * 60 * 1000;
-const throttlesRecuperacion = new Map<string, RecuperacionThrottle>();
-
-function obtenerEsperaMs(numeroEnvio: number) {
-  if (numeroEnvio <= 1) return PRIMER_REENVIO_MS;
-  return (numeroEnvio - 1) * INCREMENTO_REENVIO_MS;
-}
-
-function formatearEspera(ms: number) {
-  const segundos = Math.ceil(ms / 1000);
-  const minutos = Math.floor(segundos / 60);
-  const resto = segundos % 60;
-  return minutos > 0 ? `${minutos}m ${resto}s` : `${resto}s`;
-}
-
-function validarThrottleRecuperacion(correo: string) {
-  const ahora = Date.now();
-  const throttle = throttlesRecuperacion.get(correo);
-
-  if (throttle && throttle.disponibleEn > ahora) {
-    return {
-      error: `Espera ${formatearEspera(throttle.disponibleEn - ahora)} antes de solicitar otro código`,
-      status: 429,
-    };
-  }
-
-  const envios = (throttle?.envios ?? 0) + 1;
-  throttlesRecuperacion.set(correo, {
-    envios,
-    disponibleEn: ahora + obtenerEsperaMs(envios),
-  });
-
-  return null;
+function respuestaBloqueo(reintentarEnSegundos: number) {
+  return {
+    error: `Demasiados intentos. Inténtalo nuevamente en ${Math.max(1, reintentarEnSegundos)} segundos.`,
+    status: 429,
+  };
 }
 
 export function validarContrasenaSegura(contrasena: string) {
@@ -83,16 +59,32 @@ async function buscarUsuarioPorCorreo(correo: string) {
   return result.rows[0] as unknown as UsuarioAuthRow | undefined;
 }
 
-export async function login(correo: string, contrasena: string) {
-  const usuario = await buscarUsuarioPorCorreo(correo);
+export async function login(correo: string, contrasena: string, clienteId: string) {
+  const claveCuenta = crearClaveLimite('login-cuenta', correo);
+  const claveCliente = crearClaveLimite('login-cliente', clienteId);
+  const [limiteCuenta, limiteCliente] = await Promise.all([
+    consultarLimite(claveCuenta),
+    consultarLimite(claveCliente),
+  ]);
 
-  if (!usuario) {
-    return { error: 'Correo o contraseña incorrectos', status: 401 };
+  if (limiteCuenta.bloqueado || limiteCliente.bloqueado) {
+    return respuestaBloqueo(Math.max(limiteCuenta.reintentarEnSegundos, limiteCliente.reintentarEnSegundos));
   }
 
-  const passwordValida = await verificarPassword(contrasena, usuario.contrasena);
+  const usuario = await buscarUsuarioPorCorreo(correo);
+  const passwordValida = await verificarPassword(
+    contrasena,
+    usuario?.contrasena || await HASH_COMPARACION
+  );
 
-  if (!passwordValida) {
+  if (!usuario || !passwordValida) {
+    const [falloCuenta, falloCliente] = await Promise.all([
+      registrarIntento(claveCuenta, 'login-cuenta', LIMITES_AUTH.loginCuenta),
+      registrarIntento(claveCliente, 'login-cliente', LIMITES_AUTH.loginCliente),
+    ]);
+    if (falloCuenta.bloqueado || falloCliente.bloqueado) {
+      return respuestaBloqueo(Math.max(falloCuenta.reintentarEnSegundos, falloCliente.reintentarEnSegundos));
+    }
     return { error: 'Correo o contraseña incorrectos', status: 401 };
   }
 
@@ -100,31 +92,48 @@ export async function login(correo: string, contrasena: string) {
     return { error: 'Usuario inactivo', status: 403 };
   }
 
+  await db.execute({
+    sql: 'UPDATE Usuario SET ultimoAcceso = CURRENT_TIMESTAMP WHERE id = ?',
+    args: [usuario.id],
+  });
+  await limpiarLimite(claveCuenta);
+
   return {
     data: {
       id: usuario.id,
       nombre: usuario.nombre,
       correo: usuario.correo,
       rol: usuario.rol,
+      versionSesion: Number(usuario.versionSesion || 1),
     },
   };
 }
 
-export async function enviarCodigoRecuperacion(correo: string) {
-  const usuario = await buscarUsuarioPorCorreo(correo);
-
-  if (!usuario) {
+export async function enviarCodigoRecuperacion(correo: string, clienteId: string) {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     return {
-      error: 'Cuenta no encontrada. Revisa el correo institucional e intenta nuevamente.',
-      status: 404,
+      error: 'La recuperación por correo aún no está configurada. Contacta a coordinación para restablecer tu acceso.',
+      status: 503,
     };
   }
 
-  const throttle = validarThrottleRecuperacion(correo);
-
-  if (throttle) {
-    return throttle;
+  const claveCuenta = crearClaveLimite('recuperacion-cuenta', correo);
+  const claveCliente = crearClaveLimite('recuperacion-cliente', clienteId);
+  const [limiteCuenta, limiteCliente] = await Promise.all([
+    consultarLimite(claveCuenta),
+    consultarLimite(claveCliente),
+  ]);
+  if (limiteCuenta.bloqueado || limiteCliente.bloqueado) {
+    return respuestaBloqueo(Math.max(limiteCuenta.reintentarEnSegundos, limiteCliente.reintentarEnSegundos));
   }
+
+  await Promise.all([
+    registrarIntento(claveCuenta, 'recuperacion-cuenta', LIMITES_AUTH.recuperacionCuenta),
+    registrarIntento(claveCliente, 'recuperacion-cliente', LIMITES_AUTH.recuperacionCliente),
+  ]);
+
+  const usuario = await buscarUsuarioPorCorreo(correo);
+  if (!usuario || !usuario.activo) return { data: { mensaje: MENSAJE_RECUPERACION } };
 
   const codigo = randomInt(100000, 1000000).toString();
   const codigoHash = await hashPassword(codigo);
@@ -135,11 +144,12 @@ export async function enviarCodigoRecuperacion(correo: string) {
     args: [codigoHash, expira, usuario.id],
   });
 
-  await emailTransporter.sendMail({
-    from: `"no.reply-SIGDE" <${process.env.EMAIL_USER}>`,
-    to: correo,
-    subject: 'Código de verificación - SIGDE',
-    html: `
+  try {
+    await emailTransporter.sendMail({
+      from: `"SIGDE" <${process.env.EMAIL_USER}>`,
+      to: correo,
+      subject: 'Código de verificación - SIGDE',
+      html: `
       <div style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
         <h2 style="color: #0a1628;">Recuperación de contraseña</h2>
         <p style="color: #4a6280;">Tu código de verificación es:</p>
@@ -149,34 +159,62 @@ export async function enviarCodigoRecuperacion(correo: string) {
         <p style="color: #7a90a8; font-size: 13px;">Este código expira en 15 minutos.</p>
         <p style="color: #7a90a8; font-size: 13px;">Si no solicitaste este cambio, ignora este mensaje.</p>
       </div>
-    `,
-  });
+      `,
+    });
+  } catch (error) {
+    console.error('No se pudo enviar el código de recuperación.', error);
+    return { data: { mensaje: MENSAJE_RECUPERACION } };
+  }
 
-  return { data: { mensaje: MENSAJE_CODIGO_ENVIADO } };
+  return { data: { mensaje: MENSAJE_RECUPERACION } };
 }
 
-export async function verificarCodigo(correo: string, codigo: string) {
+async function validarCodigoRecuperacion(correo: string, codigo: string, clienteId: string) {
+  const claveCuenta = crearClaveLimite('codigo-cuenta', correo);
+  const claveCliente = crearClaveLimite('codigo-cliente', clienteId);
+  const [limiteCuenta, limiteCliente] = await Promise.all([
+    consultarLimite(claveCuenta),
+    consultarLimite(claveCliente),
+  ]);
+  if (limiteCuenta.bloqueado || limiteCliente.bloqueado) {
+    return respuestaBloqueo(Math.max(limiteCuenta.reintentarEnSegundos, limiteCliente.reintentarEnSegundos));
+  }
+
   const usuario = await buscarUsuarioPorCorreo(correo);
+  const codigoValido = await verificarPassword(
+    codigo,
+    usuario?.tokenRecuperacion || await HASH_COMPARACION
+  );
+  const codigoVigente = Boolean(
+    usuario?.tokenExpira && new Date() <= new Date(usuario.tokenExpira)
+  );
 
-  const codigoValido = usuario?.tokenRecuperacion
-    ? await verificarPassword(codigo, usuario.tokenRecuperacion)
-    : false;
-
-  if (!usuario || !codigoValido) {
-    return { error: 'Código incorrecto', status: 400 };
+  if (!usuario || !usuario.activo || !codigoValido || !codigoVigente) {
+    const [falloCuenta, falloCliente] = await Promise.all([
+      registrarIntento(claveCuenta, 'codigo-cuenta', LIMITES_AUTH.codigoCuenta),
+      registrarIntento(claveCliente, 'codigo-cliente', LIMITES_AUTH.codigoCliente),
+    ]);
+    if (falloCuenta.bloqueado || falloCliente.bloqueado) {
+      return respuestaBloqueo(Math.max(falloCuenta.reintentarEnSegundos, falloCliente.reintentarEnSegundos));
+    }
+    return { error: 'Código incorrecto o expirado', status: 400 };
   }
 
-  if (!usuario.tokenExpira || new Date() > new Date(usuario.tokenExpira)) {
-    return { error: 'El código ha expirado', status: 400 };
-  }
+  await limpiarLimite(claveCuenta);
+  return { data: usuario };
+}
 
+export async function verificarCodigo(correo: string, codigo: string, clienteId: string) {
+  const validacion = await validarCodigoRecuperacion(correo, codigo, clienteId);
+  if ('error' in validacion) return validacion;
   return { data: { mensaje: 'Código válido' } };
 }
 
 export async function cambiarContrasena(
   correo: string,
   codigo: string,
-  nuevaContrasena: string
+  nuevaContrasena: string,
+  clienteId: string
 ) {
   const errorContrasena = validarContrasenaSegura(nuevaContrasena);
 
@@ -184,19 +222,9 @@ export async function cambiarContrasena(
     return { error: errorContrasena, status: 400 };
   }
 
-  const usuario = await buscarUsuarioPorCorreo(correo);
-
-  const codigoValido = usuario?.tokenRecuperacion
-    ? await verificarPassword(codigo, usuario.tokenRecuperacion)
-    : false;
-
-  if (!usuario || !codigoValido) {
-    return { error: 'Código incorrecto', status: 400 };
-  }
-
-  if (!usuario.tokenExpira || new Date() > new Date(usuario.tokenExpira)) {
-    return { error: 'El código ha expirado', status: 400 };
-  }
+  const validacion = await validarCodigoRecuperacion(correo, codigo, clienteId);
+  if ('error' in validacion) return validacion;
+  const usuario = validacion.data;
 
   const hash = await hashPassword(nuevaContrasena);
 
@@ -205,7 +233,8 @@ export async function cambiarContrasena(
       UPDATE Usuario
       SET contrasena = ?,
           tokenRecuperacion = NULL,
-          tokenExpira = NULL
+          tokenExpira = NULL,
+          versionSesion = versionSesion + 1
       WHERE id = ?
     `,
     args: [hash, usuario.id],

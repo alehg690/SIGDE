@@ -15,14 +15,14 @@ const usuariosDemo = [
 ];
 
 const personasDemo = [
-  { estudiante: 'Juan David Martínez', documento: 'DEMO-EST-001', grado: '11', grupo: 'A', acudiente: 'Claudia Martínez', acudienteDocumento: 'DEMO-AC-001', telefono: '3001000001' },
-  { estudiante: 'Valentina Gómez', documento: 'DEMO-EST-002', grado: '10', grupo: 'B', acudiente: 'Andrés Gómez', acudienteDocumento: 'DEMO-AC-002', telefono: '3001000002' },
-  { estudiante: 'Mateo Rodríguez', documento: 'DEMO-EST-003', grado: '8', grupo: 'C', acudiente: 'Marta Rodríguez', acudienteDocumento: 'DEMO-AC-003', telefono: '3001000003' },
-  { estudiante: 'Sara López', documento: 'DEMO-EST-004', grado: '9', grupo: 'A', acudiente: 'Diana López', acudienteDocumento: 'DEMO-AC-004', telefono: '3001000004' },
-  { estudiante: 'Samuel Torres', documento: 'DEMO-EST-005', grado: '7', grupo: 'B', acudiente: 'Carlos Torres', acudienteDocumento: 'DEMO-AC-005', telefono: '3001000005' },
-  { estudiante: 'Isabella Ramírez', documento: 'DEMO-EST-006', grado: '11', grupo: 'A', acudiente: 'Paola Ramírez', acudienteDocumento: 'DEMO-AC-006', telefono: '3001000006' },
-  { estudiante: 'Nicolás Herrera', documento: 'DEMO-EST-007', grado: '6', grupo: 'A', acudiente: 'Jorge Herrera', acudienteDocumento: 'DEMO-AC-007', telefono: '3001000007' },
-  { estudiante: 'Mariana Castro', documento: 'DEMO-EST-008', grado: '10', grupo: 'A', acudiente: 'Liliana Castro', acudienteDocumento: 'DEMO-AC-008', telefono: '3001000008' },
+  { estudiante: 'Juan David Martínez', documento: 'DEMO-EST-001', grado: '11', grupo: '1', jornada: 'Mañana', acudiente: 'Claudia Martínez', acudienteDocumento: 'DEMO-AC-001', telefono: '3001000001' },
+  { estudiante: 'Valentina Gómez', documento: 'DEMO-EST-002', grado: '10', grupo: '3', jornada: 'Tarde', acudiente: 'Andrés Gómez', acudienteDocumento: 'DEMO-AC-002', telefono: '3001000002' },
+  { estudiante: 'Mateo Rodríguez', documento: 'DEMO-EST-003', grado: '8', grupo: '4', jornada: 'Tarde', acudiente: 'Marta Rodríguez', acudienteDocumento: 'DEMO-AC-003', telefono: '3001000003' },
+  { estudiante: 'Sara López', documento: 'DEMO-EST-004', grado: '9', grupo: '1', jornada: 'Mañana', acudiente: 'Diana López', acudienteDocumento: 'DEMO-AC-004', telefono: '3001000004' },
+  { estudiante: 'Samuel Torres', documento: 'DEMO-EST-005', grado: '7', grupo: '5', jornada: 'Tarde', acudiente: 'Carlos Torres', acudienteDocumento: 'DEMO-AC-005', telefono: '3001000005' },
+  { estudiante: 'Isabella Ramírez', documento: 'DEMO-EST-006', grado: '11', grupo: '3', jornada: 'Tarde', acudiente: 'Paola Ramírez', acudienteDocumento: 'DEMO-AC-006', telefono: '3001000006' },
+  { estudiante: 'Nicolás Herrera', documento: 'DEMO-EST-007', grado: '6', grupo: '2', jornada: 'Mañana', acudiente: 'Jorge Herrera', acudienteDocumento: 'DEMO-AC-007', telefono: '3001000007' },
+  { estudiante: 'Mariana Castro', documento: 'DEMO-EST-008', grado: '10', grupo: '2', jornada: 'Mañana', acudiente: 'Liliana Castro', acudienteDocumento: 'DEMO-AC-008', telefono: '3001000008' },
 ];
 
 const descripciones = [
@@ -136,8 +136,8 @@ async function sembrar() {
       [person.acudiente, person.telefono, null, person.telefono, person.acudienteDocumento]
     );
     const studentId = await insertarId(
-      "INSERT INTO Estudiante (nombre, documento, grado, grupo, estado, activo, archivado, acudienteId) VALUES (?, ?, ?, ?, 'Activo', 1, 0, ?)",
-      [person.estudiante, person.documento, person.grado, person.grupo, guardianId]
+      "INSERT INTO Estudiante (nombre, documento, grado, grupo, jornada, estado, activo, archivado, acudienteId) VALUES (?, ?, ?, ?, ?, 'Activo', 1, 0, ?)",
+      [person.estudiante, person.documento, person.grado, person.grupo, person.jornada, guardianId]
     );
     guardians.push(guardianId);
     students.push(studentId);

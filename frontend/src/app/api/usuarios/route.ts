@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     rol: String(body.rol || ''),
     contrasena: String(body.contrasena || ''),
     activo: body.activo !== false,
-  });
+  }, auth.usuario);
 
   if ('error' in result) {
     return NextResponse.json({ error: result.error }, { status: result.status });

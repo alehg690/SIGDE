@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { db } from '@backend/config/database';
 import { verificarToken } from '@backend/utils/jwt';
 import {
   normalizarRol,
@@ -53,11 +54,31 @@ export async function autorizarRoles(
       };
     }
 
+    const versionToken = Number(payload.versionSesion);
+    if (!Number.isInteger(versionToken) || versionToken <= 0) {
+      return {
+        response: NextResponse.json({ error: 'Sesion revocada' }, { status: 401 }),
+      };
+    }
+
+    const result = await db.execute({
+      sql: 'SELECT id, nombre, correo, rol, activo, versionSesion FROM Usuario WHERE id = ? LIMIT 1',
+      args: [id],
+    });
+    const cuenta = result.rows[0];
+    const rolActual = cuenta ? normalizarRol(String(cuenta.rol || '')) : null;
+    if (!cuenta || !cuenta.activo || !rolActual || Number(cuenta.versionSesion) !== versionToken) {
+      return {
+        response: NextResponse.json({ error: 'Sesion revocada' }, { status: 401 }),
+      };
+    }
+
     const usuario: SesionUsuario = {
       id,
-      nombre: String(payload.nombre || ''),
-      correo: String(payload.correo || ''),
-      rol,
+      nombre: String(cuenta.nombre || ''),
+      correo: String(cuenta.correo || ''),
+      rol: rolActual,
+      versionSesion: Number(cuenta.versionSesion),
     };
 
     if (rolesPermitidos && !rolesPermitidos.includes(usuario.rol)) {

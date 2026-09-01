@@ -13,6 +13,10 @@
 # testing
 /coverage
 
+# Codex working artifacts
+/.codex-build/
+*.inspect.ndjson
+
 # next.js
 /.next/
 /frontend/.next/

@@ -9,7 +9,11 @@
     "lint": "eslint frontend backend",
     "typecheck": "tsc --noEmit",
     "seed:dashboard": "node --env-file=.env scripts/db/seed-dashboard-demo.mjs",
-    "seed:dashboard:clean": "node --env-file=.env scripts/db/seed-dashboard-demo.mjs --clean"
+    "seed:dashboard:clean": "node --env-file=.env scripts/db/seed-dashboard-demo.mjs --clean",
+    "import:11-2": "node --env-file=.env scripts/db/import-11-2.mjs",
+    "migrate:salidas": "node scripts/db/apply-salidas-autorizadas-migration.mjs",
+    "migrate:security": "node --env-file=.env scripts/db/apply-auth-security-migration.mjs",
+    "auth:unlock": "node --env-file=.env scripts/db/unlock-auth-account.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",

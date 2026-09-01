@@ -34,7 +34,7 @@ function evidenciaSegura(value: string | null) {
   }
 }
 
-export default function ReportsWorkspace() {
+export default function ReportsWorkspace({ currentUserId, canManage, initialSearch = '' }: { currentUserId: number; canManage: boolean; initialSearch?: string }) {
   const [reportes, setReportes] = useState<Reporte[]>([]);
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [seleccionadoId, setSeleccionadoId] = useState<number | null>(null);
@@ -43,9 +43,16 @@ export default function ReportsWorkspace() {
   const [busqueda, setBusqueda] = useState('');
   const [tipo, setTipo] = useState('Todos');
   const [estado, setEstado] = useState('Todos');
+  const [docente, setDocente] = useState('Todos');
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<Feedback | null>(null);
+
+  useEffect(() => {
+    if (!initialSearch) return;
+    const timer = window.setTimeout(() => setBusqueda(initialSearch), 0);
+    return () => window.clearTimeout(timer);
+  }, [initialSearch]);
 
   const cargarDatos = useCallback(async (preferidoId?: number) => {
     const [reportesResponse, estudiantesResponse] = await Promise.all([
@@ -81,15 +88,17 @@ export default function ReportsWorkspace() {
   }, [cargarDatos]);
 
   const estados = useMemo(() => [...new Set(reportes.map((item) => item.estado))].sort((a, b) => a.localeCompare(b, 'es')), [reportes]);
+  const docentes = useMemo(() => [...new Set(reportes.map((item) => item.docente))].sort((a, b) => a.localeCompare(b, 'es')), [reportes]);
   const filtrados = useMemo(() => {
     const termino = busqueda.trim().toLocaleLowerCase('es');
     return reportes.filter((reporte) => {
       const contenido = [reporte.estudiante, reporte.docente, reporte.grado, reporte.grupo, reporte.descripcion].join(' ').toLocaleLowerCase('es');
       return (!termino || contenido.includes(termino))
         && (tipo === 'Todos' || reporte.tipoFalta === tipo)
-        && (estado === 'Todos' || reporte.estado === estado);
+        && (estado === 'Todos' || reporte.estado === estado)
+        && (docente === 'Todos' || reporte.docente === docente);
     });
-  }, [busqueda, estado, reportes, tipo]);
+  }, [busqueda, docente, estado, reportes, tipo]);
   const seleccionado = reportes.find((item) => item.id === seleccionadoId) ?? null;
 
   async function registrar(event: FormEvent<HTMLFormElement>) {
@@ -144,6 +153,7 @@ export default function ReportsWorkspace() {
               <label className="reports-search"><span>Buscar reporte</span><input type="search" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} placeholder="Estudiante, docente, curso o descripción" /></label>
               <label><span>Tipo</span><select value={tipo} onChange={(event) => setTipo(event.target.value)}><option>Todos</option>{Object.entries(TIPO_LABELS).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
               <label><span>Estado</span><select value={estado} onChange={(event) => setEstado(event.target.value)}><option>Todos</option>{estados.map((item) => <option key={item}>{item}</option>)}</select></label>
+              {canManage && <label><span>Docente</span><select value={docente} onChange={(event) => setDocente(event.target.value)}><option>Todos</option>{docentes.map((item) => <option key={item}>{item}</option>)}</select></label>}
             </div>
             <div className="reports-list-heading"><strong>Registros</strong><span>{cargando ? 'Cargando...' : `${filtrados.length} resultados`}</span></div>
             <div className="reports-list" aria-live="polite">
@@ -151,7 +161,7 @@ export default function ReportsWorkspace() {
               {filtrados.map((reporte) => <button type="button" key={reporte.id} className={seleccionado?.id === reporte.id ? 'report-row report-row--active' : 'report-row'} onClick={() => setSeleccionadoId(reporte.id)}><span className={`report-type report-type--${reporte.tipoFalta.toLowerCase()}`}>{TIPO_LABELS[reporte.tipoFalta]}</span><span><strong>{reporte.estudiante}</strong><small>{reporte.grado}-{reporte.grupo} · {reporte.docente}</small></span><span className={`report-status report-status--${estaPendiente(reporte.estado) ? 'pending' : 'managed'}`}>{reporte.estado}</span><time dateTime={reporte.fecha}>{fechaLegible(reporte.fecha)}</time></button>)}
             </div>
           </div>
-          <ReportDetail reporte={seleccionado} />
+          <ReportDetail reporte={seleccionado} currentUserId={currentUserId} canManage={canManage} onUpdated={async (id, texto) => { await cargarDatos(id); setMensaje({ tipo: 'success', texto }); }} />
         </div>}
   </section>;
 }
@@ -177,15 +187,71 @@ function ReportCreateForm({ form, setForm, estudiantes, guardando, onSubmit, onC
   </form>;
 }
 
-function ReportDetail({ reporte }: { reporte: Reporte | null }) {
+function ReportDetail({ reporte, currentUserId, canManage, onUpdated }: {
+  reporte: Reporte | null;
+  currentUserId: number;
+  canManage: boolean;
+  onUpdated: (id: number, message: string) => Promise<void>;
+}) {
+  const [modoEdicion, setModoEdicion] = useState(false);
+  const [descripcion, setDescripcion] = useState('');
+  const [evidencia, setEvidencia] = useState('');
+  const [estado, setEstado] = useState('Pendiente');
+  const [observaciones, setObservaciones] = useState('');
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState('');
+  const [instanteMontaje] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setModoEdicion(false);
+      setDescripcion(reporte?.descripcion ?? '');
+      setEvidencia(reporte?.evidenciaUrl ?? '');
+      setEstado(reporte?.estado ?? 'Pendiente');
+      setObservaciones(reporte?.observaciones ?? '');
+      setError('');
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [reporte]);
+
   const evidenciaUrl = reporte ? evidenciaSegura(reporte.evidenciaUrl) : null;
+  const puedeEditar = Boolean(reporte && reporte.docenteId === currentUserId && estaPendiente(reporte.estado) && reporte.editableHasta && new Date(reporte.editableHasta).getTime() > instanteMontaje);
+
+  async function guardarEdicion() {
+    if (!reporte) return;
+    setGuardando(true); setError('');
+    try {
+      const response = await fetch(`/api/reportes/${reporte.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ descripcion, evidenciaUrl: evidencia }) });
+      if (!response.ok) throw new Error(await leerError(response, 'No se pudo editar el reporte.'));
+      setModoEdicion(false);
+      await onUpdated(reporte.id, 'Reporte actualizado correctamente.');
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'No se pudo editar el reporte.');
+    } finally { setGuardando(false); }
+  }
+
+  async function guardarEstado() {
+    if (!reporte) return;
+    setGuardando(true); setError('');
+    try {
+      const response = await fetch(`/api/reportes/${reporte.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estado, observaciones }) });
+      if (!response.ok) throw new Error(await leerError(response, 'No se pudo actualizar el estado.'));
+      await onUpdated(reporte.id, 'Estado y observaciones actualizados.');
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'No se pudo actualizar el estado.');
+    } finally { setGuardando(false); }
+  }
+
   return <aside className="report-detail-panel">
     {reporte ? <>
       <div className="report-detail-heading"><div><span>Reporte #{reporte.id}</span><h3>{reporte.estudiante}</h3><p>{reporte.grado}-{reporte.grupo}</p></div><span className={`report-type report-type--${reporte.tipoFalta.toLowerCase()}`}>{TIPO_LABELS[reporte.tipoFalta]}</span></div>
       <dl className="report-metadata"><div><dt>Estado</dt><dd>{reporte.estado}</dd></div><div><dt>Registrado por</dt><dd>{reporte.docente}</dd></div><div><dt>Fecha</dt><dd>{fechaLegible(reporte.fecha)}</dd></div><div><dt>Acceso</dt><dd>{Boolean(reporte.confidencial) ? 'Confidencial' : 'Institucional'}</dd></div></dl>
-      <div className="report-detail-copy"><span>Descripción</span><p>{reporte.descripcion}</p></div>
+      {error && <p className="report-detail-error" role="alert">{error}</p>}
+      {modoEdicion ? <div className="report-detail-editor"><label><span>Descripción</span><textarea minLength={10} maxLength={1500} value={descripcion} onChange={(event) => setDescripcion(event.target.value)} /></label><label><span>Enlace de evidencia</span><input type="url" value={evidencia} onChange={(event) => setEvidencia(event.target.value)} placeholder="https://..." /></label><div><button type="button" onClick={() => setModoEdicion(false)}>Cancelar</button><button type="button" className="primary-button" disabled={guardando || descripcion.trim().length < 10} onClick={() => void guardarEdicion()}>{guardando ? 'Guardando...' : 'Guardar edición'}</button></div></div> : <div className="report-detail-copy"><span>Descripción</span><p>{reporte.descripcion}</p></div>}
       {reporte.observaciones && <div className="report-detail-copy"><span>Observaciones</span><p>{reporte.observaciones}</p></div>}
       {evidenciaUrl ? <a className="report-evidence-link" href={evidenciaUrl} target="_blank" rel="noreferrer">Abrir evidencia</a> : <p className="report-no-evidence">Sin evidencia adjunta</p>}
+      {!modoEdicion && puedeEditar && <button type="button" className="report-edit-button" onClick={() => setModoEdicion(true)}>Editar reporte <small>Disponible hasta {fechaLegible(reporte.editableHasta || '')}</small></button>}
+      {canManage && <div className="report-status-editor"><h4>Gestión de coordinación</h4><label><span>Estado</span><select value={estado} onChange={(event) => setEstado(event.target.value)}><option value="Pendiente">Pendiente</option><option value="EnRevision">En revisión</option><option value="Cerrado">Cerrado</option><option value="Anulado">Anulado</option></select></label><label><span>Observaciones</span><textarea value={observaciones} maxLength={1500} onChange={(event) => setObservaciones(event.target.value)} placeholder="Registra decisiones, compromisos o cierre del caso." /></label><button type="button" className="module-primary-action" disabled={guardando} onClick={() => void guardarEstado()}>{guardando ? 'Guardando...' : 'Actualizar gestión'}</button></div>}
     </> : <div className="report-detail-empty"><strong>Selecciona un reporte</strong><p>Aquí podrás consultar toda la información registrada.</p></div>}
   </aside>;
 }

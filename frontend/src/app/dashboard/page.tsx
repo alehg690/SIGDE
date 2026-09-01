@@ -1,8 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import DashboardExperience, { type DashboardUser } from '@/components/dashboard/DashboardExperience';
-import { obtenerUsuarioPorId } from '@backend/services/usuarios.service';
-import { verificarToken } from '@backend/utils/jwt';
+import { autorizarRoles, esErrorAutorizacion } from '@backend/middleware/rol.middleware';
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
@@ -15,18 +14,14 @@ export default async function DashboardPage() {
   let usuario: DashboardUser;
 
   try {
-    const payload = await verificarToken(token);
-    const usuarioActual = await obtenerUsuarioPorId(Number(payload.id));
-
-    if (!usuarioActual || !usuarioActual.activo) {
-      redirect('/');
-    }
+    const auth = await autorizarRoles(token);
+    if (esErrorAutorizacion(auth)) redirect('/');
 
     usuario = {
-      id: usuarioActual.id,
-      nombre: usuarioActual.nombre,
-      correo: usuarioActual.correo,
-      rol: usuarioActual.rol,
+      id: auth.usuario.id,
+      nombre: auth.usuario.nombre,
+      correo: auth.usuario.correo,
+      rol: auth.usuario.rol,
     };
   } catch {
     redirect('/');

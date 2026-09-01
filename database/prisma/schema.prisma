@@ -57,33 +57,51 @@ model Usuario {
   rol               RolUsuario
   activo            Boolean   @default(true)
   creadoEn          DateTime  @default(now())
+  ultimoAcceso      DateTime?
   tokenRecuperacion String?
   tokenExpira       DateTime?
+  versionSesion     Int       @default(1)
   reportes          Reporte[]
   observaciones     ObservacionReporte[]
   auditLogs         AuditLog[]
   salidasRegistradas Salida[] @relation("SalidaRegistrador")
+  gruposDirigidos   GrupoEscolar[]
+  notificacionesUsuario NotificacionUsuario[]
 }
 
 model Acudiente {
   id             Int            @id @default(autoincrement())
   nombre         String
+  primerNombre   String?
+  segundoNombre  String?
+  primerApellido String?
+  segundoApellido String?
+  tipoDocumento  String?
   contacto       String
   correo         String?
   telefono       String?
   documento      String?
+  parentesco     String?
   creadoEn       DateTime       @default(now())
   estudiantes    Estudiante[]
   notificaciones Notificacion[]
   salidas        Salida[]
+  vinculosEstudiantes EstudianteAcudiente[]
 }
 
 model Estudiante {
   id             Int       @id @default(autoincrement())
   nombre         String
+  primerNombre   String?
+  segundoNombre  String?
+  primerApellido String?
+  segundoApellido String?
+  tipoDocumento  String?
   documento      String?
+  correo         String?   @unique
   grado          String
   grupo          String
+  jornada        String    @default("Sin registrar")
   estado         String    @default("Activo")
   activo         Boolean   @default(true)
   archivado      Boolean   @default(false)
@@ -94,6 +112,7 @@ model Estudiante {
   reportes       Reporte[]
   alertas        Alerta[]
   salidas        Salida[]
+  acudientesVinculados EstudianteAcudiente[]
 }
 
 model Reporte {
@@ -115,6 +134,7 @@ model Reporte {
   evidencias     EvidenciaReporte[]
   observacionesLista ObservacionReporte[]
   notificaciones Notificacion[]
+  notificacionesUsuario NotificacionUsuario[]
 }
 
 model Alerta {
@@ -135,6 +155,11 @@ model Salida {
   motivo             String
   tipo               TipoSalida   @default(ordinaria)
   urgencia           Boolean      @default(false)
+  recogeNombre       String?
+  recogeApellido     String?
+  recogeCedula       String?
+  recogeParentesco   String?
+  recogeCorreo       String?
   estado             EstadoSalida @default(pendiente)
   firmaDirector      Boolean      @default(false)
   firmaDocente       Boolean      @default(false)
@@ -178,6 +203,56 @@ model ConfiguracionSistema {
   actualizadoEn DateTime @default(now())
 }
 
+model AuthRateLimit {
+  clave          String    @id
+  tipo           String
+  intentos       Int       @default(0)
+  ventanaInicia  DateTime  @default(now())
+  bloqueadoHasta DateTime?
+  actualizadoEn  DateTime  @default(now())
+
+  @@index([tipo, actualizadoEn])
+}
+
+model NotificacionUsuario {
+  id          Int       @id @default(autoincrement())
+  usuarioId   Int
+  reporteId   Int?
+  canal       CanalNotificacion
+  asunto      String
+  mensaje     String
+  leida       Boolean   @default(false)
+  enviadoEn   DateTime  @default(now())
+  usuario     Usuario   @relation(fields: [usuarioId], references: [id])
+  reporte     Reporte?  @relation(fields: [reporteId], references: [id])
+
+  @@index([usuarioId, leida])
+}
+
+model GrupoEscolar {
+  id          Int       @id @default(autoincrement())
+  grado       String
+  grupo       String
+  jornada     String
+  directorId  Int?
+  director    Usuario?  @relation(fields: [directorId], references: [id])
+  creadoEn    DateTime  @default(now())
+  actualizadoEn DateTime @default(now())
+
+  @@unique([grado, grupo])
+  @@index([directorId])
+}
+
+model EstudianteAcudiente {
+  estudianteId Int
+  acudienteId  Int
+  esPrincipal  Boolean @default(false)
+  estudiante   Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  acudiente    Acudiente  @relation(fields: [acudienteId], references: [id], onDelete: Cascade)
+
+  @@id([estudianteId, acudienteId])
+}
+
 model Evento {
   id            Int      @id @default(autoincrement())
   titulo        String
@@ -210,4 +285,27 @@ model ObservacionReporte {
   creadoEn  DateTime @default(now())
   reporte   Reporte  @relation(fields: [reporteId], references: [id], onDelete: Cascade)
   usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+}
+
+model ConvivenciaReporte {
+  id                      String   @id
+  estudianteId            String
+  estudiante              String
+  grado                    String
+  tipo                     String
+  descripcion              String
+  etapa                    String
+  competencia              String
+  notificacionAcudiente    String
+  requiereSiuce            Boolean  @default(false)
+  creadoPorId              Int
+  creadoPorNombre          String
+  creadoPorRol             String
+  evidencia                String?
+  estado                   String   @default("abierto")
+  creadoEn                 DateTime @default(now())
+  actualizadoEn            DateTime @default(now())
+
+  @@index([estudianteId])
+  @@index([estado, creadoEn])
 }

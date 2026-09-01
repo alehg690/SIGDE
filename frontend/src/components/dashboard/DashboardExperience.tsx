@@ -3,7 +3,11 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import StudentsWorkspace from '@/components/students/StudentsWorkspace';
-import ReportsWorkspace from '@/components/reports/ReportsWorkspace';
+import CommunicationsWorkspace from '@/components/communications/CommunicationsWorkspace';
+import SettingsWorkspace from '@/components/settings/SettingsWorkspace';
+import AuditWorkspace from '@/components/audit/AuditWorkspace';
+import UsersWorkspace from '@/components/users/UsersWorkspace';
+import type { Estudiante } from '@/types/students';
 
 export type DashboardUser = {
   id: number;
@@ -13,9 +17,9 @@ export type DashboardUser = {
 };
 
 type DashboardRole = 'coordinador' | 'docente' | 'portero';
-type DashboardSection = 'dashboard' | 'usuarios' | 'personas' | 'seguimiento' | 'estadisticas' | 'salidas' | 'comunicaciones' | 'calendario' | 'reportes' | 'configuracion' | 'perfil' | 'auditoria';
+type DashboardSection = 'dashboard' | 'usuarios' | 'personas' | 'seguimiento' | 'estadisticas' | 'salidas' | 'comunicaciones' | 'calendario' | 'reportes' | 'convivencia' | 'configuracion' | 'perfil' | 'auditoria';
 
-const DASHBOARD_SECTIONS: DashboardSection[] = ['dashboard', 'usuarios', 'personas', 'seguimiento', 'estadisticas', 'salidas', 'comunicaciones', 'calendario', 'reportes', 'configuracion', 'perfil', 'auditoria'];
+const DASHBOARD_SECTIONS: DashboardSection[] = ['dashboard', 'usuarios', 'personas', 'seguimiento', 'estadisticas', 'salidas', 'comunicaciones', 'calendario', 'reportes', 'convivencia', 'configuracion', 'perfil', 'auditoria'];
 
 function sectionFromUrl(value: string | null): DashboardSection {
   return DASHBOARD_SECTIONS.includes(value as DashboardSection) ? value as DashboardSection : 'dashboard';
@@ -107,23 +111,6 @@ type DashboardStats = {
   };
 };
 
-type UsuarioSistema = {
-  id: number;
-  nombre: string;
-  correo: string;
-  rol: string;
-  activo: boolean;
-  creadoEn: string;
-};
-
-type UsuarioForm = {
-  nombre: string;
-  correo: string;
-  rol: string;
-  contrasena: string;
-  activo: boolean;
-};
-
 const EMPTY_STATS: DashboardStats = {
   metricas: {
     usuarios: 0,
@@ -173,67 +160,26 @@ const ROLE_LABELS: Record<DashboardRole, string> = {
   portero: 'Portero',
 };
 
-const USER_ROLES = ['Coordinador', 'Docente', 'Porteria'];
-
-const EMPTY_USER_FORM: UsuarioForm = {
-  nombre: '',
-  correo: '',
-  rol: 'Docente',
-  contrasena: '',
-  activo: true,
-};
-
-type EventoSistema = { id: number; titulo: string; iniciaEn: string; ubicacion?: string | null };
-
-// Datos temporales para comprobar visualmente la tarjeta antes de que haya eventos creados.
-const EVENTOS_DE_PRUEBA: EventoSistema[] = [
-  { id: -1, titulo: 'Reunión de área — Matemáticas', iniciaEn: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() },
-  { id: -2, titulo: 'Entrega de boletines 2.º período', iniciaEn: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString() },
-  { id: -3, titulo: 'Reunión de padres — 6.º y 7.º', iniciaEn: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() },
-  { id: -4, titulo: 'Izada de bandera institucional', iniciaEn: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString() },
-];
-
-const ROLE_CONFIG: Record<DashboardRole, {
-  headline: string;
-  summary: string;
-  actions: string[];
-}> = {
-  coordinador: {
-    headline: 'Gestión y seguimiento institucional',
-    summary: 'Gestiona usuarios y configuración, y realiza el seguimiento de convivencia y alertas.',
-    actions: ['Gestionar usuarios', 'Revisar casos', 'Programar seguimiento'],
-  },
-  docente: {
-    headline: 'Registro docente',
-    summary: 'Acceso rápido para registrar reportes y consultar estudiantes asignados.',
-    actions: ['Registrar reporte', 'Consultar estudiante', 'Ver historial'],
-  },
-  portero: {
-    headline: 'Control de salidas',
-    summary: 'Consulta y registra las salidas autorizadas de su turno.',
-    actions: ['Registrar salida', 'Consultar salidas'],
-  },
-};
-
 const NAV_GROUPS: Array<{
   label: string;
-  gestion?: boolean;
-  items: Array<{ id: DashboardSection; label: string }>;
+  items: Array<{ id: DashboardSection; label: string; roles: DashboardRole[] }>;
 }> = [
-  { label: 'PRINCIPAL', items: [{ id: 'dashboard', label: 'Dashboard' }] },
-  { label: 'OPERATIVO', items: [{ id: 'reportes', label: 'Reportes' }, { id: 'salidas', label: 'Salidas' }] },
-  { label: 'ANALÍTICA', items: [{ id: 'seguimiento', label: 'Seguimiento' }, { id: 'estadisticas', label: 'Estadísticas' }] },
-  { label: 'INFORMACIÓN', items: [{ id: 'comunicaciones', label: 'Comunicaciones' }, { id: 'calendario', label: 'Calendario' }] },
-  { label: 'GESTIÓN', gestion: true, items: [{ id: 'usuarios', label: 'Usuarios' }, { id: 'personas', label: 'Estudiantes' }, { id: 'configuracion', label: 'Configuración' }, { id: 'perfil', label: 'Perfil' }] },
+  { label: 'PRINCIPAL', items: [{ id: 'dashboard', label: 'Dashboard', roles: ['coordinador', 'docente', 'portero'] }] },
+  { label: 'OPERATIVO', items: [{ id: 'reportes', label: 'Reportes', roles: ['coordinador', 'docente'] }, { id: 'convivencia', label: 'Convivencia', roles: ['coordinador', 'docente'] }, { id: 'salidas', label: 'Salidas', roles: ['coordinador', 'portero'] }] },
+  { label: 'ANALÍTICA', items: [{ id: 'seguimiento', label: 'Seguimiento', roles: ['coordinador', 'docente'] }, { id: 'estadisticas', label: 'Estadísticas', roles: ['coordinador', 'docente'] }] },
+  { label: 'INFORMACIÓN', items: [{ id: 'comunicaciones', label: 'Comunicaciones', roles: ['coordinador', 'docente'] }, { id: 'calendario', label: 'Calendario', roles: ['coordinador', 'docente', 'portero'] }] },
+  { label: 'GESTIÓN', items: [{ id: 'usuarios', label: 'Usuarios', roles: ['coordinador'] }, { id: 'personas', label: 'Estudiantes', roles: ['coordinador', 'docente'] }, { id: 'configuracion', label: 'Configuración', roles: ['coordinador'] }, { id: 'perfil', label: 'Perfil', roles: ['coordinador', 'docente', 'portero'] }] },
+  { label: 'SEGURIDAD', items: [{ id: 'auditoria', label: 'Auditoría', roles: ['coordinador'] }] },
 ];
 
-// Auditoría queda agrupada como módulo de gestión para los coordinadores.
-const SECURITY_NAV_GROUP = { label: 'SEGURIDAD', gestion: true, items: [{ id: 'auditoria' as DashboardSection, label: 'Auditoría' }] };
+function puedeAbrirSeccion(section: DashboardSection, role: DashboardRole) {
+  return NAV_GROUPS.some((group) => group.items.some((item) => item.id === section && item.roles.includes(role)));
+}
 
 type SidebarIconName = 'dashboard' | 'users' | 'graduation' | 'document' | 'door' | 'message' | 'calendar' | 'chart' | 'settings' | 'profile' | 'logout' | 'chevron' | 'chevronDown' | 'search' | 'sparkles';
 
 const ICON_BY_SECTION: Record<DashboardSection, SidebarIconName> = {
-  dashboard: 'dashboard', usuarios: 'users', personas: 'graduation', seguimiento: 'document', estadisticas: 'chart', salidas: 'door', comunicaciones: 'message', calendario: 'calendar', reportes: 'chart', configuracion: 'settings', perfil: 'profile', auditoria: 'document',
+  dashboard: 'dashboard', usuarios: 'users', personas: 'graduation', seguimiento: 'document', estadisticas: 'chart', salidas: 'door', comunicaciones: 'message', calendario: 'calendar', reportes: 'chart', convivencia: 'document', configuracion: 'settings', perfil: 'profile', auditoria: 'document',
 };
 
 function SidebarIcon({ name }: { name: SidebarIconName }) {
@@ -266,47 +212,11 @@ function normalizeRole(rol: string): DashboardRole {
   return 'docente';
 }
 
-function metricasPorRol(role: DashboardRole, stats: DashboardStats) {
-  if (role === 'coordinador') {
-    return [
-      { label: 'Reportes pendientes', value: stats.metricas.reportesPendientes },
-      { label: 'Alertas activas', value: stats.metricas.alertasActivas },
-      { label: 'Salidas pendientes', value: stats.metricas.salidasPendientes },
-    ];
-  }
-  if (role === 'docente') {
-    return [
-      { label: 'Estudiantes activos', value: stats.metricas.estudiantes },
-      { label: 'Reportes registrados', value: stats.metricas.reportes },
-      { label: 'Pendientes', value: stats.metricas.reportesPendientes },
-    ];
-  }
-  return [
-    { label: 'Estudiantes activos', value: stats.metricas.estudiantes },
-    { label: 'Salidas pendientes', value: stats.metricas.salidasPendientes },
-    { label: 'Notificaciones', value: stats.metricas.notificacionesNoLeidas },
-  ];
-}
 
 function texto(valor: unknown) {
   if (valor == null) return '';
   if (typeof valor === 'boolean') return valor ? 'Sí' : 'No';
   return String(valor);
-}
-
-function usuarioToForm(usuario: UsuarioSistema): UsuarioForm {
-  return {
-    nombre: usuario.nombre,
-    correo: usuario.correo,
-    rol: usuario.rol,
-    contrasena: '',
-    activo: usuario.activo,
-  };
-}
-
-async function leerErrorApi(res: Response, fallback: string) {
-  const data = await res.json().catch(() => null);
-  return typeof data?.error === 'string' ? data.error : fallback;
 }
 
 export default function DashboardExperience({ usuario }: { usuario: DashboardUser }) {
@@ -318,7 +228,18 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
   const [closing, setClosing] = useState(false);
   const [dashboardSnapshot, setDashboardSnapshot] = useState<DashboardStats | null>(null);
   const [dashboardError, setDashboardError] = useState('');
+  const [globalSearch, setGlobalSearch] = useState(() => searchParams.get('buscar') || '');
   const role = useMemo(() => normalizeRole(usuario.rol), [usuario.rol]);
+
+  useEffect(() => {
+    if (puedeAbrirSeccion(section, role)) return;
+    const timer = window.setTimeout(() => {
+      setSection('dashboard');
+      setGlobalSearch('');
+      window.history.replaceState(null, '', window.location.pathname);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [role, section]);
 
   const cargarDashboard = useCallback(async () => {
     try {
@@ -364,6 +285,8 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
     setSection(nextSection);
     const params = new URLSearchParams(searchParams.toString());
     params.delete('dashboard');
+    params.delete('buscar');
+    setGlobalSearch('');
     if (nextSection === 'dashboard') {
       params.delete('seccion');
     } else {
@@ -371,6 +294,18 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
     }
     const query = params.toString();
     window.history.pushState(null, '', query ? `?${query}` : window.location.pathname);
+  }
+
+  function buscarGlobal(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const termino = globalSearch.trim();
+    if (!termino || role === 'portero') return;
+    setSection('reportes');
+    const params = new URLSearchParams(window.location.search);
+    params.delete('dashboard');
+    params.set('seccion', 'reportes');
+    params.set('buscar', termino);
+    window.history.pushState(null, '', `?${params.toString()}`);
   }
 
   useEffect(() => {
@@ -409,7 +344,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
           </button>
         </div>
         <nav className="app-nav">
-          {[...NAV_GROUPS, SECURITY_NAV_GROUP].filter((group) => !group.gestion || role === 'coordinador').map((group) => (
+          {NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => item.roles.includes(role)) })).filter((group) => group.items.length > 0).map((group) => (
             <div className="app-nav-group" key={group.label}>
               <span className="app-nav-group-label">{group.label}</span>
               {group.items.map((item) => (
@@ -434,11 +369,12 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
 
       <section className="app-main">
         <header className="app-topbar app-topbar--account-only">
-          <label className="topbar-global-search">
-            <span className="sr-only">Buscar estudiantes o reportes</span>
+          {role !== 'portero' && <form className="topbar-global-search" role="search" onSubmit={buscarGlobal}>
+            <label className="sr-only" htmlFor="global-search">Buscar estudiantes o reportes</label>
             <SidebarIcon name="search" />
-            <input type="search" placeholder="Buscar estudiantes, reportes..." />
-          </label>
+            <input id="global-search" type="search" value={globalSearch} onChange={(event) => setGlobalSearch(event.target.value)} placeholder="Buscar estudiantes, reportes..." />
+            <button type="submit" aria-label="Buscar">Buscar</button>
+          </form>}
           <div className="app-topbar-tools">
             <div className="profile-menu-wrap">
               <button className="profile-menu-trigger" type="button" onClick={() => setProfileOpen((actual) => !actual)} aria-expanded={profileOpen} aria-haspopup="menu"><span className="admin-avatar">{usuario.nombre.slice(0, 1).toUpperCase()}</span><span className="profile-menu-name">{usuario.nombre.split(' ')[0]}</span><span className="profile-menu-chevron"><SidebarIcon name="chevronDown" /></span></button>
@@ -452,16 +388,17 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
             <h1 id="dashboard-title">Dashboard</h1>
             <p>Resumen institucional <span aria-hidden="true">·</span> {obtenerResumenSemana()}</p>
             {dashboardError && <p className="dashboard-data-error" role="alert">{dashboardError}</p>}
-            <WeeklyInsightCard summary={dashboardSnapshot?.resumenSemanal ?? null} activeAlerts={dashboardSnapshot?.metricas.alertasActivas ?? 0} onViewAnalysis={() => seleccionarSeccion('estadisticas')} />
-            <DashboardMetricCards stats={dashboardSnapshot} />
-            <section className="dashboard-recent-grid" aria-label="Actividad y alertas recientes">
+            {role !== 'portero' && <WeeklyInsightCard summary={dashboardSnapshot?.resumenSemanal ?? null} activeAlerts={dashboardSnapshot?.metricas.alertasActivas ?? 0} onViewAnalysis={() => seleccionarSeccion('estadisticas')} />}
+            <DashboardMetricCards stats={dashboardSnapshot} role={role} />
+            {role !== 'portero' && <section className="dashboard-recent-grid" aria-label="Actividad y alertas recientes">
               <RecentActivityCard reports={dashboardSnapshot?.tablas.ultimosReportes ?? []} onViewAll={() => seleccionarSeccion('reportes')} />
               <IntelligentAlertsCard alerts={dashboardSnapshot?.tablas.alertasRecientes ?? []} onViewAll={() => seleccionarSeccion('seguimiento')} />
-            </section>
-            <DashboardAnalytics stats={dashboardSnapshot} onOpenCalendar={() => seleccionarSeccion('calendario')} />
+            </section>}
+            {role !== 'portero' && <DashboardAnalytics stats={dashboardSnapshot} onOpenCalendar={() => seleccionarSeccion('calendario')} />}
+            {role === 'portero' && <DashboardPorteria stats={dashboardSnapshot} onOpenSalidas={() => seleccionarSeccion('salidas')} onOpenCalendar={() => seleccionarSeccion('calendario')} />}
           </section>
         ) : (<>
-          <DashboardContent section={section} usuario={usuario} role={role} config={ROLE_CONFIG[role]} stats={dashboardSnapshot ?? EMPTY_STATS} loadingStats={dashboardSnapshot === null && !dashboardError} onCurrentUserUpdated={() => router.refresh()} onDashboardRefresh={() => void cargarDashboard()} />
+          <DashboardContent section={section} usuario={usuario} role={role} onCurrentUserUpdated={() => router.refresh()} />
           <section className="dashboard-empty-canvas" aria-label="Área de trabajo vacía" />
         </>)}
       </section>
@@ -479,7 +416,7 @@ function WeeklyInsightCard({
   onViewAnalysis: () => void;
 }) {
   const diferencia = summary ? summary.reportes - summary.reportesSemanaAnterior : 0;
-  const porcentaje = summary && summary.reportesSemanaAnterior > 0
+  const porcentaje = summary && summary.reportes > 0 && summary.reportesSemanaAnterior > 0
     ? Math.round(Math.abs(diferencia / summary.reportesSemanaAnterior) * 100)
     : null;
 
@@ -488,7 +425,7 @@ function WeeklyInsightCard({
       <span className="weekly-insight-icon"><SidebarIcon name="sparkles" /></span>
       <div className="weekly-insight-content">
         <div className="weekly-insight-heading">
-          <h2>Resumen inteligente generado por SIGDE</h2>
+          <h2>Resumen automático generado por SIGDE</h2>
           <span>DATOS REALES</span>
         </div>
         {summary ? (
@@ -510,14 +447,14 @@ function WeeklyInsightCard({
   );
 }
 
-function DashboardMetricCards({ stats }: { stats: DashboardStats | null }) {
+function DashboardMetricCards({ stats, role }: { stats: DashboardStats | null; role: DashboardRole }) {
   const weekly = stats?.resumenSemanal;
   const diferenciaReportes = weekly ? weekly.reportes - weekly.reportesSemanaAnterior : 0;
-  const porcentajeReportes = weekly && weekly.reportesSemanaAnterior > 0
+  const porcentajeReportes = weekly && weekly.reportes > 0 && weekly.reportesSemanaAnterior > 0
     ? Math.round((diferenciaReportes / weekly.reportesSemanaAnterior) * 100)
     : null;
   const format = (value: number) => new Intl.NumberFormat('es-CO').format(value);
-  const cards: Array<{
+  const allCards: Array<{
     label: string;
     value: number;
     detail: string;
@@ -533,6 +470,9 @@ function DashboardMetricCards({ stats }: { stats: DashboardStats | null }) {
     { label: 'Comunicaciones (semana)', value: stats?.metricas.notificaciones ?? 0, detail: `${stats?.metricas.notificacionesNoLeidas ?? 0} sin leer`, icon: 'message', tone: 'ocean' },
     { label: 'Eventos (semana)', value: stats?.metricas.eventosProximos ?? 0, detail: stats?.metricas.eventosProximos ? 'Programados' : 'Sin eventos', icon: 'calendar', tone: 'navy' },
   ];
+  const cards = role === 'portero'
+    ? allCards.filter((card) => ['Estudiantes', 'Salidas (semana)', 'Eventos (semana)'].includes(card.label))
+    : allCards;
 
   return (
     <section className="dashboard-metric-grid" aria-label="Indicadores institucionales">
@@ -577,20 +517,23 @@ function DashboardAnalytics({ stats, onOpenCalendar }: { stats: DashboardStats |
 
   return (
     <section className="dashboard-analytics-grid" aria-label="Análisis semanal">
-      <div className="dashboard-analytics-main"><WeeklyActivityChart data={actividad} loading={!stats} /><MonthlyTrendsChart data={stats?.graficas.tendenciasMensuales ?? []} loading={!stats} /></div>
+      <div className="dashboard-analytics-main"><WeeklyActivityChart data={actividad} loading={!stats} /></div>
       <div className="dashboard-analytics-side"><DataDistributionChart data={distribucion} loading={!stats} /><UpcomingEventsCard events={stats?.tablas.proximosEventos ?? []} onOpenCalendar={onOpenCalendar} /></div>
     </section>
   );
 }
 
-function MonthlyTrendsChart({ data, loading }: { data: DashboardStats['graficas']['tendenciasMensuales']; loading: boolean }) {
-  const max = Math.max(1, ...data.flatMap((item) => [item.reportes, item.salidas]));
-  return <article className={loading ? 'dashboard-chart-card monthly-trends-card monthly-trends-card--loading' : 'dashboard-chart-card monthly-trends-card'}><header className="dashboard-chart-heading"><div><h2>Tendencias mensuales</h2><p>Reportes y salidas de los últimos seis meses</p></div><div className="dashboard-chart-legend"><span><i style={{ background: '#596ee8' }} />Reportes</span><span><i style={{ background: '#e9a22b' }} />Salidas</span></div></header>{data.length ? <div className="monthly-bars">{data.map((item) => <div className="monthly-bar-group" key={item.mes}><div className="monthly-bars"><i style={{ height: `${Math.max(8, (item.reportes / max) * 100)}%` }} /><i style={{ height: `${Math.max(8, (item.salidas / max) * 100)}%` }} /></div><span>{item.mes}</span></div>)}</div> : <p className="recent-activity-empty">Aún no hay registros suficientes para mostrar la tendencia mensual.</p>}</article>;
+function UpcomingEventsCard({ events, onOpenCalendar }: { events: DashboardStats['tablas']['proximosEventos']; onOpenCalendar: () => void }) {
+  return <article className="dashboard-chart-card upcoming-events-card"><header className="dashboard-chart-heading"><div><h2>Agenda</h2><p>Próximos eventos institucionales</p></div><button type="button" className="upcoming-events-calendar" aria-label="Abrir calendario" onClick={onOpenCalendar}><SidebarIcon name="calendar" /></button></header><div className="upcoming-events-list">{events.length ? events.map((event, index) => <div className="upcoming-event" key={event.id}><i className={`upcoming-event-marker upcoming-event-marker--${index % 4}`} /><div><strong>{event.titulo}</strong><time dateTime={event.iniciaEn}>{new Date(event.iniciaEn).toLocaleString('es-CO', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</time></div></div>) : <p className="recent-activity-empty">No hay eventos próximos programados.</p>}</div></article>;
 }
 
-function UpcomingEventsCard({ events, onOpenCalendar }: { events: DashboardStats['tablas']['proximosEventos']; onOpenCalendar: () => void }) {
-  const eventosVisibles = events.length ? events : EVENTOS_DE_PRUEBA;
-  return <article className="dashboard-chart-card upcoming-events-card"><header className="dashboard-chart-heading"><div><h2>Próximos eventos</h2><p>{events.length ? 'Agenda institucional' : 'Vista previa de la agenda'}</p></div><button type="button" className="upcoming-events-calendar" aria-label="Abrir calendario" onClick={onOpenCalendar}><SidebarIcon name="calendar" /></button></header><div className="upcoming-events-list">{eventosVisibles.map((event, index) => <div className="upcoming-event" key={event.id}><i className={`upcoming-event-marker upcoming-event-marker--${index % 4}`} /><div><strong>{event.titulo}</strong><time dateTime={event.iniciaEn}>{new Date(event.iniciaEn).toLocaleString('es-CO', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</time></div></div>)}</div></article>;
+function DashboardPorteria({ stats, onOpenSalidas, onOpenCalendar }: { stats: DashboardStats | null; onOpenSalidas: () => void; onOpenCalendar: () => void }) {
+  const salidas = stats?.tablas.ultimasSalidas ?? [];
+  return <section className="porteria-dashboard-grid" aria-label="Operación de portería">
+    <article className="dashboard-chart-card porteria-quick-card"><div><span>Control operativo</span><h2>Registro de salidas</h2><p>Consulta las novedades recientes o registra una nueva salida con los datos de la persona autorizada.</p></div><button type="button" className="module-primary-action" onClick={onOpenSalidas}>Abrir control de salidas</button></article>
+    <article className="dashboard-chart-card porteria-recent-exits"><header className="dashboard-panel-heading"><div><h2>Salidas recientes</h2><p>Últimos movimientos registrados</p></div><button type="button" className="dashboard-view-all" onClick={onOpenSalidas}>Ver todo <span aria-hidden="true">›</span></button></header><div>{salidas.length ? salidas.map((salida) => <button type="button" key={texto(salida.id)} onClick={onOpenSalidas}><span>{texto(salida.estudiante).slice(0, 1).toUpperCase()}</span><div><strong>{texto(salida.estudiante)}</strong><small>Grado {texto(salida.grado)} · {texto(salida.acudiente)}</small></div><time dateTime={texto(salida.creadoEn)}>{formatearActividadReciente(texto(salida.creadoEn))}</time></button>) : <p className="recent-activity-empty">Aún no hay salidas registradas.</p>}</div></article>
+    <UpcomingEventsCard events={stats?.tablas.proximosEventos ?? []} onOpenCalendar={onOpenCalendar} />
+  </section>;
 }
 
 function RecentActivityCard({ reports, onViewAll }: { reports: Array<Record<string, unknown>>; onViewAll: () => void }) {
@@ -617,7 +560,7 @@ function RecentActivityCard({ reports, onViewAll }: { reports: Array<Record<stri
 function IntelligentAlertsCard({ alerts, onViewAll }: { alerts: DashboardStats['tablas']['alertasRecientes']; onViewAll: () => void }) {
   return <article className="dashboard-chart-card intelligent-alerts-card">
     <header className="dashboard-panel-heading intelligent-alerts-heading">
-      <div><h2>Alertas IA</h2><p>Patrones detectados por reglas</p></div>
+      <div><h2>Alertas por reglas</h2><p>Reincidencias detectadas por umbrales</p></div>
       <div className="intelligent-alerts-actions"><span><i /> En vivo</span><button className="dashboard-view-all" type="button" onClick={onViewAll}>Ver todo <b aria-hidden="true">›</b></button></div>
     </header>
     <div className="intelligent-alerts-list">
@@ -626,7 +569,7 @@ function IntelligentAlertsCard({ alerts, onViewAll }: { alerts: DashboardStats['
         const title = priority === 'high' ? 'Reincidencia prioritaria' : priority === 'tracking' ? 'Patrón en seguimiento' : 'Reincidencia detectada';
         return <button type="button" className="intelligent-alert-row" onClick={onViewAll} key={alert.id}>
           <span className={`intelligent-alert-icon intelligent-alert-icon--${priority}`}><SidebarIcon name="sparkles" /></span>
-          <span className="intelligent-alert-copy"><strong>{title}</strong><small>{alert.estudiante} · {alert.cantidadReportes} reportes. {alert.notas || `Grado ${alert.grado}${alert.grupo}.`}</small></span>
+          <span className="intelligent-alert-copy"><strong>{title}</strong><small>{alert.estudiante} · {alert.cantidadReportes} reportes. {alert.notas || `Grado ${alert.grado}-${alert.grupo}.`}</small></span>
           <span className="intelligent-alert-meta"><time dateTime={alert.creadoEn}>{formatearActividadReciente(alert.creadoEn)}</time><i /></span>
         </button>;
       }) : <p className="recent-activity-empty">No hay alertas activas en este momento.</p>}
@@ -799,50 +742,23 @@ function DashboardContent({
   section,
   usuario,
   onCurrentUserUpdated,
-  onDashboardRefresh,
   role,
-  config,
-  stats,
-  loadingStats,
 }: {
   section: DashboardSection;
   usuario: DashboardUser;
   onCurrentUserUpdated: () => void;
-  onDashboardRefresh: () => void;
   role: DashboardRole;
-  config: typeof ROLE_CONFIG[DashboardRole];
-  stats: DashboardStats;
-  loadingStats: boolean;
 }) {
-  const metrics = metricasPorRol(role, stats);
-
   if (section === 'personas') {
     return <StudentsWorkspace canManage={role === 'coordinador'} />;
   }
 
   if (section === 'salidas') {
-    return <ControlSalidasWorkspace />;
+    return <ControlSalidasWorkspace role={role} />;
   }
 
-  if (section === 'calendario') {
-    return <CalendarWorkspace onEventCreated={onDashboardRefresh} />;
-  }
-
-  if (section === 'reportes') {
-    return <ReportsWorkspace />;
-  }
-
-  if (['comunicaciones', 'seguimiento', 'estadisticas'].includes(section)) {
-    return <ModuleWireframe section={section as Extract<DashboardSection, 'comunicaciones' | 'seguimiento' | 'estadisticas' | 'reportes'>} onNavigate={() => undefined} />;
-  }
-
-  if (false && (section === 'comunicaciones' || section === 'calendario')) {
-    const titles = {
-      comunicaciones: ['Comunicaciones', 'Envía y consulta comunicados vinculados a estudiantes y acudientes.'],
-      calendario: ['Calendario', 'Consulta reuniones, citaciones y actividades institucionales.'],
-    } as const;
-    const [title, subtitle] = titles[section as 'comunicaciones' | 'calendario'];
-    return <section className="workspace-panel"><SectionTitle title={title} subtitle={subtitle} /><div className="empty-state"><span aria-hidden="true">◌</span><strong>Módulo listo para conectar</strong><p>La estructura visual está preparada para integrar los registros reales del sistema.</p></div></section>;
+  if (section === 'comunicaciones') {
+    return <CommunicationsWorkspace />;
   }
 
   if (section === 'perfil') {
@@ -859,453 +775,60 @@ function DashboardContent({
   }
 
   if (section === 'usuarios') {
-    return <UsuariosWorkspace role={role} currentUserId={usuario.id} onCurrentUserUpdated={onCurrentUserUpdated} />;
+    return <UsersWorkspace currentUserId={usuario.id} onCurrentUserUpdated={onCurrentUserUpdated} />;
   }
 
   if (section === 'configuracion') {
-    return (
-      <section className="workspace-panel">
-        <SectionTitle title="Configuración del sistema" subtitle="Parámetros institucionales disponibles para el coordinador." />
-        <div className="action-grid">
-          {['Mi perfil', 'Cuenta y seguridad', 'Umbrales de alertas', 'Tipos de faltas', 'Periodos académicos'].map((action) => <button key={action} type="button">{action}</button>)}
-        </div>
-      </section>
-    );
+    return <SettingsWorkspace />;
   }
 
   if (section === 'auditoria') {
-    return (
-      <section className="workspace-panel">
-        <SectionTitle title="Auditoría y seguridad" subtitle="Consulta quién accedió, qué modificó y cuándo ocurrió." />
-        <DataList title="Actividad reciente" rows={stats.tablas.ultimosReportes} loading={loadingStats} />
-      </section>
-    );
+    return <AuditWorkspace />;
   }
 
-  if (section === 'seguimiento') {
-    return (
-      <section className="workspace-panel">
-        <SectionTitle title="Seguimiento" subtitle="Tareas operativas principales para el rol." />
-        <div className="action-grid">
-          {config.actions.map((action) => <button key={action} type="button">{action}</button>)}
-        </div>
-        <DataList title="Últimos reportes" rows={stats.tablas.ultimosReportes} loading={loadingStats} />
-      </section>
-    );
-  }
-
-  return (
-    <section className="workspace-panel">
-      <SectionTitle title="Inicio" subtitle="Resumen de trabajo y accesos rápidos." />
-      <div className="metric-grid">
-        {metrics.map((metric) => <Metric key={metric.label} {...metric} loading={loadingStats} />)}
-      </div>
-      <DataList title="Últimas salidas" rows={stats.tablas.ultimasSalidas} loading={loadingStats} />
-    </section>
-  );
+  return null;
 }
 
-function CalendarWorkspace({ onEventCreated }: { onEventCreated: () => void }) {
-  const [eventos, setEventos] = useState<EventoSistema[]>([]);
-  const [titulo, setTitulo] = useState('');
-  const [iniciaEn, setIniciaEn] = useState('');
-  const [ubicacion, setUbicacion] = useState('');
-  const [cargando, setCargando] = useState(true);
-  const [guardando, setGuardando] = useState(false);
-  const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
+type SalidaRegistrada = { id: string; estudiante: string; grado: string; grupo: string; jornada: string; acudiente: string; recogeNombre: string; recogeApellido: string; recogeCedula: string; recogeParentesco: string; estado: string; creadoEn: string; registradoPorNombre: string };
 
-  const cargarEventos = useCallback(async () => {
-    setCargando(true);
-    try {
-      const response = await fetch('/api/eventos', { cache: 'no-store' });
-      if (!response.ok) throw new Error(await leerErrorApi(response, 'No se pudo cargar el calendario.'));
-      setEventos(await response.json() as EventoSistema[]);
-    } catch (error) {
-      setMensaje({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo cargar el calendario.' });
-    } finally {
-      setCargando(false);
-    }
+function ControlSalidasWorkspace({ role }: { role: DashboardRole }) {
+  const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
+  const [salidas, setSalidas] = useState<SalidaRegistrada[]>([]);
+  const [estudianteId, setEstudianteId] = useState('');
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
+  const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
+  const [recoge, setRecoge] = useState({ nombre: '', apellido: '', cedula: '', parentesco: '', correo: '' });
+  const seleccionado = estudiantes.find((item) => item.id === Number(estudianteId));
+  const salidasVisibles = salidas.filter((salida) => [salida.estudiante, salida.grado, salida.grupo, salida.acudiente, salida.recogeNombre, salida.recogeApellido, salida.recogeCedula].join(' ').toLocaleLowerCase('es').includes(busqueda.trim().toLocaleLowerCase('es')));
+
+  const cargar = useCallback(async () => {
+    const [estudiantesRespuesta, salidasRespuesta] = await Promise.all([fetch('/api/estudiantes'), fetch('/api/salidas')]);
+    if (estudiantesRespuesta.ok) setEstudiantes(await estudiantesRespuesta.json() as Estudiante[]);
+    if (salidasRespuesta.ok) setSalidas(await salidasRespuesta.json() as SalidaRegistrada[]);
   }, []);
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => void cargarEventos(), 0);
-    return () => window.clearTimeout(timer);
-  }, [cargarEventos]);
-
-  async function crearEvento(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setGuardando(true);
-    setMensaje(null);
-    try {
-      const response = await fetch('/api/eventos', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ titulo, iniciaEn, ubicacion }),
-      });
-      if (!response.ok) throw new Error(await leerErrorApi(response, 'No se pudo crear el evento.'));
-      setTitulo(''); setIniciaEn(''); setUbicacion('');
-      setMensaje({ tipo: 'success', texto: 'Evento creado. Ya aparece en el resumen del dashboard.' });
-      await cargarEventos();
-      onEventCreated();
-    } catch (error) {
-      setMensaje({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo crear el evento.' });
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  return <section className="workspace-panel calendar-workspace">
-    <SectionTitle title="Calendario institucional" subtitle="Crea actividades y consulta los próximos eventos institucionales." />
-    <form className="calendar-event-form" onSubmit={crearEvento}>
-      <label><span>Título</span><input value={titulo} onChange={(event) => setTitulo(event.target.value)} placeholder="Ej. Reunión de padres" required /></label>
-      <label><span>Fecha y hora</span><input type="datetime-local" value={iniciaEn} onChange={(event) => setIniciaEn(event.target.value)} required /></label>
-      <label><span>Lugar (opcional)</span><input value={ubicacion} onChange={(event) => setUbicacion(event.target.value)} placeholder="Ej. Sala de docentes" /></label>
-      <button type="submit" className="module-primary-action" disabled={guardando}>{guardando ? 'Guardando...' : 'Crear evento'}</button>
-    </form>
-    {mensaje && <p className={mensaje.tipo === 'success' ? 'calendar-feedback calendar-feedback--success' : 'calendar-feedback calendar-feedback--error'} role="status">{mensaje.texto}</p>}
-    <div className="calendar-events-list">
-      <h2>Próximos eventos</h2>
-      {cargando ? <p className="recent-activity-empty">Cargando eventos...</p> : eventos.length ? eventos.map((evento) => <article key={evento.id}><SidebarIcon name="calendar" /><div><strong>{evento.titulo}</strong><time dateTime={evento.iniciaEn}>{new Date(evento.iniciaEn).toLocaleString('es-CO', { dateStyle: 'full', timeStyle: 'short' })}</time>{evento.ubicacion && <small>{evento.ubicacion}</small>}</div></article>) : <p className="recent-activity-empty">Aún no hay eventos creados. El dashboard muestra datos de prueba mientras agregas el primero.</p>}
-    </div>
-  </section>;
-}
-
-function ModuleWireframe({ section, onNavigate }: { section: Extract<DashboardSection, 'comunicaciones' | 'seguimiento' | 'estadisticas' | 'reportes'>; onNavigate: () => void }) {
-  const content = {
-    reportes: {
-      title: 'Reportes disciplinarios', subtitle: 'Registra, revisa y da trazabilidad a cada situación de convivencia.', action: 'Crear reporte',
-      columns: ['Estudiante', 'Tipo de reporte', 'Estado', 'Fecha'], rows: [['Juan David Martínez', 'Tipo II · Convivencia', 'Pendiente', 'Hoy, 9:40 a. m.'], ['Valentina Gómez', 'Tipo I · Aula', 'En seguimiento', 'Ayer, 2:15 p. m.']],
-    },
-    seguimiento: {
-      title: 'Seguimiento de casos', subtitle: 'Organiza compromisos, observaciones y próximos pasos con cada estudiante.', action: 'Programar seguimiento',
-      columns: ['Estudiante', 'Compromiso actual', 'Responsable', 'Próxima fecha'], rows: [['Mateo Rodríguez', 'Citación con acudiente', 'Coordinación', '12 ago.'], ['Sara López', 'Observación docente', 'Docente titular', '14 ago.']],
-    },
-    estadisticas: {
-      title: 'Estadísticas institucionales', subtitle: 'Visualiza tendencias para acompañar decisiones de convivencia.', action: 'Exportar informe',
-      columns: ['Indicador', 'Periodo', 'Resultado', 'Variación'], rows: [['Reportes registrados', 'Semana actual', '24', '+ 3'], ['Salidas autorizadas', 'Semana actual', '18', '− 2']],
-    },
-    comunicaciones: {
-      title: 'Comunicaciones', subtitle: 'Prepara mensajes claros para estudiantes, acudientes y equipo institucional.', action: 'Nuevo comunicado',
-      columns: ['Asunto', 'Destinatarios', 'Canal', 'Estado'], rows: [['Citación a acudiente', 'Familia de Juan David', 'Correo', 'Borrador'], ['Recordatorio de reunión', 'Docentes de grado 11', 'Plataforma', 'Programado']],
-    },
-    calendario: {
-      title: 'Calendario institucional', subtitle: 'Consulta citaciones, seguimientos y actividades próximas en un solo lugar.', action: 'Agendar actividad',
-      columns: ['Actividad', 'Fecha', 'Participantes', 'Estado'], rows: [['Reunión de seguimiento', '12 ago. · 10:00 a. m.', 'Acudiente y coordinación', 'Confirmada'], ['Cierre de observaciones', '14 ago. · 4:00 p. m.', 'Docentes', 'Pendiente']],
-    },
-  }[section];
-
-  return (
-    <section className="workspace-panel module-wireframe">
-      <div className="module-wireframe-heading"><SectionTitle title={content.title} subtitle={content.subtitle} /><button type="button" className="module-primary-action" onClick={onNavigate}>{content.action}</button></div>
-      <div className="module-wireframe-summary" aria-label="Resumen del módulo">
-        <article><span>Por atender</span><strong>{section === 'comunicaciones' ? '3' : '8'}</strong><small>Registros que requieren acción.</small></article>
-        <article><span>Esta semana</span><strong>{section === 'estadisticas' ? '24' : '12'}</strong><small>Actividad registrada en SIGDE.</small></article>
-        <article><span>Próximo paso</span><strong>2 días</strong><small>Revisión sugerida para el equipo.</small></article>
-      </div>
-      <div className="module-wireframe-toolbar"><label><span className="sr-only">Buscar en {content.title}</span><input type="search" placeholder={`Buscar en ${content.title.toLowerCase()}...`} /></label><button type="button">Filtros</button></div>
-      <div className="module-wireframe-table-wrap"><table className="module-wireframe-table"><thead><tr>{content.columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{content.rows.map((row) => <tr key={row[0]}>{row.map((cell, index) => <td key={`${cell}-${index}`}>{index === 2 && section !== 'estadisticas' ? <span className="wireframe-status">{cell}</span> : cell}</td>)}</tr>)}</tbody></table></div>
-      <p className="wireframe-note">Wireframe listo: la estructura visual queda preparada para conectar los datos y acciones reales del módulo.</p>
-    </section>
-  );
-}
-
-function ControlSalidasWorkspace() {
-  const [estudiante, setEstudiante] = useState('');
-  const [grado, setGrado] = useState('');
-  const [acudiente, setAcudiente] = useState('');
-  const [motivo, setMotivo] = useState('');
-  const [urgencia, setUrgencia] = useState(false);
-  const [guardando, setGuardando] = useState(false);
-  const [mensaje, setMensaje] = useState<string | null>(null);
+  useEffect(() => { void Promise.resolve().then(cargar); }, [cargar]);
 
   async function registrarSalida(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setGuardando(true);
-    setMensaje(null);
+    event.preventDefault(); setGuardando(true); setMensaje(null);
     try {
-      const response = await fetch('/api/salidas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estudiante, grado, acudiente, motivo, urgencia }) });
+      const response = await fetch('/api/salidas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estudianteId, recogeNombre: recoge.nombre, recogeApellido: recoge.apellido, recogeCedula: recoge.cedula, recogeParentesco: recoge.parentesco, recogeCorreo: recoge.correo }) });
       const data = await response.json().catch(() => null);
       if (!response.ok) throw new Error(typeof data?.error === 'string' ? data.error : 'No se pudo registrar la salida.');
-      setMensaje('Salida registrada y notificación preparada para el acudiente vinculado.');
-      setEstudiante(''); setGrado(''); setAcudiente(''); setMotivo(''); setUrgencia(false);
-    } catch (error) {
-      setMensaje(error instanceof Error ? error.message : 'No se pudo registrar la salida.');
-    } finally {
-      setGuardando(false);
-    }
+      setMensaje({ tipo: 'success', texto: data?.correoEnviado ? 'Salida registrada y correo de aviso enviado.' : 'Salida registrada. El correo no se envió porque no hay configuración disponible.' });
+      setRecoge({ nombre: '', apellido: '', cedula: '', parentesco: '', correo: '' }); setEstudianteId(''); setMostrarFormulario(false); await cargar();
+    } catch (error) { setMensaje({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo registrar la salida.' }); }
+    finally { setGuardando(false); }
   }
 
-  return <section className="workspace-panel exit-control-workspace"><SectionTitle title="Control de salidas" subtitle="Registra salidas autorizadas, urgentes o sin autorización previa y conserva el vínculo con el acudiente." /><div className="exit-control-layout"><form className="exit-form" onSubmit={registrarSalida}><div className="exit-form-heading"><span className="stat-icon stat-icon--exit">↗</span><div><strong>Registrar nueva salida</strong><span>La actividad quedará asociada al estudiante y a su acudiente.</span></div></div><div className="exit-form-grid"><UserInput label="Estudiante o código" value={estudiante} onChange={setEstudiante} required /><UserInput label="Grado y grupo" value={grado} onChange={setGrado} required /><UserInput label="Acudiente que retira" value={acudiente} onChange={setAcudiente} required /><UserInput label="Motivo de salida" value={motivo} onChange={setMotivo} required /></div><label className="exit-urgency"><input type="checkbox" checked={urgencia} onChange={(event) => setUrgencia(event.target.checked)} /><span><strong>Salida de urgencia</strong><small>Se notificará de inmediato al acudiente vinculado.</small></span></label>{mensaje && <p className="feedback success">{mensaje}</p>}<button className="primary-button" type="submit" disabled={guardando}>{guardando ? 'Registrando...' : 'Registrar salida'}</button></form><div className="exit-info-card"><span className="eyebrow">Flujo seguro</span><h3>Vínculo estudiante–acudiente</h3><p>Cada salida debe identificar al estudiante, la persona que lo retira, el motivo y el tipo de autorización.</p><div className="exit-flow-step"><b>1</b><span>Buscar estudiante</span></div><div className="exit-flow-step"><b>2</b><span>Verificar acudiente autorizado</span></div><div className="exit-flow-step"><b>3</b><span>Guardar y notificar</span></div></div></div></section>;
-}
-
-function ChartCard({ title, meta, children }: { title: string; meta: string; children: React.ReactNode }) { return <article className="dashboard-card chart-card"><div className="card-heading"><div><h3>{title}</h3><span>{meta}</span></div><button type="button" aria-label={`Más opciones de ${title}`}>•••</button></div>{children}</article>; }
-function RecentReports() { return <article className="dashboard-card"><div className="card-heading"><div><h3>Reportes recientes</h3><span>Última actividad registrada</span></div><button type="button">Ver todos</button></div><div className="recent-report-list">{[['Incidente de convivencia', 'Juan David Martínez', 'Hace 12 min', 'Alta'], ['Seguimiento académico', 'Valentina Gómez', 'Hace 48 min', 'Media'], ['Salida autorizada', 'Mateo Rodríguez', 'Hace 1 h', 'Baja']].map(([title, student, time, priority]) => <div className="recent-report" key={`${title}-${student}`}><span className="report-avatar">{student[0]}</span><div><strong>{title}</strong><span>{student} · {time}</span></div><em className={`priority-badge priority-badge--${priority.toLowerCase()}`}>{priority}</em></div>)}</div></article>; }
-function AlertsPanel() { return <article className="dashboard-card"><div className="card-heading"><div><h3>Alertas y actividad</h3><span>Requieren tu atención</span></div><button type="button" aria-label="Ver todas las alertas">•••</button></div><div className="alert-list"><div><span className="alert-mark alert-mark--red">!</span><p><strong>14 alertas pendientes</strong><span>Estudiantes con seguimiento requerido</span></p></div><div><span className="alert-mark alert-mark--blue">✓</span><p><strong>Sincronización completada</strong><span>Todos los datos están actualizados</span></p></div><div><span className="alert-mark alert-mark--gold">i</span><p><strong>Revisión mensual</strong><span>El período cierra en 5 días</span></p></div></div></article>; }
-
-function UsuariosWorkspace({ role, currentUserId, onCurrentUserUpdated }: { role: DashboardRole; currentUserId: number; onCurrentUserUpdated: () => void }) {
-  const puedeGestionar = role === 'coordinador';
-  const [usuarios, setUsuarios] = useState<UsuarioSistema[]>([]);
-  const [seleccionadoId, setSeleccionadoId] = useState<number | null>(null);
-  const [filtroRol, setFiltroRol] = useState('Todos');
-  const [busqueda, setBusqueda] = useState('');
-  const [formCrear, setFormCrear] = useState<UsuarioForm>(EMPTY_USER_FORM);
-  const [formEditar, setFormEditar] = useState<UsuarioForm>(EMPTY_USER_FORM);
-  const [cargando, setCargando] = useState(true);
-  const [guardando, setGuardando] = useState(false);
-  const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
-
-  const usuarioSeleccionado = usuarios.find((usuario) => usuario.id === seleccionadoId) ?? usuarios[0] ?? null;
-  const usuariosFiltrados = usuarios.filter((usuario) => {
-    const coincideRol = filtroRol === 'Todos' || usuario.rol === filtroRol;
-    const textoBusqueda = `${usuario.nombre} ${usuario.correo} ${usuario.rol}`.toLowerCase();
-    return coincideRol && textoBusqueda.includes(busqueda.trim().toLowerCase());
-  });
-
-  const resumenRoles = USER_ROLES.map((rol) => ({
-    rol,
-    total: usuarios.filter((usuario) => usuario.rol === rol).length,
-  }));
-
-  useEffect(() => {
-    let activo = true;
-
-    async function cargarUsuarios() {
-      setCargando(true);
-      setMensaje(null);
-
-      try {
-        const res = await fetch('/api/usuarios', { cache: 'no-store' });
-        if (!res.ok) throw new Error(await leerErrorApi(res, 'No se pudieron cargar los usuarios'));
-        const data = await res.json();
-        if (!activo) return;
-
-        const lista = Array.isArray(data) ? data as UsuarioSistema[] : [];
-        setUsuarios(lista);
-        setSeleccionadoId((actual) => actual ?? lista[0]?.id ?? null);
-        if (lista[0]) setFormEditar((actual) => actual.correo ? actual : usuarioToForm(lista[0]));
-      } catch (error) {
-        if (activo) {
-          setUsuarios([]);
-          setMensaje({ tipo: 'error', texto: error instanceof Error ? error.message : 'Error cargando usuarios' });
-        }
-      } finally {
-        if (activo) setCargando(false);
-      }
-    }
-
-    cargarUsuarios();
-
-    return () => {
-      activo = false;
-    };
-  }, []);
-
-  function seleccionarUsuario(usuario: UsuarioSistema) {
-    setSeleccionadoId(usuario.id);
-    setFormEditar(usuarioToForm(usuario));
-    setMensaje(null);
-  }
-
-  async function recargarUsuarios(idSeleccionado?: number) {
-    const res = await fetch('/api/usuarios', { cache: 'no-store' });
-    if (!res.ok) throw new Error(await leerErrorApi(res, 'No se pudieron actualizar los usuarios'));
-    const data = await res.json();
-    const lista = Array.isArray(data) ? data as UsuarioSistema[] : [];
-    const siguiente = idSeleccionado ?? seleccionadoId ?? lista[0]?.id ?? null;
-    const usuario = lista.find((item) => item.id === siguiente) ?? lista[0] ?? null;
-
-    setUsuarios(lista);
-    setSeleccionadoId(usuario?.id ?? null);
-    if (usuario) setFormEditar(usuarioToForm(usuario));
-  }
-
-  async function crearUsuario(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!puedeGestionar) return;
-
-    setGuardando(true);
-    setMensaje(null);
-
-    try {
-      const res = await fetch('/api/usuarios', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formCrear),
-      });
-
-      if (!res.ok) throw new Error(await leerErrorApi(res, 'No se pudo crear el usuario'));
-      const creado = await res.json() as UsuarioSistema;
-      setFormCrear(EMPTY_USER_FORM);
-      await recargarUsuarios(creado.id);
-      setMensaje({ tipo: 'success', texto: 'Usuario creado correctamente.' });
-    } catch (error) {
-      setMensaje({ tipo: 'error', texto: error instanceof Error ? error.message : 'Error creando usuario' });
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  async function actualizarUsuario(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!puedeGestionar || !usuarioSeleccionado) return;
-
-    setGuardando(true);
-    setMensaje(null);
-
-    try {
-      const res = await fetch(`/api/usuarios/${usuarioSeleccionado.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formEditar),
-      });
-
-      if (!res.ok) throw new Error(await leerErrorApi(res, 'No se pudo actualizar el usuario'));
-      const actualizado = await res.json() as UsuarioSistema;
-      await recargarUsuarios(actualizado.id);
-      if (actualizado.id === currentUserId) onCurrentUserUpdated();
-      setMensaje({ tipo: 'success', texto: 'Usuario actualizado correctamente.' });
-    } catch (error) {
-      setMensaje({ tipo: 'error', texto: error instanceof Error ? error.message : 'Error actualizando usuario' });
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  async function cambiarEstado(usuario: UsuarioSistema) {
-    if (!puedeGestionar) return;
-
-    setGuardando(true);
-    setMensaje(null);
-
-    try {
-      const res = await fetch(`/api/usuarios/${usuario.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ activo: !usuario.activo }),
-      });
-
-      if (!res.ok) throw new Error(await leerErrorApi(res, 'No se pudo cambiar el estado del usuario'));
-      const actualizado = await res.json() as UsuarioSistema;
-      await recargarUsuarios(actualizado.id);
-      setMensaje({ tipo: 'success', texto: actualizado.activo ? 'Usuario activado.' : 'Usuario desactivado.' });
-    } catch (error) {
-      setMensaje({ tipo: 'error', texto: error instanceof Error ? error.message : 'Error cambiando estado' });
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  return (
-    <section className="workspace-panel">
-      <SectionTitle title="Usuarios" subtitle="Administracion de cuentas, roles y estado de acceso." />
-
-      {mensaje && <p className={`feedback ${mensaje.tipo}`}>{mensaje.texto}</p>}
-
-      <div className="user-summary-grid">
-        {resumenRoles.map((item) => (
-          <button
-            key={item.rol}
-            type="button"
-            className={filtroRol === item.rol ? 'user-role-card user-role-card--active' : 'user-role-card'}
-            onClick={() => setFiltroRol(item.rol)}
-          >
-            <strong>{item.total}</strong>
-            <span>{item.rol}</span>
-          </button>
-        ))}
-        <button
-          type="button"
-          className={filtroRol === 'Todos' ? 'user-role-card user-role-card--active' : 'user-role-card'}
-          onClick={() => setFiltroRol('Todos')}
-        >
-          <strong>{usuarios.length}</strong>
-          <span>Todos</span>
-        </button>
-      </div>
-
-      <div className="users-workspace-grid">
-        <div className="user-list-panel">
-          <div className="user-toolbar">
-            <label>
-              <span>Buscar usuario</span>
-              <input
-                value={busqueda}
-                placeholder="Nombre, correo o rol"
-                onChange={(event) => setBusqueda(event.target.value)}
-              />
-            </label>
-            <small>{cargando ? 'Cargando...' : `${usuariosFiltrados.length} registros`}</small>
-          </div>
-
-          <div className="user-list" aria-live="polite">
-            {!cargando && usuariosFiltrados.length === 0 && (
-              <span className="empty-inline">No hay usuarios para mostrar.</span>
-            )}
-            {usuariosFiltrados.map((item) => (
-              <article
-                key={item.id}
-                className={usuarioSeleccionado?.id === item.id ? 'user-list-row user-list-row--active' : 'user-list-row'}
-              >
-                <button type="button" onClick={() => seleccionarUsuario(item)}>
-                  <strong>{item.nombre}</strong>
-                  <span>{item.correo}</span>
-                </button>
-                <em>{item.rol}</em>
-                <b className={item.activo ? 'status-badge status-badge--active' : 'status-badge status-badge--inactive'}>
-                  {item.activo ? 'Activo' : 'Inactivo'}
-                </b>
-                <button type="button" disabled={!puedeGestionar || guardando} onClick={() => cambiarEstado(item)}>
-                  {item.activo ? 'Desactivar' : 'Activar'}
-                </button>
-              </article>
-            ))}
-          </div>
-        </div>
-
-        <form className="user-form-panel" onSubmit={actualizarUsuario}>
-          <SectionTitle title="Gestionar usuario" subtitle="Edita datos, rol y restablece contrasena." />
-          {usuarioSeleccionado ? (
-            <>
-              <div className="user-form-grid">
-                <UserInput label="Nombre" value={formEditar.nombre} onChange={(value) => setFormEditar({ ...formEditar, nombre: value })} required />
-                <UserInput label="Correo" type="email" value={formEditar.correo} onChange={(value) => setFormEditar({ ...formEditar, correo: value })} required />
-                <RoleSelect value={formEditar.rol} onChange={(value) => setFormEditar({ ...formEditar, rol: value })} />
-                <UserInput label="Nueva contrasena" type="password" value={formEditar.contrasena} onChange={(value) => setFormEditar({ ...formEditar, contrasena: value })} />
-              </div>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={formEditar.activo}
-                  onChange={(event) => setFormEditar({ ...formEditar, activo: event.target.checked })}
-                />
-                <span>Usuario activo</span>
-              </label>
-              <button className="primary-button" type="submit" disabled={!puedeGestionar || guardando}>
-                {guardando ? 'Guardando...' : 'Guardar cambios'}
-              </button>
-            </>
-          ) : (
-            <p className="empty-inline">Selecciona un usuario para gestionarlo.</p>
-          )}
-          {!puedeGestionar && <p className="readonly-note">Tu rol permite consultar usuarios, pero solo administracion puede gestionarlos.</p>}
-        </form>
-      </div>
-
-      {puedeGestionar && (
-        <form className="user-form-panel user-form-panel--create" onSubmit={crearUsuario}>
-          <SectionTitle title="Crear usuario" subtitle="Alta de cuentas para coordinadores, docentes y portería." />
-          <div className="user-form-grid user-form-grid--create">
-            <UserInput label="Nombre" value={formCrear.nombre} onChange={(value) => setFormCrear({ ...formCrear, nombre: value })} required />
-            <UserInput label="Correo" type="email" value={formCrear.correo} onChange={(value) => setFormCrear({ ...formCrear, correo: value })} required />
-            <RoleSelect value={formCrear.rol} onChange={(value) => setFormCrear({ ...formCrear, rol: value })} />
-            <UserInput label="Contrasena inicial" type="password" value={formCrear.contrasena} onChange={(value) => setFormCrear({ ...formCrear, contrasena: value })} required />
-          </div>
-          <button className="secondary-button" type="submit" disabled={guardando}>
-            {guardando ? 'Creando...' : 'Crear usuario'}
-          </button>
-        </form>
-      )}
-    </section>
-  );
+  return <section className="workspace-panel exit-control-workspace">
+    <div className="exit-page-heading"><div><h2>Salidas</h2><p>{role === 'portero' ? 'Consulta y registra las salidas del turno de hoy.' : 'Consulta el historial institucional y registra nuevas salidas.'}</p></div><button className="exit-register-trigger" type="button" onClick={() => { setMensaje(null); setMostrarFormulario(true); }}>↗ Registrar salida</button></div>
+    {mensaje && <p className={`feedback ${mensaje.tipo}`}>{mensaje.texto}</p>}
+    <div className="exit-history"><div><div><h3>{role === 'portero' ? 'Salidas de hoy' : 'Historial de salidas'}</h3><p>{salidas.length ? `${salidasVisibles.length} de ${salidas.length} registros` : 'Aún no hay registros'}</p></div><label className="exit-history-search"><span className="sr-only">Buscar salida</span><input type="search" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} placeholder="Buscar estudiante, acudiente o documento" /></label></div><div className="exit-table-wrap"><table><thead><tr><th>Estudiante</th><th>Grado</th><th>Jornada</th><th>Acudiente</th><th>Persona que recoge</th><th>Estado</th><th>Fecha y hora</th></tr></thead><tbody>{salidasVisibles.length ? salidasVisibles.map((salida) => <tr key={salida.id}><td><strong>{salida.estudiante}</strong></td><td>{salida.grado} · {salida.grupo}</td><td>{salida.jornada === 'Sin registrar' ? 'Sin registrar' : salida.jornada}</td><td>{salida.acudiente}</td><td><strong>{salida.recogeNombre && salida.recogeApellido ? `${salida.recogeNombre} ${salida.recogeApellido}` : 'Sin registrar'}</strong><small>{salida.recogeParentesco && salida.recogeCedula ? `${salida.recogeParentesco} · ${salida.recogeCedula}` : 'Dato no disponible'}</small></td><td><span className="exit-status">{salida.estado}</span></td><td><strong>{new Date(salida.creadoEn).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}</strong><small>Registró: {salida.registradoPorNombre}</small></td></tr>) : <tr><td colSpan={7}>{salidas.length ? 'No hay salidas que coincidan con la búsqueda.' : 'Aún no hay salidas registradas.'}</td></tr>}</tbody></table></div></div>
+    {mostrarFormulario && <div className="exit-modal-backdrop" role="presentation" onMouseDown={() => setMostrarFormulario(false)}><form className="exit-modal" role="dialog" aria-modal="true" aria-labelledby="exit-modal-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={registrarSalida}><header><div><span aria-hidden="true">↗</span><h3 id="exit-modal-title">Registrar salida</h3></div><button type="button" aria-label="Cerrar" onClick={() => setMostrarFormulario(false)}>×</button></header><div className="exit-modal-body"><label className="exit-student-select"><span>Estudiante</span><select value={estudianteId} onChange={(event) => setEstudianteId(event.target.value)} required><option value="">Selecciona un estudiante...</option>{estudiantes.map((item) => <option key={item.id} value={item.id}>{item.nombre} · {item.grado} {item.grupo}</option>)}</select></label>{seleccionado && <div className="exit-student-summary"><strong>{seleccionado.nombre}</strong><span>{seleccionado.grado} · Grupo {seleccionado.grupo} · Jornada {seleccionado.jornada}</span><small>Acudiente: {seleccionado.acudiente.nombre}</small></div>}<div className="exit-modal-fields"><UserInput label="Nombre" value={recoge.nombre} onChange={(nombre) => setRecoge({ ...recoge, nombre })} required /><UserInput label="Apellido" value={recoge.apellido} onChange={(apellido) => setRecoge({ ...recoge, apellido })} required /><UserInput label="Cédula" value={recoge.cedula} onChange={(cedula) => setRecoge({ ...recoge, cedula })} required /><UserInput label="Parentesco" value={recoge.parentesco} onChange={(parentesco) => setRecoge({ ...recoge, parentesco })} required /><UserInput label="Correo electrónico" value={recoge.correo} onChange={(correo) => setRecoge({ ...recoge, correo })} type="email" required /></div><p className="exit-notice">Al guardar, se enviará un aviso al acudiente registrado y a la persona que recoge al estudiante.</p></div><footer><button type="button" className="exit-modal-cancel" onClick={() => setMostrarFormulario(false)}>Cancelar</button><button className="exit-modal-submit" type="submit" disabled={guardando}>{guardando ? 'Registrando...' : 'Registrar salida'}</button></footer></form></div>}
+  </section>;
 }
 
 function UserInput({
@@ -1334,62 +857,11 @@ function UserInput({
   );
 }
 
-function RoleSelect({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  return (
-    <label className="user-field">
-      <span>Rol</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)}>
-        {USER_ROLES.map((rol) => <option key={rol} value={rol}>{rol}</option>)}
-      </select>
-    </label>
-  );
-}
-
 function SectionTitle({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <div className="module-title">
       <h2>{title}</h2>
       <p>{subtitle}</p>
-    </div>
-  );
-}
-
-function Metric({ label, value, loading }: { label: string; value: number; loading: boolean }) {
-  return (
-    <div className="mini-metric">
-      <strong>{loading ? '...' : value.toLocaleString('es-CO')}</strong>
-      <span>{label}</span>
-    </div>
-  );
-}
-
-function DataList({ title, rows, loading }: { title: string; rows: Array<Record<string, unknown>>; loading: boolean }) {
-  if (loading) {
-    return (
-      <div className="activity-list">
-        <span>Cargando datos...</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="table-preview">
-      <Row title={title} text={rows.length ? `${rows.length} registros recientes` : 'Sin registros'} />
-      {rows.map((row, index) => (
-        <div key={String(row.id ?? index)}>
-          <strong>{texto(row.estudiante || row.nombre || row.id || 'Registro')}</strong>
-          <span>{Object.entries(row).slice(1, 5).map(([, value]) => texto(value)).filter(Boolean).join(' · ')}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Row({ title, text }: { title: string; text: string }) {
-  return (
-    <div>
-      <strong>{title}</strong>
-      <span>{text}</span>
     </div>
   );
 }

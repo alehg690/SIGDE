@@ -1,35 +1,61 @@
 export type Acudiente = {
   id: number;
   nombre: string;
+  primerNombre: string | null;
+  segundoNombre: string | null;
+  primerApellido: string | null;
+  segundoApellido: string | null;
+  tipoDocumento: string | null;
   contacto: string;
   correo: string | null;
   telefono: string | null;
   documento: string | null;
+  parentesco: string | null;
 };
 
 export type Estudiante = {
   id: number;
   nombre: string;
+  primerNombre: string | null;
+  segundoNombre: string | null;
+  primerApellido: string | null;
+  segundoApellido: string | null;
+  tipoDocumento: string | null;
   documento: string | null;
+  correo: string | null;
   grado: string;
   grupo: string;
+  jornada: string;
   estado: string;
   activo: boolean;
   archivado: boolean;
   creadoEn: string;
   actualizadoEn: string;
+  novedades: number;
+  salidas: number;
   acudiente: Acudiente;
 };
 
 export type EstudianteFormData = {
-  nombre: string;
+  primerNombre: string;
+  segundoNombre: string;
+  primerApellido: string;
+  segundoApellido: string;
+  tipoDocumento: string;
   documento: string;
+  correo: string;
   grado: string;
   grupo: string;
+  jornada: string;
   estado: string;
   activo: boolean;
-  acudienteNombre: string;
+  acudientePrimerNombre: string;
+  acudienteSegundoNombre: string;
+  acudientePrimerApellido: string;
+  acudienteSegundoApellido: string;
+  acudienteTipoDocumento: string;
   acudienteDocumento: string;
+  acudienteParentesco: string;
   acudienteTelefono: string;
   acudienteCorreo: string;
 };

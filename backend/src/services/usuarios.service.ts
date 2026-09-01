@@ -1,6 +1,7 @@
 import { db } from '@backend/config/database';
 import { hashPassword, validarContrasenaSegura } from '@backend/services/auth.service';
-import { normalizarRol, type RolUsuario } from '@backend/types/roles';
+import { registrarAccion } from '@backend/services/auditoria.service';
+import { normalizarRol, type RolUsuario, type SesionUsuario } from '@backend/types/roles';
 
 type UsuarioRow = {
   id: number;
@@ -9,6 +10,7 @@ type UsuarioRow = {
   rol: string;
   activo: number;
   creadoEn: string;
+  ultimoAcceso: string | null;
 };
 
 export type UsuarioInput = {
@@ -29,6 +31,7 @@ function mapUsuario(row: UsuarioRow) {
     rol: row.rol,
     activo: Boolean(row.activo),
     creadoEn: row.creadoEn,
+    ultimoAcceso: row.ultimoAcceso,
   };
 }
 
@@ -52,7 +55,7 @@ function validarDatosUsuario(input: UsuarioInput, requiereContrasena: boolean) {
 
 export async function listarUsuarios() {
   const result = await db.execute(`
-    SELECT id, nombre, correo, rol, activo, creadoEn
+    SELECT id, nombre, correo, rol, activo, creadoEn, ultimoAcceso
     FROM Usuario
     ORDER BY id ASC
   `);
@@ -62,7 +65,7 @@ export async function listarUsuarios() {
 
 export async function obtenerUsuarioPorId(id: number) {
   const result = await db.execute({
-    sql: 'SELECT id, nombre, correo, rol, activo, creadoEn FROM Usuario WHERE id = ? LIMIT 1',
+    sql: 'SELECT id, nombre, correo, rol, activo, creadoEn, ultimoAcceso FROM Usuario WHERE id = ? LIMIT 1',
     args: [id],
   });
 
@@ -70,7 +73,7 @@ export async function obtenerUsuarioPorId(id: number) {
   return usuario ? mapUsuario(usuario) : null;
 }
 
-export async function crearUsuario(input: UsuarioInput) {
+export async function crearUsuario(input: UsuarioInput, actor: SesionUsuario) {
   const validacion = validarDatosUsuario(input, true);
   if ('error' in validacion) return validacion;
 
@@ -91,19 +94,27 @@ export async function crearUsuario(input: UsuarioInput) {
     sql: `
       INSERT INTO Usuario (nombre, correo, contrasena, rol, activo)
       VALUES (?, ?, ?, ?, ?)
-      RETURNING id, nombre, correo, rol, activo, creadoEn
+      RETURNING id, nombre, correo, rol, activo, creadoEn, ultimoAcceso
     `,
     args: [nombre, correo, contrasenaHash, rol, activo],
   });
 
-  return { data: mapUsuario(result.rows[0] as unknown as UsuarioRow), status: 201 };
+  const usuario = mapUsuario(result.rows[0] as unknown as UsuarioRow);
+  await registrarAccion({ usuarioId: actor.id, accion: 'crear_usuario', entidad: 'Usuario', entidadId: usuario.id, detalle: { rol: usuario.rol } });
+  return { data: usuario, status: 201 };
 }
 
-export async function actualizarUsuario(id: number, input: UsuarioInput) {
+export async function actualizarUsuario(id: number, input: UsuarioInput, actor: SesionUsuario) {
   const validacion = validarDatosUsuario(input, false);
   if ('error' in validacion) return validacion;
 
   const { nombre, correo, rol } = validacion.data;
+  if (id === actor.id && rol !== actor.rol) {
+    return { error: 'No puedes cambiar el rol de la cuenta con la que estás trabajando', status: 400 };
+  }
+  if (id === actor.id && input.activo === false) {
+    return { error: 'No puedes desactivar la cuenta con la que estás trabajando', status: 400 };
+  }
   const existente = await db.execute({
     sql: 'SELECT id FROM Usuario WHERE LOWER(correo) = LOWER(?) AND id <> ? LIMIT 1',
     args: [correo, id],
@@ -127,28 +138,59 @@ export async function actualizarUsuario(id: number, input: UsuarioInput) {
   const result = await db.execute({
     sql: `
       UPDATE Usuario
-      SET nombre = ?, correo = ?, rol = ?, activo = ?${setContrasena}
+      SET nombre = ?, correo = ?, rol = ?, activo = ?${setContrasena},
+          versionSesion = versionSesion + 1
       WHERE id = ?
-      RETURNING id, nombre, correo, rol, activo, creadoEn
+      RETURNING id, nombre, correo, rol, activo, creadoEn, ultimoAcceso
     `,
     args,
   });
 
   if (!result.rows[0]) return { error: 'Usuario no encontrado', status: 404 };
-  return { data: mapUsuario(result.rows[0] as unknown as UsuarioRow) };
+  const usuario = mapUsuario(result.rows[0] as unknown as UsuarioRow);
+  await registrarAccion({ usuarioId: actor.id, accion: 'actualizar_usuario', entidad: 'Usuario', entidadId: id, detalle: { rol: usuario.rol, activo: usuario.activo, cambioContrasena: Boolean(input.contrasena) } });
+  return { data: usuario };
 }
 
-export async function cambiarEstadoUsuario(id: number, activo: boolean) {
+export async function cambiarEstadoUsuario(id: number, activo: boolean, actor: SesionUsuario) {
+  if (id === actor.id && !activo) return { error: 'No puedes desactivar la cuenta con la que estás trabajando', status: 400 };
   const result = await db.execute({
     sql: `
       UPDATE Usuario
-      SET activo = ?
+      SET activo = ?, versionSesion = versionSesion + 1
       WHERE id = ?
-      RETURNING id, nombre, correo, rol, activo, creadoEn
+      RETURNING id, nombre, correo, rol, activo, creadoEn, ultimoAcceso
     `,
     args: [activo ? 1 : 0, id],
   });
 
   if (!result.rows[0]) return { error: 'Usuario no encontrado', status: 404 };
-  return { data: mapUsuario(result.rows[0] as unknown as UsuarioRow) };
+  const usuario = mapUsuario(result.rows[0] as unknown as UsuarioRow);
+  await registrarAccion({ usuarioId: actor.id, accion: activo ? 'activar_usuario' : 'desactivar_usuario', entidad: 'Usuario', entidadId: id });
+  return { data: usuario };
+}
+
+export async function eliminarUsuario(id: number, actor: SesionUsuario) {
+  if (id === actor.id) return { error: 'No puedes eliminar la cuenta con la que estás trabajando', status: 400 };
+
+  const usuario = await obtenerUsuarioPorId(id);
+  if (!usuario) return { error: 'Usuario no encontrado', status: 404 };
+
+  const dependencias = await db.execute({
+    sql: `
+      SELECT
+        (SELECT COUNT(*) FROM Reporte WHERE docenteId = ?) +
+        (SELECT COUNT(*) FROM ObservacionReporte WHERE usuarioId = ?) +
+        (SELECT COUNT(*) FROM Salida WHERE registradoPorId = ?) +
+        (SELECT COUNT(*) FROM AuditLog WHERE usuarioId = ?) AS total
+    `,
+    args: [id, id, id, id],
+  });
+  if (Number(dependencias.rows[0]?.total || 0) > 0) {
+    return { error: 'Este usuario tiene historial institucional y no puede eliminarse. Desactívalo para conservar la trazabilidad.', status: 409 };
+  }
+
+  await db.execute({ sql: 'DELETE FROM Usuario WHERE id = ?', args: [id] });
+  await registrarAccion({ usuarioId: actor.id, accion: 'eliminar_usuario', entidad: 'Usuario', entidadId: id, detalle: { nombre: usuario.nombre, correo: usuario.correo, rol: usuario.rol } });
+  return { data: { id } };
 }

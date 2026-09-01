@@ -1,35 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SIGDE — Sistema de Gestión Digital Escolar
 
-## Getting Started
+SIGDE es una plataforma web full-stack para apoyar la gestión de convivencia escolar. Centraliza estudiantes y acudientes, reportes disciplinarios, Ruta de Atención Integral (RAICE), alertas configurables, comunicaciones, salidas, calendario, estadísticas y auditoría.
 
-First, run the development server:
+El proyecto fue desarrollado como proyecto escolar y no pretende reemplazar el Manual de Convivencia, el debido proceso ni las decisiones de los órganos institucionales. Las alertas funcionan mediante reglas y umbrales configurables; no utilizan inteligencia artificial ni realizan valoraciones automáticas sobre los estudiantes.
+
+## Roles
+
+- **Coordinación:** administra usuarios, estudiantes, reportes, convivencia, alertas, comunicaciones, salidas, calendario, configuración, informes y auditoría.
+- **Docente:** consulta estudiantes, crea y edita sus reportes dentro del periodo permitido, consulta alertas, registra procesos de convivencia y comunicaciones.
+- **Portería:** consulta y registra salidas del turno, revisa la agenda institucional y accede a su perfil.
+
+Los acudientes no reciben cuentas de acceso. El sistema conserva sus datos de contacto para las notificaciones institucionales autorizadas.
+
+## Tecnologías
+
+- Next.js 16 con App Router, React y TypeScript
+- Tailwind CSS 4 y estilos CSS accesibles
+- Prisma, SQLite local y Turso/libSQL en producción
+- Autenticación con cookies HTTP-only, `jose` y `bcryptjs`
+- Nodemailer para correo institucional opcional
+- Arquitectura por capas con controladores API delgados y servicios de dominio
+
+## Ejecución local
+
+Requisitos: Node.js 20 o superior y npm.
 
 ```bash
+npm install
+copy .env.example .env
+npx prisma migrate deploy --schema database/prisma/schema.prisma
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000).
 
-## Datos de demostración del dashboard
+Para usar SQLite local durante el desarrollo, configura en `.env`:
 
-Para poblar el dashboard con información relacionada y distribuida entre la semana actual, la semana anterior y los últimos seis meses:
+```env
+DATABASE_URL="file:./database/prisma/dev.db"
+TURSO_DATABASE_URL="file:./database/prisma/dev.db"
+TURSO_AUTH_TOKEN=""
+JWT_SECRET="una-clave-segura-de-al-menos-24-caracteres"
+```
+
+El envío de correo requiere `EMAIL_USER` y `EMAIL_PASS`. Si no están configurados, SIGDE registra la comunicación o salida sin afirmar que el correo fue entregado y muestra un aviso claro al usuario.
+
+## Datos de demostración
 
 ```bash
 npm run seed:dashboard
 ```
 
-El proceso es idempotente: reemplaza únicamente registros identificados como `DEMO` y no duplica información al ejecutarse de nuevo. Crea una cuenta de coordinación para recorrer todos los módulos:
+El proceso es idempotente y reemplaza únicamente los registros identificados como `DEMO`.
 
-```text
-Correo: demo.coordinacion@sigde.local
-Contraseña: Demo2026
-```
+| Rol | Correo | Contraseña |
+| --- | --- | --- |
+| Coordinación | `demo.coordinacion@sigde.local` | `Demo2026` |
+| Docente | `demo.docente@sigde.local` | `Demo2026` |
+| Portería | `demo.porteria@sigde.local` | `Demo2026` |
 
 Para retirar exclusivamente los datos de demostración:
 
@@ -37,21 +65,22 @@ Para retirar exclusivamente los datos de demostración:
 npm run seed:dashboard:clean
 ```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Validación antes de entregar
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint
+npm run typecheck
+npm run build
+```
 
-## Learn More
+## Despliegue
 
-To learn more about Next.js, take a look at the following resources:
+SIGDE es una aplicación web, no una APK. La entrega desplegada debe realizarse mediante un enlace web, por ejemplo en Vercel.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Crea una base de datos Turso y configura `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`.
+2. Define `JWT_SECRET` y los datos institucionales indicados en `.env.example`.
+3. Configura `EMAIL_USER` y `EMAIL_PASS` únicamente si se habilitará correo.
+4. Aplica las migraciones contra la base de producción. Para el endurecimiento de autenticación ejecuta `npm run migrate:security` con las variables de Turso configuradas.
+5. Importa el repositorio en Vercel y ejecuta la compilación con `npm run build`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+No publiques archivos `.env`, tokens, contraseñas de aplicación ni datos reales de estudiantes en el repositorio.

@@ -36,16 +36,26 @@ export async function PUT(req: NextRequest, { params }: Params) {
   if (!body) return NextResponse.json({ error: 'Solicitud inválida' }, { status: 400 });
 
   const result = await actualizarEstudiante(estudianteId, {
-    nombre: String(body.nombre || ''),
-    documento: body.documento ? String(body.documento) : undefined,
+    primerNombre: String(body.primerNombre || ''),
+    segundoNombre: String(body.segundoNombre || ''),
+    primerApellido: String(body.primerApellido || ''),
+    segundoApellido: String(body.segundoApellido || ''),
+    tipoDocumento: String(body.tipoDocumento || ''),
+    documento: String(body.documento || ''),
+    correo: String(body.correo || ''),
     grado: String(body.grado || ''),
     grupo: String(body.grupo || ''),
-    estado: body.estado ? String(body.estado) : undefined,
-    activo: body.activo !== false,
-    acudienteNombre: String(body.acudienteNombre || ''),
-    acudienteCorreo: body.acudienteCorreo ? String(body.acudienteCorreo) : undefined,
-    acudienteTelefono: body.acudienteTelefono ? String(body.acudienteTelefono) : undefined,
-    acudienteDocumento: body.acudienteDocumento ? String(body.acudienteDocumento) : undefined,
+    jornada: body.jornada ? String(body.jornada) : undefined,
+    estado: String(body.estado || 'Activo'),
+    acudientePrimerNombre: String(body.acudientePrimerNombre || ''),
+    acudienteSegundoNombre: String(body.acudienteSegundoNombre || ''),
+    acudientePrimerApellido: String(body.acudientePrimerApellido || ''),
+    acudienteSegundoApellido: String(body.acudienteSegundoApellido || ''),
+    acudienteTipoDocumento: String(body.acudienteTipoDocumento || ''),
+    acudienteDocumento: String(body.acudienteDocumento || ''),
+    acudienteParentesco: String(body.acudienteParentesco || ''),
+    acudienteCorreo: String(body.acudienteCorreo || ''),
+    acudienteTelefono: String(body.acudienteTelefono || ''),
   }, auth.usuario);
 
   if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });

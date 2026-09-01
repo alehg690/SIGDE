@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { actualizarUsuario, cambiarEstadoUsuario } from '@backend/services/usuarios.service';
+import { actualizarUsuario, cambiarEstadoUsuario, eliminarUsuario } from '@backend/services/usuarios.service';
 import { esErrorAuth, requerirSesion } from '@/app/api/_utils/session';
 
 type Params = {
@@ -25,7 +25,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     rol: String(body.rol || ''),
     contrasena: body.contrasena ? String(body.contrasena) : undefined,
     activo: body.activo !== false,
-  });
+  }, auth.usuario);
 
   if ('error' in result) {
     return NextResponse.json({ error: result.error }, { status: result.status });
@@ -49,11 +49,26 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Indica si el usuario queda activo' }, { status: 400 });
   }
 
-  const result = await cambiarEstadoUsuario(usuarioId, body.activo);
+  const result = await cambiarEstadoUsuario(usuarioId, body.activo, auth.usuario);
 
   if ('error' in result) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
+  return NextResponse.json(result.data);
+}
+
+export async function DELETE(_req: NextRequest, { params }: Params) {
+  const auth = await requerirSesion(['Coordinador']);
+  if (esErrorAuth(auth)) return auth.response;
+
+  const { id } = await params;
+  const usuarioId = Number(id);
+  if (!Number.isInteger(usuarioId) || usuarioId <= 0) {
+    return NextResponse.json({ error: 'Usuario no válido' }, { status: 400 });
+  }
+
+  const result = await eliminarUsuario(usuarioId, auth.usuario);
+  if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json(result.data);
 }

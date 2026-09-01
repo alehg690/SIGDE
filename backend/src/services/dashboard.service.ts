@@ -25,6 +25,11 @@ async function consultar(sql: string) {
   return result.rows;
 }
 
+async function consultarConArgs(sql: string, args: Array<string | number>) {
+  const result = await db.execute({ sql, args });
+  return result.rows;
+}
+
 async function contarConArgs(sql: string, args: Array<string | number>) {
   const result = await db.execute({ sql, args });
   return Number(result.rows[0]?.total || 0);
@@ -196,7 +201,7 @@ export async function obtenerEstadisticasDashboard(usuario: SesionUsuario) {
     contar("SELECT COUNT(*) AS total FROM Reporte WHERE estado = 'Pendiente'"),
     contarSiExiste('ConvivenciaReporte', "SELECT COUNT(*) AS total FROM ConvivenciaReporte WHERE estado = 'abierto'"),
     contar("SELECT COUNT(*) AS total FROM Salida WHERE estado = 'pendiente'"),
-    contarConArgs("SELECT COUNT(*) AS total FROM Alerta WHERE estado <> 'resuelta' AND datetime(creadoEn) >= datetime(?) AND datetime(creadoEn) < datetime(?)", [rangoSemana.inicio, rangoSemana.fin]),
+    contar("SELECT COUNT(*) AS total FROM Alerta WHERE estado <> 'resuelta'"),
     contarConArgs('SELECT COUNT(*) AS total FROM Notificacion WHERE leida = 0 AND datetime(enviadoEn) >= datetime(?) AND datetime(enviadoEn) < datetime(?)', [rangoSemana.inicio, rangoSemana.fin]),
     contarConArgs('SELECT COUNT(*) AS total FROM Notificacion WHERE datetime(enviadoEn) >= datetime(?) AND datetime(enviadoEn) < datetime(?)', [rangoSemana.inicio, rangoSemana.fin]),
     contarConArgs('SELECT COUNT(*) AS total FROM Salida WHERE datetime(creadoEn) >= datetime(?) AND datetime(creadoEn) < datetime(?)', [rangoDia.hoy, rangoDia.manana]),
@@ -208,15 +213,16 @@ export async function obtenerEstadisticasDashboard(usuario: SesionUsuario) {
       GROUP BY estado
       ORDER BY total DESC
     `),
-    consultar(`
+    consultarConArgs(`
       SELECT r.id, r.tipoFalta, r.descripcion, r.estado, r.fecha,
         e.nombre AS estudiante, e.grado, e.grupo, u.nombre AS docente
       FROM Reporte r
       INNER JOIN Estudiante e ON e.id = r.estudianteId
       INNER JOIN Usuario u ON u.id = r.docenteId
+      WHERE r.confidencial = 0 OR ? = 'Coordinador' OR r.docenteId = ?
       ORDER BY r.fecha DESC
       LIMIT 6
-    `),
+    `, [usuario.rol, usuario.id]),
     consultar(`
       SELECT s.id, s.motivo, s.estado, s.urgencia, s.creadoEn,
         e.nombre AS estudiante, e.grado, a.nombre AS acudiente
@@ -249,36 +255,45 @@ export async function obtenerEstadisticasDashboard(usuario: SesionUsuario) {
     obtenerTendenciasMensuales(),
   ]);
 
+  const esPorteria = usuario.rol === 'Porteria';
+  const resumenVisible = esPorteria ? {
+    ...resumenSemanal,
+    reportes: 0,
+    reportesSemanaAnterior: 0,
+    gradoMayorActividad: null,
+    registrosGrado: 0,
+  } : resumenSemanal;
+
   return {
     data: {
       usuario,
       metricas: {
-        usuarios,
+        usuarios: usuario.rol === 'Coordinador' ? usuarios : 0,
         estudiantes,
-        reportes,
-        reportesPendientes,
-        convivenciaAbierta,
+        reportes: esPorteria ? 0 : reportes,
+        reportesPendientes: esPorteria ? 0 : reportesPendientes,
+        convivenciaAbierta: esPorteria ? 0 : convivenciaAbierta,
         salidasPendientes,
-        alertasActivas,
-        notificacionesNoLeidas,
-        notificaciones,
+        alertasActivas: esPorteria ? 0 : alertasActivas,
+        notificacionesNoLeidas: esPorteria ? 0 : notificacionesNoLeidas,
+        notificaciones: esPorteria ? 0 : notificaciones,
         salidasHoy,
         salidasAyer,
         eventosProximos,
       },
-      resumenSemanal,
+      resumenSemanal: resumenVisible,
       graficas: {
-        actividadSemanal: graficasSemanales.actividadSemanal,
-        reportesPorTipo: graficasSemanales.reportesPorTipo,
+        actividadSemanal: esPorteria ? [] : graficasSemanales.actividadSemanal,
+        reportesPorTipo: esPorteria ? [] : graficasSemanales.reportesPorTipo,
         salidasSemanales: graficasSemanales.salidasSemanales,
         salidasPorEstado,
-        tendenciasMensuales,
+        tendenciasMensuales: esPorteria ? tendenciasMensuales.map((item) => ({ ...item, reportes: 0 })) : tendenciasMensuales,
       },
       tablas: {
-        ultimosReportes,
+        ultimosReportes: esPorteria ? [] : ultimosReportes,
         ultimasSalidas,
         proximosEventos,
-        alertasRecientes,
+        alertasRecientes: esPorteria ? [] : alertasRecientes,
       },
       accesos: obtenerAccesosPorRol(usuario.rol),
     },
