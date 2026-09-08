@@ -1,0 +1,528 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/a8mf5m",
+    "id": "a8mf5m",
+    "slide": 1,
+    "layoutId": "165faccc-19fc-4787-878e-7cfaf6a7f96a",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "90a53661-d873-496d-afbe-bc403fd86847",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "+mn-lt"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "165faccc-19fc-4787-878e-7cfaf6a7f96a",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "90a53661-d873-496d-afbe-bc403fd86847",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "90a53661-d873-496d-afbe-bc403fd86847",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/zypk3qdc",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "alt": "Fondo espacial educativo de SIGDE",
+      "contentType": "image/png",
+      "imageFit": "cover",
+      "asset": {
+        "assetId": "9b730dc9-8439-4b4f-8b53-df33f2f0c14b",
+        "contentType": "image/png",
+        "byteLength": 1951529
+      }
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9obulgb6",
+      "id": "2",
+      "bbox": [
+        365,
+        132,
+        550,
+        360
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#07162B",
+      "lineColor": "#244A6C",
+      "lineWidth": 1.5
+    },
+    {
+      "order": 3,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/l0r250vi",
+      "id": "3",
+      "bbox": [
+        555,
+        153,
+        170,
+        170
+      ],
+      "alt": "Logo SIGDE",
+      "contentType": "image/png",
+      "imageFit": "contain",
+      "asset": {
+        "assetId": "ecaf420d-4c32-4407-a630-e14a0e3677aa",
+        "contentType": "image/png",
+        "byteLength": 252893
+      }
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zy9cf6t4",
+      "id": "4",
+      "bbox": [
+        420,
+        326,
+        440,
+        76
+      ],
+      "geometry": "rect",
+      "text": "SIGDE",
+      "textPreview": "SIGDE",
+      "resolvedFontSize": 58,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 58,
+        "typeface": "+mn-lt",
+        "color": "#F4F8FC",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "SIGDE"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "SIGDE",
+          "resolvedTextStyle": {
+            "fontSize": 58,
+            "color": "#F4F8FC",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "SIGDE",
+              "fontSize": 58,
+              "color": "#F4F8FC",
+              "bold": true,
+              "alignment": "center"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/yx0b61cj",
+      "id": "5",
+      "bbox": [
+        420,
+        397,
+        440,
+        30
+      ],
+      "geometry": "rect",
+      "text": "SISTEMA DE GESTIÓN DIGITAL ESCOLAR",
+      "textPreview": "SISTEMA DE GESTIÓN DIGITAL ESCOLAR",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 16,
+        "typeface": "+mn-lt",
+        "color": "#85D8F0",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "SISTEMA DE GESTIÓN DIGITAL ESCOLAR"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "SISTEMA DE GESTIÓN DIGITAL ESCOLAR",
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "color": "#85D8F0",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "SISTEMA DE GESTIÓN DIGITAL ESCOLAR",
+              "fontSize": 16,
+              "color": "#85D8F0",
+              "bold": true,
+              "alignment": "center"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l0ruhgba",
+      "id": "6",
+      "bbox": [
+        410,
+        437,
+        460,
+        50
+      ],
+      "geometry": "rect",
+      "text": "Registro, seguimiento y análisis de convivencia en tiempo real.",
+      "textPreview": "Registro, seguimiento y análisis de convivencia en tiempo real.",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 18,
+        "typeface": "+mn-lt",
+        "color": "#F4F8FC",
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Registro, seguimiento y análisis de convivencia en tiempo"
+          },
+          {
+            "index": 2,
+            "text": "real."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Registro, seguimiento y análisis de convivencia en tiempo real.",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "color": "#F4F8FC",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Registro, seguimiento y análisis de convivencia en tiempo real.",
+              "fontSize": 18,
+              "color": "#F4F8FC",
+              "alignment": "center"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/kzit8bap",
+      "id": "7",
+      "bbox": [
+        60,
+        52,
+        300,
+        28
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#1F6FB8",
+      "lineColor": "#1F6FB8",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/bupsb6t8",
+      "id": "8",
+      "bbox": [
+        60,
+        55,
+        300,
+        20
+      ],
+      "geometry": "rect",
+      "text": "PROYECTO ESCOLAR · GRADO 11 · 2026",
+      "textPreview": "PROYECTO ESCOLAR · GRADO 11 · 2026",
+      "resolvedFontSize": 12,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 12,
+        "typeface": "+mn-lt",
+        "color": "#F4F8FC",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "PROYECTO ESCOLAR · GRADO 11 · 2026"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "PROYECTO ESCOLAR · GRADO 11 · 2026",
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "color": "#F4F8FC",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "PROYECTO ESCOLAR · GRADO 11 · 2026",
+              "fontSize": 12,
+              "color": "#F4F8FC",
+              "bold": true,
+              "alignment": "center"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/atgb21cn",
+      "id": "9",
+      "bbox": [
+        60,
+        615,
+        360,
+        34
+      ],
+      "geometry": "rect",
+      "text": "Alejandro Hurtado",
+      "textPreview": "Alejandro Hurtado",
+      "resolvedFontSize": 22,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 22,
+        "typeface": "+mn-lt",
+        "color": "#F4F8FC",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Alejandro Hurtado"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Alejandro Hurtado",
+          "resolvedTextStyle": {
+            "fontSize": 22,
+            "color": "#F4F8FC",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Alejandro Hurtado",
+              "fontSize": 22,
+              "color": "#F4F8FC",
+              "bold": true,
+              "alignment": "left"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0vqpwfex",
+      "id": "10",
+      "bbox": [
+        60,
+        651,
+        420,
+        24
+      ],
+      "geometry": "rect",
+      "text": "I.E.T.I. Rafael Navia Varón",
+      "textPreview": "I.E.T.I. Rafael Navia Varón",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 15,
+        "typeface": "+mn-lt",
+        "color": "#A8B8C9",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "I.E.T.I. Rafael Navia Varón"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "I.E.T.I. Rafael Navia Varón",
+          "resolvedTextStyle": {
+            "fontSize": 15,
+            "color": "#A8B8C9",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "I.E.T.I. Rafael Navia Varón",
+              "fontSize": 15,
+              "color": "#A8B8C9",
+              "alignment": "left"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

@@ -46,7 +46,7 @@ export default function FollowUpWorkspace({ canManage }: { canManage: boolean })
   const [feedback, setFeedback] = useState<Feedback | null>(null);
 
   const cargar = useCallback(async (preferidaId?: number) => {
-    const response = await fetch('/api/alertas', { cache: 'no-store' });
+    const response = await fetch('/api/alertas?historial=1', { cache: 'no-store' });
     if (!response.ok) throw new Error(await leerError(response, 'No se pudieron cargar las alertas.'));
     const data = await response.json() as Alerta[];
     setAlertas(data);

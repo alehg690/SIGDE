@@ -1,0 +1,16 @@
+Presentación: Avances del proyecto SIGDE
+Fecha de preparación: 2026-09-01
+
+Fuentes principales:
+- Capturas de pantalla aportadas por Alejandro Hurtado en la conversación.
+- Activos del repositorio: frontend/public/Logo-login.png, frontend/public/Logo.png y frontend/public/sigde-space-background.png.
+- Estado funcional informado por el usuario: Ruta de convivencia, Seguimiento, Estadísticas y Calendario sin desarrollar; Configuración y Perfil parciales; pendiente control mostrar/ocultar en Nueva contraseña.
+- Estructura real del proyecto y base de datos: frontend/src, backend/src y database/prisma/schema.prisma.
+
+Definición utilizada para el inventario de interfaces:
+- 23 vistas o estados principales planificados.
+- 17 realizados.
+- 6 pendientes de cierre: 4 sin desarrollar y 2 parciales.
+- El control mostrar/ocultar contraseña se presenta como ajuste puntual y no como interfaz adicional.
+
+No se usaron imágenes ni afirmaciones obtenidas de Internet.

@@ -1,0 +1,1144 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/n8govw",
+    "id": "n8govw",
+    "slide": 11,
+    "layoutId": "165faccc-19fc-4787-878e-7cfaf6a7f96a",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "90a53661-d873-496d-afbe-bc403fd86847",
+    "masterLayoutName": "Master",
+    "backgroundColor": "#07162B",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "+mn-lt"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "165faccc-19fc-4787-878e-7cfaf6a7f96a",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "90a53661-d873-496d-afbe-bc403fd86847",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "90a53661-d873-496d-afbe-bc403fd86847",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/rqxwby5w",
+      "id": "1",
+      "bbox": [
+        60,
+        36,
+        250,
+        24
+      ],
+      "geometry": "rect",
+      "text": "SIGDE  /  11",
+      "textPreview": "SIGDE  /  11",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "+mn-lt",
+        "color": "#39C4E6",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "SIGDE  /  11"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "SIGDE  /  11",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "color": "#39C4E6",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "SIGDE  /  11",
+              "fontSize": 13,
+              "color": "#39C4E6",
+              "bold": true,
+              "alignment": "left"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/srqxk3mh",
+      "id": "2",
+      "bbox": [
+        60,
+        70,
+        1158,
+        58
+      ],
+      "geometry": "rect",
+      "text": "Regresar es explícito y mantiene la orientación",
+      "textPreview": "Regresar es explícito y mantiene la orientación",
+      "resolvedFontSize": 36,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 36,
+        "typeface": "+mn-lt",
+        "color": "#F4F8FC",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Regresar es explícito y mantiene la orientación"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Regresar es explícito y mantiene la orientación",
+          "resolvedTextStyle": {
+            "fontSize": 36,
+            "color": "#F4F8FC",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Regresar es explícito y mantiene la orientación",
+              "fontSize": 36,
+              "color": "#F4F8FC",
+              "bold": true,
+              "alignment": "left"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tszyd8nm",
+      "id": "3",
+      "bbox": [
+        60,
+        126,
+        1110,
+        34
+      ],
+      "geometry": "rect",
+      "text": "SIGDE usa controles visibles para volver, cerrar formularios o recuperar el menú.",
+      "textPreview": "SIGDE usa controles visibles para volver, cerrar formularios o recuperar el menú.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 17,
+        "typeface": "+mn-lt",
+        "color": "#A8B8C9",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "SIGDE usa controles visibles para volver, cerrar formularios o recuperar el menú."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "SIGDE usa controles visibles para volver, cerrar formularios o recuperar el menú.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "color": "#A8B8C9",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "SIGDE usa controles visibles para volver, cerrar formularios o recuperar el menú.",
+              "fontSize": 17,
+              "color": "#A8B8C9",
+              "alignment": "left"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ilofet4z",
+      "id": "4",
+      "bbox": [
+        60,
+        166,
+        1160,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#244A6C",
+      "lineWidth": 1
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/jmxw7y5k",
+      "id": "5",
+      "bbox": [
+        67,
+        202,
+        626,
+        396
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#0E2743",
+      "lineColor": "#244A6C",
+      "lineWidth": 1.5
+    },
+    {
+      "order": 6,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/tczapc3a",
+      "id": "6",
+      "bbox": [
+        70,
+        205,
+        620,
+        390
+      ],
+      "geometry": "roundRect",
+      "alt": "Recuperación de contraseña con botón Regresar",
+      "contentType": "image/png",
+      "imageCrop": {
+        "left": 0.63,
+        "top": 0.04,
+        "right": 0.02,
+        "bottom": 0.04
+      },
+      "imageFit": "cover",
+      "imageMask": {
+        "geometry": "roundRect",
+        "adjustmentList": [
+          {
+            "name": "adj",
+            "formula": "val 4615"
+          }
+        ]
+      },
+      "asset": {
+        "assetId": "b72f463d-9d79-4f75-932d-54aeaa8e2b1f",
+        "contentType": "image/png",
+        "byteLength": 1254488
+      }
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5ofe9onq",
+      "id": "7",
+      "bbox": [
+        520,
+        513,
+        34,
+        34
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#F5B94C",
+      "lineColor": "#F4F8FC",
+      "lineWidth": 2
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/2h8fqd4j",
+      "id": "8",
+      "bbox": [
+        520,
+        517,
+        34,
+        22
+      ],
+      "geometry": "rect",
+      "text": "1",
+      "textPreview": "1",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 16,
+        "typeface": "+mn-lt",
+        "color": "#07162B",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "1"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "1",
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "color": "#07162B",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "1",
+              "fontSize": 16,
+              "color": "#07162B",
+              "bold": true,
+              "alignment": "center"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3i1gji54",
+      "id": "9",
+      "bbox": [
+        747,
+        202,
+        466,
+        229
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#0E2743",
+      "lineColor": "#244A6C",
+      "lineWidth": 1.5
+    },
+    {
+      "order": 10,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/sritwrmx",
+      "id": "10",
+      "bbox": [
+        750,
+        205,
+        460,
+        223
+      ],
+      "geometry": "roundRect",
+      "alt": "Dashboard con menú lateral contraído",
+      "contentType": "image/png",
+      "imageFit": "cover",
+      "imageMask": {
+        "geometry": "roundRect",
+        "adjustmentList": [
+          {
+            "name": "adj",
+            "formula": "val 8072"
+          }
+        ]
+      },
+      "asset": {
+        "assetId": "0bb93346-9fd5-48ae-a2fb-8607e8c2728a",
+        "contentType": "image/png",
+        "byteLength": 427683
+      }
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/yds7yx0v",
+      "id": "11",
+      "bbox": [
+        759,
+        214,
+        34,
+        34
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#39C4E6",
+      "lineColor": "#F4F8FC",
+      "lineWidth": 2
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/lgj6tszm",
+      "id": "12",
+      "bbox": [
+        759,
+        218,
+        34,
+        22
+      ],
+      "geometry": "rect",
+      "text": "2",
+      "textPreview": "2",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 16,
+        "typeface": "+mn-lt",
+        "color": "#07162B",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "2"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "2",
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "color": "#07162B",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "2",
+              "fontSize": 16,
+              "color": "#07162B",
+              "bold": true,
+              "alignment": "center"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/kfap0ny1",
+      "id": "13",
+      "bbox": [
+        760,
+        470,
+        34,
+        34
+      ],
+      "geometry": "rect",
+      "text": "1",
+      "textPreview": "1",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "+mn-lt",
+        "color": "#F5B94C",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "1"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "1",
+          "resolvedTextStyle": {
+            "fontSize": 24,
+            "color": "#F5B94C",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "1",
+              "fontSize": 24,
+              "color": "#F5B94C",
+              "bold": true,
+              "alignment": "center"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/72lov2hs",
+      "id": "14",
+      "bbox": [
+        805,
+        469,
+        165,
+        26
+      ],
+      "geometry": "rect",
+      "text": "Botón “Regresar”",
+      "textPreview": "Botón “Regresar”",
+      "resolvedFontSize": 19,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 19,
+        "typeface": "+mn-lt",
+        "color": "#F4F8FC",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Botón “Regresar”"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Botón “Regresar”",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "color": "#F4F8FC",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Botón “Regresar”",
+              "fontSize": 19,
+              "color": "#F4F8FC",
+              "bold": true,
+              "alignment": "left"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/6hs72xg7",
+      "id": "15",
+      "bbox": [
+        760,
+        507,
+        205,
+        74
+      ],
+      "geometry": "rect",
+      "text": "Devuelve al paso anterior del flujo de autenticación sin perder la referencia visual.",
+      "textPreview": "Devuelve al paso anterior del flujo de autenticación sin perder la referencia visual.",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 15,
+        "typeface": "+mn-lt",
+        "color": "#A8B8C9",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Devuelve al paso anterior del"
+          },
+          {
+            "index": 2,
+            "text": "flujo de autenticación sin"
+          },
+          {
+            "index": 3,
+            "text": "perder la referencia visual."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Devuelve al paso anterior del flujo de autenticación sin perder la referencia visual.",
+          "resolvedTextStyle": {
+            "fontSize": 15,
+            "color": "#A8B8C9",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Devuelve al paso anterior del flujo de autenticación sin perder la referencia visual.",
+              "fontSize": 15,
+              "color": "#A8B8C9",
+              "alignment": "left"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/t436xczi",
+      "id": "16",
+      "bbox": [
+        990,
+        470,
+        34,
+        34
+      ],
+      "geometry": "rect",
+      "text": "2",
+      "textPreview": "2",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "+mn-lt",
+        "color": "#39C4E6",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "2"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "2",
+          "resolvedTextStyle": {
+            "fontSize": 24,
+            "color": "#39C4E6",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "2",
+              "fontSize": 24,
+              "color": "#39C4E6",
+              "bold": true,
+              "alignment": "center"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/83up47yx",
+      "id": "17",
+      "bbox": [
+        1035,
+        469,
+        175,
+        26
+      ],
+      "geometry": "rect",
+      "text": "Control del menú",
+      "textPreview": "Control del menú",
+      "resolvedFontSize": 19,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 19,
+        "typeface": "+mn-lt",
+        "color": "#F4F8FC",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Control del menú"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Control del menú",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "color": "#F4F8FC",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Control del menú",
+              "fontSize": 19,
+              "color": "#F4F8FC",
+              "bold": true,
+              "alignment": "left"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/v6loz2ho",
+      "id": "18",
+      "bbox": [
+        990,
+        507,
+        220,
+        74
+      ],
+      "geometry": "rect",
+      "text": "Permite contraer o desplegar la navegación y conserva el módulo seleccionado.",
+      "textPreview": "Permite contraer o desplegar la navegación y conserva el módulo seleccionado.",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 15,
+        "typeface": "+mn-lt",
+        "color": "#A8B8C9",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Permite contraer o desplegar la"
+          },
+          {
+            "index": 2,
+            "text": "navegación y conserva el módulo"
+          },
+          {
+            "index": 3,
+            "text": "seleccionado."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Permite contraer o desplegar la navegación y conserva el módulo seleccionado.",
+          "resolvedTextStyle": {
+            "fontSize": 15,
+            "color": "#A8B8C9",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Permite contraer o desplegar la navegación y conserva el módulo seleccionado.",
+              "fontSize": 15,
+              "color": "#A8B8C9",
+              "alignment": "left"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u5c76hg3",
+      "id": "19",
+      "bbox": [
+        70,
+        623,
+        1140,
+        28
+      ],
+      "geometry": "rect",
+      "text": "En los documentos legales también aparece “← Volver al inicio de sesión”.",
+      "textPreview": "En los documentos legales también aparece “← Volver al inicio de sesión”.",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 16,
+        "typeface": "+mn-lt",
+        "color": "#85D8F0",
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "En los documentos legales también aparece “← Volver al inicio de sesión”."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "En los documentos legales también aparece “← Volver al inicio de sesión”.",
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "color": "#85D8F0",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "En los documentos legales también aparece “← Volver al inicio de sesión”.",
+              "fontSize": 16,
+              "color": "#85D8F0",
+              "alignment": "center"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/q1wryl0b",
+      "id": "20",
+      "bbox": [
+        60,
+        682,
+        1160,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#244A6C",
+      "lineWidth": 1
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/r2psr61w",
+      "id": "21",
+      "bbox": [
+        60,
+        690,
+        310,
+        18
+      ],
+      "geometry": "rect",
+      "text": "SIGDE · Avances del proyecto",
+      "textPreview": "SIGDE · Avances del proyecto",
+      "resolvedFontSize": 11,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 11,
+        "typeface": "+mn-lt",
+        "color": "#71879D",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "SIGDE · Avances del proyecto"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "SIGDE · Avances del proyecto",
+          "resolvedTextStyle": {
+            "fontSize": 11,
+            "color": "#71879D",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "SIGDE · Avances del proyecto",
+              "fontSize": 11,
+              "color": "#71879D",
+              "alignment": "left"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/s3y90bih",
+      "id": "22",
+      "bbox": [
+        1168,
+        688,
+        52,
+        20
+      ],
+      "geometry": "rect",
+      "text": "11",
+      "textPreview": "11",
+      "resolvedFontSize": 12,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 12,
+        "typeface": "+mn-lt",
+        "color": "#39C4E6",
+        "bold": true,
+        "alignment": "right",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "11"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "11",
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "color": "#39C4E6",
+            "bold": true,
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "11",
+              "fontSize": 12,
+              "color": "#39C4E6",
+              "bold": true,
+              "alignment": "right"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

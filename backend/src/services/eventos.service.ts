@@ -14,6 +14,7 @@ function validarEvento(input: EventoInput) {
   const iniciaEn = new Date(input.iniciaEn);
 
   if (!titulo) return { error: 'El título del evento es obligatorio.', status: 400 };
+  if (titulo.length > 120 || (input.ubicacion?.length ?? 0) > 200 || (input.descripcion?.length ?? 0) > 1000) return { error: 'El evento supera la longitud permitida.', status: 400 };
   if (Number.isNaN(iniciaEn.getTime())) return { error: 'Selecciona una fecha y hora válidas.', status: 400 };
 
   return {
@@ -30,7 +31,7 @@ export async function listarEventosProximos() {
   const result = await db.execute(`
     SELECT id, titulo, descripcion, ubicacion, iniciaEn
     FROM Evento
-    WHERE activo = 1 AND datetime(iniciaEn) >= datetime('now', '-1 day')
+    WHERE activo = 1 AND datetime(iniciaEn) >= datetime('now')
     ORDER BY datetime(iniciaEn) ASC
     LIMIT 20
   `);

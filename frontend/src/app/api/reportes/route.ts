@@ -21,7 +21,11 @@ export async function POST(req: NextRequest) {
     {
       estudianteId: Number(body.estudianteId),
       tipoFalta: Number(body.tipoFalta),
+      fechaHecho: body.fechaHecho ? String(body.fechaHecho) : undefined,
+      lugar: body.lugar ? String(body.lugar) : undefined,
+      situacion: body.situacion ? String(body.situacion) : undefined,
       descripcion: String(body.descripcion || ''),
+      actuacionInicial: body.actuacionInicial ? String(body.actuacionInicial) : undefined,
       confidencial: body.confidencial === true,
       evidenciaUrl: body.evidenciaUrl ? String(body.evidenciaUrl) : undefined,
     },

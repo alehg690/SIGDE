@@ -78,6 +78,54 @@ export async function notificarAcudientePorReporte(reporteId: number) {
   }
 }
 
+export async function notificarAcudienteCambioReporte(reporteId: number, estado: string) {
+  const result = await db.execute({
+    sql: `
+      SELECT r.id, e.nombre AS estudiante, a.id AS acudienteId,
+             COALESCE(a.correo, a.contacto) AS destino
+      FROM Reporte r
+      INNER JOIN Estudiante e ON e.id = r.estudianteId
+      INNER JOIN Acudiente a ON a.id = e.acudienteId
+      WHERE r.id = ?
+      LIMIT 1
+    `,
+    args: [reporteId],
+  });
+
+  const row = result.rows[0];
+  if (!row) return;
+
+  const etiquetas: Record<string, string> = {
+    Pendiente: 'pendiente de revisión',
+    EnRevision: 'en revisión por coordinación',
+    Cerrado: 'cerrado',
+    Anulado: 'anulado',
+  };
+  const estadoLegible = etiquetas[estado] || estado;
+  const asunto = `Actualización de reporte - ${row.estudiante}`;
+  const mensaje = `El reporte de convivencia de ${row.estudiante} ahora se encuentra ${estadoLegible}. Para ampliar la información, comuníquese con la institución.`;
+  const destino = String(row.destino || '');
+  const canal = destino.includes('@') ? 'email' : 'app';
+
+  await db.execute({
+    sql: 'INSERT INTO Notificacion (acudienteId, reporteId, canal, asunto, mensaje) VALUES (?, ?, ?, ?, ?)',
+    args: [Number(row.acudienteId), reporteId, canal, asunto, mensaje],
+  });
+
+  if (canal === 'email' && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    try {
+      await emailTransporter.sendMail({
+        from: `"SIGDE" <${process.env.EMAIL_USER}>`,
+        to: destino,
+        subject: asunto,
+        text: mensaje,
+      });
+    } catch (error) {
+      console.error('No se pudo enviar la actualización del reporte al acudiente.', error);
+    }
+  }
+}
+
 export async function listarNotificaciones(acudienteId?: number) {
   const result = await db.execute({
     sql: `

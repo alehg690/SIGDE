@@ -12,6 +12,7 @@ export async function evaluarAlertaEstudiante(estudianteId: number, usuario: Ses
       SELECT COUNT(*) AS total
       FROM Reporte
       WHERE estudianteId = ?
+        AND estado <> 'Anulado'
         AND creadoEn >= datetime('now', ?)
     `,
     args: [estudianteId, `-${periodoDias} days`],
@@ -47,12 +48,12 @@ export async function evaluarAlertaEstudiante(estudianteId: number, usuario: Ses
   return { data: result.rows[0] };
 }
 
-export async function listarAlertasActivas() {
+export async function listarAlertasActivas(incluirResueltas = false) {
   const result = await db.execute(`
     SELECT a.*, e.nombre AS estudiante, e.grado, e.grupo
     FROM Alerta a
     INNER JOIN Estudiante e ON e.id = a.estudianteId
-    WHERE a.estado <> 'resuelta'
+    ${incluirResueltas ? '' : "WHERE a.estado <> 'resuelta'"}
     ORDER BY a.creadoEn DESC
   `);
 

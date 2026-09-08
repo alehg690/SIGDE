@@ -4,9 +4,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import StudentsWorkspace from '@/components/students/StudentsWorkspace';
 import CommunicationsWorkspace from '@/components/communications/CommunicationsWorkspace';
+import ReportsWorkspace from '@/components/reports/ReportsWorkspace';
 import SettingsWorkspace from '@/components/settings/SettingsWorkspace';
 import AuditWorkspace from '@/components/audit/AuditWorkspace';
 import UsersWorkspace from '@/components/users/UsersWorkspace';
+import CoexistenceWorkspace from '@/components/coexistence/CoexistenceWorkspace';
+import FollowUpWorkspace from '@/components/follow-up/FollowUpWorkspace';
+import StatisticsWorkspace from '@/components/statistics/StatisticsWorkspace';
+import CalendarWorkspace from '@/components/calendar/CalendarWorkspace';
+import ProfileWorkspace from '@/components/profile/ProfileWorkspace';
 import type { Estudiante } from '@/types/students';
 
 export type DashboardUser = {
@@ -309,7 +315,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
   }
 
   useEffect(() => {
-    if (section !== 'dashboard') return;
+    if (section !== 'dashboard' && section !== 'estadisticas') return;
     const timer = window.setTimeout(() => void cargarDashboard(), 0);
     return () => window.clearTimeout(timer);
   }, [section, cargarDashboard]);
@@ -398,7 +404,15 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
             {role === 'portero' && <DashboardPorteria stats={dashboardSnapshot} onOpenSalidas={() => seleccionarSeccion('salidas')} onOpenCalendar={() => seleccionarSeccion('calendario')} />}
           </section>
         ) : (<>
-          <DashboardContent section={section} usuario={usuario} role={role} onCurrentUserUpdated={() => router.refresh()} />
+          <DashboardContent
+            stats={dashboardSnapshot}
+            statsError={dashboardError}
+            section={section}
+            usuario={usuario}
+            role={role}
+            initialSearch={searchParams.get('buscar') ?? globalSearch}
+            onCurrentUserUpdated={() => router.refresh()}
+          />
           <section className="dashboard-empty-canvas" aria-label="Área de trabajo vacía" />
         </>)}
       </section>
@@ -739,16 +753,28 @@ function DataDistributionChart({ data, loading }: {
 }
 
 function DashboardContent({
+  stats,
+  statsError,
   section,
   usuario,
   onCurrentUserUpdated,
   role,
+  initialSearch,
 }: {
+  stats: DashboardStats | null;
+  statsError: string;
   section: DashboardSection;
   usuario: DashboardUser;
   onCurrentUserUpdated: () => void;
   role: DashboardRole;
+  initialSearch: string;
 }) {
+  if (section === 'convivencia') return <CoexistenceWorkspace />;
+  if (section === 'seguimiento') return <FollowUpWorkspace canManage={role === 'coordinador'} />;
+  if (section === 'calendario') return <CalendarWorkspace canManage={role === 'coordinador'} />;
+  if (section === 'estadisticas') return statsError
+    ? <p className="feedback error" role="alert">{statsError}</p>
+    : <StatisticsWorkspace stats={stats ?? EMPTY_STATS} loading={!stats} canExport={role === 'coordinador'} />;
   if (section === 'personas') {
     return <StudentsWorkspace canManage={role === 'coordinador'} />;
   }
@@ -761,17 +787,18 @@ function DashboardContent({
     return <CommunicationsWorkspace />;
   }
 
-  if (section === 'perfil') {
+  if (section === 'reportes') {
     return (
-      <section className="workspace-panel">
-        <SectionTitle title="Perfil" subtitle="Información de la sesión activa." />
-        <dl className="profile-list">
-          <div><dt>Nombre</dt><dd>{usuario.nombre}</dd></div>
-          <div><dt>Correo</dt><dd>{usuario.correo}</dd></div>
-          <div><dt>Rol</dt><dd>{ROLE_LABELS[role]}</dd></div>
-        </dl>
-      </section>
+      <ReportsWorkspace
+        currentUserId={usuario.id}
+        canManage={role === 'coordinador'}
+        initialSearch={initialSearch}
+      />
     );
+  }
+
+  if (section === 'perfil') {
+    return <ProfileWorkspace key={usuario.id} usuario={usuario} onUpdated={onCurrentUserUpdated} />;
   }
 
   if (section === 'usuarios') {
@@ -854,14 +881,5 @@ function UserInput({
         onChange={(event) => onChange(event.target.value)}
       />
     </label>
-  );
-}
-
-function SectionTitle({ title, subtitle }: { title: string; subtitle: string }) {
-  return (
-    <div className="module-title">
-      <h2>{title}</h2>
-      <p>{subtitle}</p>
-    </div>
   );
 }

@@ -120,7 +120,11 @@ model Reporte {
   estudianteId   Int
   docenteId      Int
   tipoFalta      TipoFalta
+  fechaHecho     DateTime?
+  lugar          String?
+  situacion      String?
   descripcion    String
+  actuacionInicial String?
   evidenciaUrl   String?
   observaciones  String?
   fecha          DateTime  @default(now())
@@ -135,6 +139,10 @@ model Reporte {
   observacionesLista ObservacionReporte[]
   notificaciones Notificacion[]
   notificacionesUsuario NotificacionUsuario[]
+
+  @@index([docenteId, fecha])
+  @@index([estudianteId, fecha])
+  @@index([estado, fecha])
 }
 
 model Alerta {
@@ -275,6 +283,8 @@ model EvidenciaReporte {
   url       String
   creadoEn  DateTime @default(now())
   reporte   Reporte  @relation(fields: [reporteId], references: [id], onDelete: Cascade)
+
+  @@index([reporteId, creadoEn])
 }
 
 model ObservacionReporte {
@@ -285,6 +295,8 @@ model ObservacionReporte {
   creadoEn  DateTime @default(now())
   reporte   Reporte  @relation(fields: [reporteId], references: [id], onDelete: Cascade)
   usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+
+  @@index([reporteId, creadoEn])
 }
 
 model ConvivenciaReporte {

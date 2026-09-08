@@ -1,0 +1,5 @@
+Trabajo de comunicación: al terminar, docentes y evaluadores deben comprender qué problema resuelve SIGDE, qué funciona hoy y qué falta, porque la exposición muestra evidencia real sin exagerar el avance.
+
+Arco narrativo: identidad -> propósito -> problema y solución -> diseño -> arquitectura de pantalla -> avance -> flujo técnico -> componentes de navegación -> confianza legal -> menú por roles -> retorno -> base de datos -> autenticación y próximo paso.
+
+Dirección visual: diseño personalizado basado en SIGDE. Fondo azul marino #0A1628, azul principal #1F6FB8, cian #39C4E6, blanco frío #F4F8FC y acento ámbar #F5B94C. Uso selectivo del fondo espacial y capturas reales en marcos amplios; tipografía Aptos/Aptos Display.

@@ -624,18 +624,23 @@ function Field({
   onChange: (value: string) => void;
   maxLength?: number;
 }) {
+  const [visible, setVisible] = useState(false);
+  const esContrasena = type === 'password';
   return (
     <div className="field-group">
       <label htmlFor={id}>{label}</label>
+      <div className={esContrasena ? 'password-field' : undefined}>
       <input
         id={id}
-        type={type}
+        type={esContrasena && visible ? 'text' : type}
         autoComplete={autoComplete}
         placeholder={placeholder}
         value={value}
         maxLength={maxLength}
         onChange={(event) => onChange(event.target.value)}
       />
+      {esContrasena && <button type="button" className="icon-button" onClick={() => setVisible((actual) => !actual)} aria-label={`${visible ? 'Ocultar' : 'Mostrar'} ${label.toLocaleLowerCase('es')}`} aria-controls={id} aria-pressed={visible}>{visible ? <EyeOffIcon /> : <EyeIcon />}</button>}
+      </div>
     </div>
   );
 }

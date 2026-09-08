@@ -1,5 +1,4 @@
 import { db } from '@backend/config/database';
-import { registrarAccion } from '@backend/services/auditoria.service';
 import type { SesionUsuario } from '@backend/types/roles';
 
 export async function obtenerConfiguracion() {
@@ -22,29 +21,31 @@ export async function obtenerValorConfiguracion(clave: string, fallback: string)
 }
 
 export async function actualizarConfiguracion(clave: string, valor: string, usuario: SesionUsuario) {
-  const claveLimpia = clave.trim();
-  const valorLimpio = valor.trim();
+  return actualizarConfiguraciones([{ clave, valor }], usuario);
+}
 
-  if (!claveLimpia || !valorLimpio) {
-    return { error: 'Clave y valor son obligatorios', status: 400 };
+export async function actualizarConfiguraciones(entradas: unknown, usuario: SesionUsuario) {
+  if (!Array.isArray(entradas) || entradas.length < 1 || entradas.length > 4) return { error: 'Configuración inválida.', status: 400 };
+  const limpias: Array<{ clave: string; valor: string }> = [];
+  for (const entrada of entradas) {
+    if (typeof entrada?.clave !== 'string' || typeof entrada?.valor !== 'string') return { error: 'Clave y valor deben ser texto.', status: 400 };
+    const clave = entrada.clave.trim();
+    const valor = entrada.valor.trim();
+    const numero = Number(valor);
+    const valida = clave === 'institucion.nombre' ? valor.length >= 3 && valor.length <= 120
+      : clave === 'institucion.anoLectivo' ? /^\d{4}$/.test(valor) && numero >= 2000 && numero <= 2100
+      : clave === 'alertas.umbralReportes' ? /^\d+$/.test(valor) && numero >= 2 && numero <= 20
+      : clave === 'alertas.periodoDias' ? /^\d+$/.test(valor) && numero >= 1 && numero <= 365
+      : false;
+    if (!valida || limpias.some((item) => item.clave === clave)) return { error: `Revisa el valor de ${clave || 'la configuración'}.`, status: 400 };
+    limpias.push({ clave, valor });
   }
-
-  await db.execute({
-    sql: `
-      INSERT INTO ConfiguracionSistema (clave, valor, actualizadoEn)
-      VALUES (?, ?, CURRENT_TIMESTAMP)
-      ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor, actualizadoEn = CURRENT_TIMESTAMP
-    `,
-    args: [claveLimpia, valorLimpio],
-  });
-
-  await registrarAccion({
-    usuarioId: usuario.id,
-    accion: 'actualizar_configuracion',
-    entidad: 'ConfiguracionSistema',
-    entidadId: claveLimpia,
-    detalle: { valor: valorLimpio },
-  });
-
-  return { data: { clave: claveLimpia, valor: valorLimpio } };
+  await db.batch([
+    ...limpias.map(({ clave, valor }) => ({
+      sql: 'INSERT INTO ConfiguracionSistema (clave, valor, actualizadoEn) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor, actualizadoEn = CURRENT_TIMESTAMP',
+      args: [clave, valor],
+    })),
+    { sql: 'INSERT INTO AuditLog (usuarioId, accion, entidad, detalle) VALUES (?, ?, ?, ?)', args: [usuario.id, 'actualizar_configuracion', 'ConfiguracionSistema', JSON.stringify(limpias)] },
+  ], 'write');
+  return { data: limpias, status: 200 };
 }
