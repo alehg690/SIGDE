@@ -343,7 +343,7 @@ export default function StudentsWorkspace({
         </label>
       </div>
       <div className="students-table-card">
-        <div className="students-table-scroll">
+        <div className="students-table-scroll" tabIndex={0} role="region" aria-label="Directorio de estudiantes">
           <table className="students-directory-table">
             <thead>
               <tr>

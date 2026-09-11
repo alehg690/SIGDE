@@ -16,7 +16,7 @@ export default function ProfileWorkspace({ usuario, onUpdated }: { usuario: { no
     } catch (err) { setFeedback({ error: true, texto: err instanceof Error ? err.message : 'No hay conexión con el servidor.' }); }
     finally { setGuardando(false); }
   }
-  return <section className="workspace-panel settings-workspace"><header className="module-page-heading"><div className="module-title"><h2>Mi perfil</h2><p>Actualiza tu nombre y consulta los datos de tu cuenta.</p></div></header>
+  return <section className="workspace-panel settings-workspace profile-workspace"><header className="module-page-heading"><div className="module-title"><h2>Mi perfil</h2><p>Actualiza tu nombre y consulta los datos de tu cuenta.</p></div></header>
     {feedback && <p className={`feedback ${feedback.error ? 'error' : 'success'}`} role={feedback.error ? 'alert' : 'status'}>{feedback.texto}</p>}
     <form className="settings-form" onSubmit={guardar}><div className="settings-card"><div className="settings-fields"><label><span>Nombre completo</span><input required minLength={3} maxLength={120} value={nombre} disabled={guardando} onChange={(e) => setNombre(e.target.value)} /></label></div><dl className="profile-list"><div><dt>Correo</dt><dd>{usuario.correo}</dd></div><div><dt>Rol</dt><dd>{usuario.rol === 'Porteria' ? 'Portería' : usuario.rol}</dd></div></dl><p>Para cambiar tu correo o rol, contacta a Coordinación.</p><button type="submit" className="primary-button" disabled={guardando || nombre.trim() === usuario.nombre}>{guardando ? 'Guardando...' : 'Guardar cambios'}</button></div></form>
   </section>;

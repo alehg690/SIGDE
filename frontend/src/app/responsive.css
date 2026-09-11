@@ -1,0 +1,268 @@
+/* Adaptación estructural. Los colores, fondos y estilos de cada módulo
+   siguen definidos en globals.css; estas reglas se cargan al final. */
+.app-main {
+  min-width: 0;
+}
+
+.app-main :where(section, article, aside, form, fieldset, label, header, footer),
+.login-shell > *, .login-card, .legal-card {
+  min-width: 0;
+}
+
+:where(input, select, textarea) { min-width: 0; max-width: 100%; }
+:where(img, video, canvas) { max-width: 100%; }
+:where(.workspace-panel, .dashboard-weekly-summary, .legal-content, .feedback,
+  .profile-menu, .report-detail-panel, .module-detail-panel, .calendar-events-list) {
+  overflow-wrap: anywhere;
+}
+
+.topbar-global-search input { flex: 1; min-width: 0; }
+.topbar-global-search > button { flex: 0 0 auto; }
+.profile-menu { max-width: min(320px, calc(100vw - 32px)); }
+.profile-menu-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+.mobile-menu-trigger { display: none; }
+.mobile-navigation:not([open]) { display: none; }
+
+/* Las tablas conservan todas sus columnas dentro de una región desplazable. */
+:where(.users-table-scroll, .students-table-scroll, .exit-table-wrap,
+  .coexistence-table-wrap, .audit-table-wrap, .directory-table-wrap,
+  .students-table-wrap, .module-wireframe-table-wrap) {
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+:where(.users-table-scroll, .students-table-scroll, .exit-table-wrap,
+  .coexistence-table-wrap, .audit-table-wrap):focus-visible {
+  outline: 2px solid #72b9ee;
+  outline-offset: 3px;
+}
+
+/* Formularios largos: encabezado y acciones accesibles con teclado virtual. */
+.users-modal, .exit-modal {
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+.users-modal > header, .exit-modal > header { flex-shrink: 0; }
+.users-delete-dialog, .students-archive-dialog {
+  max-width: 100%;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.report-form-section { min-inline-size: 0; }
+.calendar-workspace .settings-card,
+.profile-workspace .settings-card { grid-template-columns: minmax(0, 1fr); }
+.calendar-workspace fieldset { min-inline-size: 0; }
+
+/* Reserva espacio para la barra lateral sin crear un bloque contenedor
+   que cambie la posición fija de los modales existentes. */
+@media (max-width: 1280px) {
+  .dashboard-recent-grid, .dashboard-analytics-grid, .reports-consultation,
+  .module-split-layout, .communications-layout, .porteria-dashboard-grid,
+  .settings-card { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-activity-card, .dashboard-distribution-card, .upcoming-events-card {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .module-list-panel, .communications-compose {
+    border-right: 0;
+    border-bottom: 1px solid var(--module-border);
+  }
+  .dashboard-metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .users-directory-toolbar, .students-directory-toolbar { flex-wrap: wrap; }
+  .users-directory-toolbar > label, .students-directory-toolbar > label:first-child {
+    flex: 1 1 240px;
+    width: auto;
+  }
+  .statistics-export-actions { flex-wrap: wrap; }
+}
+
+@media (max-width: 900px) {
+  .dashboard-metric-grid, .reports-summary, .module-kpi-grid, .statistics-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .statistics-grid, .distribution-chart-body, .settings-fields,
+  .coexistence-form-grid, .report-form-grid, .reports-toolbar,
+  .exit-form-grid { grid-template-columns: minmax(0, 1fr); }
+  .statistics-card--wide, .coexistence-description, .coexistence-rule { grid-column: auto; }
+  .module-page-heading, .users-directory-heading, .students-directory-heading,
+  .module-filter-bar, .settings-actions { flex-direction: column; align-items: stretch; }
+  .recent-report-table-head, .recent-report-row {
+    grid-template-columns: 30px minmax(0, 1fr) 68px 62px;
+    gap: 7px;
+    padding-inline: 10px;
+  }
+  .follow-up-row { grid-template-columns: 36px minmax(0, 1fr); }
+  .follow-up-row .module-status, .follow-up-row time {
+    grid-column: 2; justify-self: start; text-align: left;
+  }
+  .report-row { grid-template-columns: 60px minmax(0, 1fr) 90px; }
+  .report-row-trace { display: block; grid-column: 2 / -1; }
+  .weekly-insight-actions { flex-wrap: wrap; gap: 10px; }
+}
+
+@media (max-width: 1250px) {
+  /* Evita que una tarjeta cree una segunda columna implícita. */
+  .dashboard-analytics-grid > .dashboard-analytics-main > *,
+  .dashboard-analytics-grid > .dashboard-analytics-side > * {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 1023px) {
+  .app-shell, .app-shell--sidebar-collapsed { display: block; }
+  .app-shell > .app-sidebar { display: none; }
+  .app-main {
+    --workspace-gutter: 24px;
+    gap: 20px;
+    padding: 0 var(--workspace-gutter) 28px;
+  }
+  .app-shell[data-theme='dark'] .app-topbar--account-only {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 0 calc(-1 * var(--workspace-gutter));
+    padding: 10px var(--workspace-gutter);
+    min-height: 64px;
+  }
+  .app-topbar--account-only .app-topbar-tools { margin-left: auto; }
+  .topbar-global-search { flex: 1; width: auto; max-width: 420px; min-height: 44px; }
+  .mobile-menu-trigger {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    border: 1px solid rgba(142, 208, 255, .2);
+    border-radius: 9px;
+    padding: 8px 12px;
+    background: #10243c;
+    color: #e8f4fd;
+    font: inherit;
+    cursor: pointer;
+  }
+  .mobile-navigation[open] {
+    position: fixed;
+    inset: 0 auto 0 0;
+    display: flex;
+    flex-direction: column;
+    width: min(320px, calc(100vw - 32px));
+    max-width: none;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border: 0;
+    border-right: 1px solid rgba(166, 204, 234, .2);
+    border-radius: 0 16px 16px 0;
+    padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
+    background: #0a1628;
+    color: #e8f4fd;
+    overflow: hidden;
+    box-shadow: 16px 0 48px rgba(0, 0, 0, .35);
+  }
+  .mobile-navigation::backdrop { background: rgba(2, 8, 17, .7); backdrop-filter: blur(4px); }
+  .mobile-navigation > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 18px; }
+  .mobile-navigation > header strong { display: block; font-size: 1.4rem; letter-spacing: .1em; }
+  .mobile-navigation > header span { display: block; color: #8ed0ff; font-size: .85rem; margin-top: 4px; }
+  .mobile-navigation > header button { width: 44px; height: 44px; border: 1px solid rgba(142, 208, 255, .2); border-radius: 50%; background: #101d31; color: #e8f4fd; font-size: 1.5rem; cursor: pointer; }
+  .mobile-navigation-content { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #526781 #0a1628; }
+  .app-shell .mobile-navigation .app-nav { display: grid; gap: 18px; width: 100%; overflow: visible; }
+  .app-shell .mobile-navigation .app-nav-group-label { display: block; }
+  .app-shell .mobile-navigation .app-nav-item { width: 100%; min-width: 0; min-height: 48px; justify-content: flex-start; padding: 8px 12px; text-align: left; }
+  .app-shell .mobile-navigation .app-nav-label { display: block; }
+  .app-shell .mobile-navigation .app-nav-icon { width: 20px; height: 20px; flex-basis: 20px; padding: 2px; }
+  .app-shell .mobile-navigation .app-nav-item::after { display: none; }
+  .app-shell .mobile-navigation .app-nav-item--active { background: rgba(52, 92, 185, .27); }
+  .workspace-panel { max-width: 100%; }
+  .users-table-scroll, .students-table-scroll { padding-bottom: 12px; margin-bottom: 0; }
+  :where(.users-table-scroll, .students-table-scroll, .exit-table-wrap, .coexistence-table-wrap, .audit-table-wrap)::before {
+    content: 'Desliza horizontalmente para ver todas las columnas';
+    display: block;
+    position: sticky;
+    left: 0;
+    padding: 10px 12px;
+    color: #9db1c5;
+    font-size: .75rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-main { --workspace-gutter: 16px; gap: 16px; }
+  .app-shell[data-theme='dark'] .app-topbar--account-only { position: relative; gap: 8px; }
+  .topbar-global-search { order: 3; flex-basis: 100%; max-width: none; }
+  .profile-menu-name { max-width: 110px; }
+  .workspace-panel { padding: 16px; }
+  .dashboard-weekly-summary { padding-inline: 0; }
+  .weekly-insight-card { gap: 10px; padding: 14px; }
+  .weekly-insight-icon { width: 32px; height: 32px; flex-basis: 32px; }
+  .weekly-insight-content { min-width: 0; }
+  .weekly-insight-heading, .dashboard-panel-heading, .report-detail-heading,
+  .report-trace-section > header, .module-detail-heading, .statistics-card > header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .dashboard-metric-card { min-width: 0; padding: 14px; }
+  .dashboard-chart-heading, .settings-actions, .users-directory-heading,
+  .students-directory-heading { align-items: stretch; }
+  .users-directory-toolbar > label, .students-directory-toolbar > label:first-child { flex-basis: auto; width: 100%; }
+  .users-role-filters { width: 100%; }
+  .users-role-filters button { flex: 1 1 auto; }
+  .users-table-footer, .students-table-footer { flex-wrap: wrap; gap: 12px; }
+  .report-row { grid-template-columns: 48px minmax(0, 1fr); }
+  .report-row > :nth-child(n + 3) { grid-column: 2; justify-self: start; text-align: left; }
+  .report-row-trace { display: block; }
+  .report-metadata, .report-detail-editor, .statistics-insights { grid-template-columns: minmax(0, 1fr); }
+  .report-detail-editor > div, .report-form-actions, .exit-form-actions { flex-wrap: wrap; }
+  .report-form-actions button, .exit-form-actions button { min-width: 0; flex: 1 1 160px; }
+  .report-detail-panel, .module-detail-panel, .settings-card, .coexistence-form-grid { padding: 16px; }
+  .module-filter-bar, .communications-compose { padding: 14px; }
+  .statistics-export-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .statistics-export-actions a { flex: 1 1 130px; text-align: center; }
+  .weekly-bars { gap: 8px; padding-inline: 0; }
+  .communication-row-heading { flex-wrap: wrap; }
+  .communication-row-heading strong { white-space: normal; }
+  .porteria-recent-exits > div > button { grid-template-columns: 34px minmax(0, 1fr); }
+  .porteria-recent-exits > div > button > time { grid-column: 2; }
+  .users-modal-backdrop, .students-modal-backdrop, .exit-modal-backdrop {
+    align-items: start;
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+  }
+  .users-modal, .students-modal, .exit-modal { max-height: calc(100dvh - 20px); width: 100%; }
+  .users-modal-body, .students-modal-body { min-height: 0; }
+  .users-modal > footer, .students-modal > footer { gap: 10px; }
+  .students-fields-grid { grid-template-columns: minmax(0, 1fr); }
+  .login-form-panel { padding: 24px 20px; min-height: 100dvh; }
+  .legal-card { padding: 24px 18px; }
+  .legal-card h1 { font-size: clamp(1.65rem, 7vw, 2.4rem); overflow-wrap: anywhere; }
+  /* Evita el zoom automático de iOS sin desactivar el zoom del usuario. */
+  .app-shell :is(input, select, textarea), .login-shell :is(input, select, textarea) { font-size: 16px; }
+}
+
+@media (max-width: 380px) {
+  .app-main { --workspace-gutter: 12px; }
+  .workspace-panel { padding: 12px; }
+  .weekly-insight-card { flex-direction: column; }
+  .dashboard-metric-grid { gap: 8px; }
+  .dashboard-metric-card { padding: 12px 10px; }
+  .recent-report-table-head { display: none; }
+  .recent-report-row { grid-template-columns: 28px minmax(0, 1fr); }
+  .recent-report-row > :nth-child(n + 3) { grid-column: 2; }
+  .dashboard-chart-card { padding: 14px 10px; }
+  .profile-menu-name { max-width: 85px; }
+}
+
+@media (pointer: coarse) {
+  .app-shell :where(button, summary), .statistics-export-actions a, .legal-back { min-height: 44px; }
+  .app-shell :where(.users-actions-cell > button, .students-actions-cell > button, .sidebar-logout) { min-width: 44px; }
+  .login-shell .icon-button { width: 44px; height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell, .app-shell *, .login-shell * { scroll-behavior: auto; transition-duration: 0s; animation-duration: .01ms; animation-iteration-count: 1; }
+}

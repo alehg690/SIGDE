@@ -199,7 +199,7 @@ export default function UsersWorkspace({ currentUserId, onCurrentUserUpdated }: 
       <div className="users-role-filters" aria-label="Filtrar por rol"><button type="button" className={filtroRol === 'Todos' ? 'active' : ''} onClick={() => setFiltroRol('Todos')}>Todos</button>{ROLES.map((rol) => <button type="button" key={rol} className={filtroRol === rol ? 'active' : ''} onClick={() => setFiltroRol(rol)}>{etiquetaRol(rol)}</button>)}</div>
     </div>
     <div className="users-table-card">
-      <div className="users-table-scroll">
+      <div className="users-table-scroll" tabIndex={0} role="region" aria-label="Directorio de usuarios">
         <table className="users-directory-table">
           <thead><tr><th>Usuario</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Último acceso</th><th><span className="sr-only">Acciones</span></th></tr></thead>
           <tbody>{usuariosFiltrados.map((usuario) => <tr key={usuario.id}>

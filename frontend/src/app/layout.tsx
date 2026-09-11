@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import ClientProviders from '@/components/ui/ClientProviders';
 import RouteLoadingOverlay from '@/components/ui/RouteLoadingOverlay';
 import './globals.css';
+import './responsive.css';
 
 const inter = Inter({
   subsets: ['latin'],

@@ -13,6 +13,7 @@ import FollowUpWorkspace from '@/components/follow-up/FollowUpWorkspace';
 import StatisticsWorkspace from '@/components/statistics/StatisticsWorkspace';
 import CalendarWorkspace from '@/components/calendar/CalendarWorkspace';
 import ProfileWorkspace from '@/components/profile/ProfileWorkspace';
+import MobileNavigation from '@/components/dashboard/MobileNavigation';
 import type { Estudiante } from '@/types/students';
 
 export type DashboardUser = {
@@ -349,25 +350,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
             <SidebarIcon name="chevron" />
           </button>
         </div>
-        <nav className="app-nav">
-          {NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => item.roles.includes(role)) })).filter((group) => group.items.length > 0).map((group) => (
-            <div className="app-nav-group" key={group.label}>
-              <span className="app-nav-group-label">{group.label}</span>
-              {group.items.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  data-tooltip={item.label}
-                  className={section === item.id ? 'app-nav-item app-nav-item--active' : 'app-nav-item'}
-                  onClick={() => seleccionarSeccion(item.id)}
-                >
-                  <span className="app-nav-icon"><SidebarIcon name={ICON_BY_SECTION[item.id]} /></span>
-                  <span className="app-nav-label">{item.label}</span>
-                </button>
-              ))}
-            </div>
-          ))}
-        </nav>
+        <DashboardNavigation role={role} section={section} onSelect={seleccionarSeccion} />
         <div className="app-sidebar-footer">
           <div className="sidebar-user-card"><span className="admin-avatar">{usuario.nombre.slice(0, 1).toUpperCase()}</span><span className="sidebar-user-copy"><strong>{usuario.nombre}</strong><small>{ROLE_LABELS[role]}</small></span><button type="button" className="sidebar-logout" onClick={handleLogout} disabled={closing} aria-label="Cerrar sesión" title="Cerrar sesión"><SidebarIcon name="logout" /></button></div>
         </div>
@@ -375,6 +358,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
 
       <section className="app-main">
         <header className="app-topbar app-topbar--account-only">
+          <MobileNavigation roleLabel={ROLE_LABELS[role]}><DashboardNavigation role={role} section={section} onSelect={seleccionarSeccion} /></MobileNavigation>
           {role !== 'portero' && <form className="topbar-global-search" role="search" onSubmit={buscarGlobal}>
             <label className="sr-only" htmlFor="global-search">Buscar estudiantes o reportes</label>
             <SidebarIcon name="search" />
@@ -418,6 +402,15 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
       </section>
     </main>
   );
+}
+
+function DashboardNavigation({ role, section, onSelect }: { role: DashboardRole; section: DashboardSection; onSelect: (section: DashboardSection) => void }) {
+  return <nav className="app-nav" aria-label="Módulos del sistema">
+    {NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => item.roles.includes(role)) })).filter((group) => group.items.length > 0).map((group) => <div className="app-nav-group" key={group.label}>
+      <span className="app-nav-group-label">{group.label}</span>
+      {group.items.map((item) => <button key={item.id} type="button" data-tooltip={item.label} aria-label={item.label} aria-current={section === item.id ? 'page' : undefined} className={section === item.id ? 'app-nav-item app-nav-item--active' : 'app-nav-item'} onClick={() => onSelect(item.id)}><span className="app-nav-icon"><SidebarIcon name={ICON_BY_SECTION[item.id]} /></span><span className="app-nav-label">{item.label}</span></button>)}
+    </div>)}
+  </nav>;
 }
 
 function WeeklyInsightCard({
@@ -853,7 +846,7 @@ function ControlSalidasWorkspace({ role }: { role: DashboardRole }) {
   return <section className="workspace-panel exit-control-workspace">
     <div className="exit-page-heading"><div><h2>Salidas</h2><p>{role === 'portero' ? 'Consulta y registra las salidas del turno de hoy.' : 'Consulta el historial institucional y registra nuevas salidas.'}</p></div><button className="exit-register-trigger" type="button" onClick={() => { setMensaje(null); setMostrarFormulario(true); }}>↗ Registrar salida</button></div>
     {mensaje && <p className={`feedback ${mensaje.tipo}`}>{mensaje.texto}</p>}
-    <div className="exit-history"><div><div><h3>{role === 'portero' ? 'Salidas de hoy' : 'Historial de salidas'}</h3><p>{salidas.length ? `${salidasVisibles.length} de ${salidas.length} registros` : 'Aún no hay registros'}</p></div><label className="exit-history-search"><span className="sr-only">Buscar salida</span><input type="search" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} placeholder="Buscar estudiante, acudiente o documento" /></label></div><div className="exit-table-wrap"><table><thead><tr><th>Estudiante</th><th>Grado</th><th>Jornada</th><th>Acudiente</th><th>Persona que recoge</th><th>Estado</th><th>Fecha y hora</th></tr></thead><tbody>{salidasVisibles.length ? salidasVisibles.map((salida) => <tr key={salida.id}><td><strong>{salida.estudiante}</strong></td><td>{salida.grado} · {salida.grupo}</td><td>{salida.jornada === 'Sin registrar' ? 'Sin registrar' : salida.jornada}</td><td>{salida.acudiente}</td><td><strong>{salida.recogeNombre && salida.recogeApellido ? `${salida.recogeNombre} ${salida.recogeApellido}` : 'Sin registrar'}</strong><small>{salida.recogeParentesco && salida.recogeCedula ? `${salida.recogeParentesco} · ${salida.recogeCedula}` : 'Dato no disponible'}</small></td><td><span className="exit-status">{salida.estado}</span></td><td><strong>{new Date(salida.creadoEn).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}</strong><small>Registró: {salida.registradoPorNombre}</small></td></tr>) : <tr><td colSpan={7}>{salidas.length ? 'No hay salidas que coincidan con la búsqueda.' : 'Aún no hay salidas registradas.'}</td></tr>}</tbody></table></div></div>
+    <div className="exit-history"><div><div><h3>{role === 'portero' ? 'Salidas de hoy' : 'Historial de salidas'}</h3><p>{salidas.length ? `${salidasVisibles.length} de ${salidas.length} registros` : 'Aún no hay registros'}</p></div><label className="exit-history-search"><span className="sr-only">Buscar salida</span><input type="search" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} placeholder="Buscar estudiante, acudiente o documento" /></label></div><div className="exit-table-wrap" tabIndex={0} role="region" aria-label="Historial de salidas"><table><thead><tr><th>Estudiante</th><th>Grado</th><th>Jornada</th><th>Acudiente</th><th>Persona que recoge</th><th>Estado</th><th>Fecha y hora</th></tr></thead><tbody>{salidasVisibles.length ? salidasVisibles.map((salida) => <tr key={salida.id}><td><strong>{salida.estudiante}</strong></td><td>{salida.grado} · {salida.grupo}</td><td>{salida.jornada === 'Sin registrar' ? 'Sin registrar' : salida.jornada}</td><td>{salida.acudiente}</td><td><strong>{salida.recogeNombre && salida.recogeApellido ? `${salida.recogeNombre} ${salida.recogeApellido}` : 'Sin registrar'}</strong><small>{salida.recogeParentesco && salida.recogeCedula ? `${salida.recogeParentesco} · ${salida.recogeCedula}` : 'Dato no disponible'}</small></td><td><span className="exit-status">{salida.estado}</span></td><td><strong>{new Date(salida.creadoEn).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}</strong><small>Registró: {salida.registradoPorNombre}</small></td></tr>) : <tr><td colSpan={7}>{salidas.length ? 'No hay salidas que coincidan con la búsqueda.' : 'Aún no hay salidas registradas.'}</td></tr>}</tbody></table></div></div>
     {mostrarFormulario && <div className="exit-modal-backdrop" role="presentation" onMouseDown={() => setMostrarFormulario(false)}><form className="exit-modal" role="dialog" aria-modal="true" aria-labelledby="exit-modal-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={registrarSalida}><header><div><span aria-hidden="true">↗</span><h3 id="exit-modal-title">Registrar salida</h3></div><button type="button" aria-label="Cerrar" onClick={() => setMostrarFormulario(false)}>×</button></header><div className="exit-modal-body"><label className="exit-student-select"><span>Estudiante</span><select value={estudianteId} onChange={(event) => setEstudianteId(event.target.value)} required><option value="">Selecciona un estudiante...</option>{estudiantes.map((item) => <option key={item.id} value={item.id}>{item.nombre} · {item.grado} {item.grupo}</option>)}</select></label>{seleccionado && <div className="exit-student-summary"><strong>{seleccionado.nombre}</strong><span>{seleccionado.grado} · Grupo {seleccionado.grupo} · Jornada {seleccionado.jornada}</span><small>Acudiente: {seleccionado.acudiente.nombre}</small></div>}<div className="exit-modal-fields"><UserInput label="Nombre" value={recoge.nombre} onChange={(nombre) => setRecoge({ ...recoge, nombre })} required /><UserInput label="Apellido" value={recoge.apellido} onChange={(apellido) => setRecoge({ ...recoge, apellido })} required /><UserInput label="Cédula" value={recoge.cedula} onChange={(cedula) => setRecoge({ ...recoge, cedula })} required /><UserInput label="Parentesco" value={recoge.parentesco} onChange={(parentesco) => setRecoge({ ...recoge, parentesco })} required /><UserInput label="Correo electrónico" value={recoge.correo} onChange={(correo) => setRecoge({ ...recoge, correo })} type="email" required /></div><p className="exit-notice">Al guardar, se enviará un aviso al acudiente registrado y a la persona que recoge al estudiante.</p></div><footer><button type="button" className="exit-modal-cancel" onClick={() => setMostrarFormulario(false)}>Cancelar</button><button className="exit-modal-submit" type="submit" disabled={guardando}>{guardando ? 'Registrando...' : 'Registrar salida'}</button></footer></form></div>}
   </section>;
 }
