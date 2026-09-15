@@ -129,7 +129,7 @@ export async function actualizarUsuario(id: number, input: UsuarioInput, actor: 
   let setContrasena = '';
 
   if (input.contrasena) {
-    setContrasena = ', contrasena = ?';
+    setContrasena = ', contrasena = ?, tokenRecuperacion = NULL, tokenExpira = NULL';
     args.push(await hashPassword(input.contrasena));
   }
 

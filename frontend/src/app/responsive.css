@@ -23,6 +23,28 @@
 .mobile-menu-trigger { display: none; }
 .mobile-navigation:not([open]) { display: none; }
 
+/* El zoom reduce el ancho disponible: los roles conservan su palabra completa
+   y las acciones permanecen visibles mientras se desplaza la tabla. */
+.users-directory-table { min-width: 1040px; }
+.users-directory-table :is(th, td):first-child { min-width: 200px; }
+.users-directory-table :is(th, td):nth-child(2) { min-width: 240px; }
+.users-directory-table :is(th, td):nth-child(3) { min-width: 120px; }
+.users-role-badge { white-space: nowrap; overflow-wrap: normal; }
+.users-directory-table thead tr { background: #192f49; }
+.users-directory-table th { background: inherit; }
+.users-directory-table tbody tr { background: #071724; }
+.users-directory-table tbody tr:hover { background: #0b2138; }
+.users-directory-table th:last-child, .users-directory-table .users-actions-cell {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  min-width: 64px;
+  background: inherit;
+}
+.users-directory-table .users-actions-cell:has([aria-expanded='true']) { z-index: 5; }
+.users-actions-cell > button { white-space: nowrap; padding-inline: 0; }
+.users-password-field > button { flex-shrink: 0; }
+
 /* Las tablas conservan todas sus columnas dentro de una región desplazable. */
 :where(.users-table-scroll, .students-table-scroll, .exit-table-wrap,
   .coexistence-table-wrap, .audit-table-wrap, .directory-table-wrap,

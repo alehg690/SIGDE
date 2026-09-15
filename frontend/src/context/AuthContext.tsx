@@ -17,7 +17,7 @@ type AuthContextValue = {
   autenticado: boolean;
   expiraEn: number | null;
   refrescarSesion: () => Promise<void>;
-  cerrarSesion: () => Promise<void>;
+  cerrarSesion: (message?: string) => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

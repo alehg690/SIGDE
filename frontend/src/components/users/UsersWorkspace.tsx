@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 type RolUsuario = 'Coordinador' | 'Docente' | 'Porteria';
 type Usuario = { id: number; nombre: string; correo: string; rol: RolUsuario; activo: boolean; creadoEn: string; ultimoAcceso: string | null };
@@ -50,7 +51,8 @@ function usuarioToForm(usuario: Usuario): UsuarioForm {
   return { nombre: usuario.nombre, correo: usuario.correo, rol: usuario.rol, contrasena: '', activo: usuario.activo };
 }
 
-export default function UsersWorkspace({ currentUserId, onCurrentUserUpdated }: { currentUserId: number; onCurrentUserUpdated: () => void }) {
+export default function UsersWorkspace({ currentUserId }: { currentUserId: number }) {
+  const { cerrarSesion } = useAuth();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [busqueda, setBusqueda] = useState('');
   const [filtroRol, setFiltroRol] = useState<'Todos' | RolUsuario>('Todos');
@@ -61,6 +63,8 @@ export default function UsersWorkspace({ currentUserId, onCurrentUserUpdated }: 
   const [formCrear, setFormCrear] = useState<UsuarioForm>(EMPTY_FORM);
   const [formEditar, setFormEditar] = useState<UsuarioForm>(EMPTY_FORM);
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
+  const [confirmarContrasena, setConfirmarContrasena] = useState('');
+  const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
   const [contrasenaCopiada, setContrasenaCopiada] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -104,6 +108,9 @@ export default function UsersWorkspace({ currentUserId, onCurrentUserUpdated }: 
   function abrirEditar(usuario: Usuario) {
     setUsuarioEditar(usuario);
     setFormEditar(usuarioToForm(usuario));
+    setMostrarContrasena(false);
+    setMostrarConfirmacion(false);
+    setConfirmarContrasena('');
     setFeedback(null);
     setMenuAbiertoId(null);
     setModal('editar');
@@ -113,6 +120,10 @@ export default function UsersWorkspace({ currentUserId, onCurrentUserUpdated }: 
     if (guardando) return;
     setModal(null);
     setUsuarioEditar(null);
+    setFormEditar(EMPTY_FORM);
+    setConfirmarContrasena('');
+    setMostrarContrasena(false);
+    setMostrarConfirmacion(false);
   }
 
   function generarTemporal() {
@@ -150,15 +161,27 @@ export default function UsersWorkspace({ currentUserId, onCurrentUserUpdated }: 
   async function actualizarUsuario(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!usuarioEditar) return;
+    if (formEditar.contrasena !== confirmarContrasena) {
+      setFeedback({ tipo: 'error', texto: 'Las contraseñas no coinciden.' });
+      return;
+    }
     setGuardando(true); setFeedback(null);
     try {
       const response = await fetch(`/api/usuarios/${usuarioEditar.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formEditar) });
       if (!response.ok) throw new Error(await leerError(response, 'No se pudo actualizar el usuario.'));
-      await cargarUsuarios();
       setModal(null);
-      if (usuarioEditar.id === currentUserId) onCurrentUserUpdated();
       setUsuarioEditar(null);
-      setFeedback({ tipo: 'success', texto: 'Usuario actualizado correctamente.' });
+      setFormEditar(EMPTY_FORM);
+      setConfirmarContrasena('');
+      setMostrarContrasena(false);
+      setMostrarConfirmacion(false);
+      if (usuarioEditar.id === currentUserId) {
+        // La actualización revoca las sesiones, incluida la de esta cuenta.
+        await cerrarSesion('Cuenta actualizada. Inicia sesión con tus credenciales vigentes.');
+        return;
+      }
+      setFeedback({ tipo: 'success', texto: formEditar.contrasena ? 'Usuario y contraseña actualizados. Sus sesiones anteriores se cerraron.' : 'Usuario actualizado correctamente.' });
+      await cargarUsuarios();
     } catch (error) {
       setFeedback({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo actualizar el usuario.' });
     } finally { setGuardando(false); }
@@ -193,7 +216,7 @@ export default function UsersWorkspace({ currentUserId, onCurrentUserUpdated }: 
 
   return <section className="workspace-panel users-directory-workspace" onClick={() => setMenuAbiertoId(null)}>
     <header className="users-directory-heading"><div><h2>Usuarios</h2><p>{cargando ? 'Cargando usuarios...' : `${usuarios.length} usuarios registrados en el sistema`}</p></div><button type="button" className="users-create-trigger" onClick={(event) => { event.stopPropagation(); abrirCrear(); }}><span aria-hidden="true">＋</span> Crear usuario</button></header>
-    {feedback && <p className={`feedback ${feedback.tipo}`} role="status">{feedback.texto}</p>}
+    {feedback && !modal && <p className={`feedback ${feedback.tipo}`} role="status">{feedback.texto}</p>}
     <div className="users-directory-toolbar">
       <label><span className="users-search-icon" aria-hidden="true">⌕</span><span className="sr-only">Buscar usuario</span><input type="search" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} placeholder="Buscar usuario..." /></label>
       <div className="users-role-filters" aria-label="Filtrar por rol"><button type="button" className={filtroRol === 'Todos' ? 'active' : ''} onClick={() => setFiltroRol('Todos')}>Todos</button>{ROLES.map((rol) => <button type="button" key={rol} className={filtroRol === rol ? 'active' : ''} onClick={() => setFiltroRol(rol)}>{etiquetaRol(rol)}</button>)}</div>
@@ -215,9 +238,32 @@ export default function UsersWorkspace({ currentUserId, onCurrentUserUpdated }: 
       </div>
     </div>
 
-    {modal === 'crear' && <div className="users-modal-backdrop" role="presentation" onMouseDown={cerrarModal}><form className="users-modal" role="dialog" aria-modal="true" aria-labelledby="create-user-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={crearUsuario}><header><h3 id="create-user-title">Crear usuario</h3><button type="button" aria-label="Cerrar" onClick={cerrarModal}>×</button></header><div className="users-modal-body"><UserField label="Nombre completo" value={formCrear.nombre} placeholder="Nombre y apellido" onChange={(nombre) => { setFormCrear({ ...formCrear, nombre }); setContrasenaCopiada(false); }} required /><UserField label="Correo electrónico" type="email" value={formCrear.correo} placeholder="correo@institucion.edu.co" onChange={(correo) => setFormCrear({ ...formCrear, correo })} required /><RoleField value={formCrear.rol} onChange={(rol) => setFormCrear({ ...formCrear, rol })} /><label className="users-modal-field"><span>Contraseña temporal</span><div className="users-password-field"><input type={mostrarContrasena ? 'text' : 'password'} value={formCrear.contrasena} minLength={8} maxLength={128} onChange={(event) => { setFormCrear({ ...formCrear, contrasena: event.target.value }); setContrasenaCopiada(false); }} placeholder="Genera o escribe una contraseña" required /><button type="button" onClick={() => setMostrarContrasena((actual) => !actual)}>{mostrarContrasena ? 'Ocultar' : 'Ver'}</button></div><div className="users-password-actions"><button type="button" disabled={!formCrear.nombre.trim()} onClick={generarTemporal}>Generar con el nombre</button><button type="button" disabled={!formCrear.contrasena} onClick={() => void copiarContrasena()}>{contrasenaCopiada ? 'Copiada' : 'Copiar'}</button></div><small>Combina el nombre con números aleatorios y cumple la política mínima de seguridad.</small></label></div><footer><button type="button" onClick={cerrarModal}>Cancelar</button><button type="submit" className="primary" disabled={guardando || !formCrear.contrasena}>{guardando ? 'Creando...' : '✓  Crear usuario'}</button></footer></form></div>}
+    {modal === 'crear' && <div className="users-modal-backdrop" role="presentation" onMouseDown={cerrarModal}><form className="users-modal" role="dialog" aria-modal="true" aria-labelledby="create-user-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={crearUsuario}><header><h3 id="create-user-title">Crear usuario</h3><button type="button" aria-label="Cerrar" onClick={cerrarModal}>×</button></header><div className="users-modal-body">{feedback && <p className={`feedback ${feedback.tipo}`} role="alert">{feedback.texto}</p>}<UserField label="Nombre completo" value={formCrear.nombre} placeholder="Nombre y apellido" onChange={(nombre) => { setFormCrear({ ...formCrear, nombre }); setContrasenaCopiada(false); }} required /><UserField label="Correo electrónico" type="email" value={formCrear.correo} placeholder="correo@institucion.edu.co" onChange={(correo) => setFormCrear({ ...formCrear, correo })} required /><RoleField value={formCrear.rol} onChange={(rol) => setFormCrear({ ...formCrear, rol })} /><label className="users-modal-field"><span>Contraseña temporal</span><div className="users-password-field"><input type={mostrarContrasena ? 'text' : 'password'} value={formCrear.contrasena} minLength={8} maxLength={128} onChange={(event) => { setFormCrear({ ...formCrear, contrasena: event.target.value }); setContrasenaCopiada(false); }} placeholder="Genera o escribe una contraseña" required /><button type="button" onClick={() => setMostrarContrasena((actual) => !actual)}>{mostrarContrasena ? 'Ocultar' : 'Ver'}</button></div><div className="users-password-actions"><button type="button" disabled={!formCrear.nombre.trim()} onClick={generarTemporal}>Generar con el nombre</button><button type="button" disabled={!formCrear.contrasena} onClick={() => void copiarContrasena()}>{contrasenaCopiada ? 'Copiada' : 'Copiar'}</button></div><small>Combina el nombre con números aleatorios y cumple la política mínima de seguridad.</small></label></div><footer><button type="button" onClick={cerrarModal}>Cancelar</button><button type="submit" className="primary" disabled={guardando || !formCrear.contrasena}>{guardando ? 'Creando...' : '✓  Crear usuario'}</button></footer></form></div>}
 
-    {modal === 'editar' && usuarioEditar && <div className="users-modal-backdrop" role="presentation" onMouseDown={cerrarModal}><form className="users-modal" role="dialog" aria-modal="true" aria-labelledby="edit-user-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={actualizarUsuario}><header><h3 id="edit-user-title">Editar usuario</h3><button type="button" aria-label="Cerrar" onClick={cerrarModal}>×</button></header><div className="users-modal-body"><UserField label="Nombre completo" value={formEditar.nombre} onChange={(nombre) => setFormEditar({ ...formEditar, nombre })} required /><UserField label="Correo electrónico" type="email" value={formEditar.correo} onChange={(correo) => setFormEditar({ ...formEditar, correo })} required /><RoleField value={formEditar.rol} disabled={usuarioEditar.id === currentUserId} onChange={(rol) => setFormEditar({ ...formEditar, rol })} />{usuarioEditar.id === currentUserId && <p className="users-current-account-note">Por seguridad no puedes cambiar el rol de la cuenta en uso.</p>}</div><footer><button type="button" onClick={cerrarModal}>Cancelar</button><button type="submit" className="primary" disabled={guardando}>{guardando ? 'Guardando...' : '✓  Guardar cambios'}</button></footer></form></div>}
+    {modal === 'editar' && usuarioEditar && <div className="users-modal-backdrop" role="presentation" onMouseDown={cerrarModal}>
+      <form className="users-modal" role="dialog" aria-modal="true" aria-labelledby="edit-user-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={actualizarUsuario}>
+        <header><h3 id="edit-user-title">Editar usuario</h3><button type="button" aria-label="Cerrar" onClick={cerrarModal}>×</button></header>
+        <div className="users-modal-body">
+          {feedback && <p className={`feedback ${feedback.tipo}`} role="alert">{feedback.texto}</p>}
+          <UserField label="Nombre completo" value={formEditar.nombre} onChange={(nombre) => setFormEditar({ ...formEditar, nombre })} required />
+          <UserField label="Correo electrónico" type="email" value={formEditar.correo} onChange={(correo) => setFormEditar({ ...formEditar, correo })} required />
+          <RoleField value={formEditar.rol} disabled={usuarioEditar.id === currentUserId} onChange={(rol) => setFormEditar({ ...formEditar, rol })} />
+          {usuarioEditar.id === currentUserId && <p className="users-current-account-note">No puedes cambiar tu rol. Al guardar tendrás que iniciar sesión nuevamente.</p>}
+          <label className="users-modal-field" htmlFor="edit-user-password"><span>Nueva contraseña (opcional)</span></label>
+          <div className="users-password-field">
+            <input id="edit-user-password" type={mostrarContrasena ? 'text' : 'password'} autoComplete="new-password" value={formEditar.contrasena} minLength={8} maxLength={128} disabled={guardando} aria-describedby="edit-password-help" onChange={(event) => setFormEditar({ ...formEditar, contrasena: event.target.value })} />
+            <button type="button" aria-label={mostrarContrasena ? 'Ocultar nueva contraseña' : 'Mostrar nueva contraseña'} aria-pressed={mostrarContrasena} onClick={() => setMostrarContrasena((actual) => !actual)}>{mostrarContrasena ? 'Ocultar' : 'Ver'}</button>
+          </div>
+          <p className="users-current-account-note" id="edit-password-help">Déjala vacía para conservar la actual. Usa entre 8 y 128 caracteres, con letras y números. El cambio cierra las sesiones anteriores del usuario.</p>
+          <label className="users-modal-field" htmlFor="edit-user-password-confirm"><span>Confirmar nueva contraseña</span></label>
+          <div className="users-password-field">
+            <input id="edit-user-password-confirm" type={mostrarConfirmacion ? 'text' : 'password'} autoComplete="new-password" value={confirmarContrasena} required={Boolean(formEditar.contrasena)} maxLength={128} disabled={guardando} onChange={(event) => setConfirmarContrasena(event.target.value)} />
+            <button type="button" aria-label={mostrarConfirmacion ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'} aria-pressed={mostrarConfirmacion} onClick={() => setMostrarConfirmacion((actual) => !actual)}>{mostrarConfirmacion ? 'Ocultar' : 'Ver'}</button>
+          </div>
+        </div>
+        <footer><button type="button" onClick={cerrarModal}>Cancelar</button><button type="submit" className="primary" disabled={guardando}>{guardando ? 'Guardando...' : '✓  Guardar cambios'}</button></footer>
+      </form>
+    </div>}
 
     {usuarioEliminar && <div className="users-modal-backdrop" role="presentation" onMouseDown={() => !guardando && setUsuarioEliminar(null)}><div className="users-delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-user-title" onMouseDown={(event) => event.stopPropagation()}><span className="users-delete-icon" aria-hidden="true">!</span><h3 id="delete-user-title">¿Eliminar usuario?</h3><p>Se eliminará la cuenta de <strong>{usuarioEliminar.nombre}</strong>. Si tiene reportes, salidas o registros de auditoría, SIGDE conservará la cuenta y te pedirá desactivarla.</p><div><button type="button" disabled={guardando} onClick={() => setUsuarioEliminar(null)}>Cancelar</button><button type="button" className="danger" disabled={guardando} onClick={() => void eliminarUsuario()}>{guardando ? 'Eliminando...' : 'Eliminar usuario'}</button></div></div></div>}
   </section>;

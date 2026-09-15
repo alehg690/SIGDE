@@ -795,7 +795,7 @@ function DashboardContent({
   }
 
   if (section === 'usuarios') {
-    return <UsersWorkspace currentUserId={usuario.id} onCurrentUserUpdated={onCurrentUserUpdated} />;
+    return <UsersWorkspace currentUserId={usuario.id} />;
   }
 
   if (section === 'configuracion') {
