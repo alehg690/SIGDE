@@ -170,27 +170,41 @@ export async function cambiarEstadoUsuario(id: number, activo: boolean, actor: S
   return { data: usuario };
 }
 
-export async function eliminarUsuario(id: number, actor: SesionUsuario) {
+export async function eliminarUsuario(id: number, actor: SesionUsuario, borrarAuditoria = false) {
   if (id === actor.id) return { error: 'No puedes eliminar la cuenta con la que estás trabajando', status: 400 };
-
-  const usuario = await obtenerUsuarioPorId(id);
-  if (!usuario) return { error: 'Usuario no encontrado', status: 404 };
-
-  const dependencias = await db.execute({
-    sql: `
-      SELECT
-        (SELECT COUNT(*) FROM Reporte WHERE docenteId = ?) +
-        (SELECT COUNT(*) FROM ObservacionReporte WHERE usuarioId = ?) +
-        (SELECT COUNT(*) FROM Salida WHERE registradoPorId = ?) +
-        (SELECT COUNT(*) FROM AuditLog WHERE usuarioId = ?) AS total
-    `,
-    args: [id, id, id, id],
-  });
-  if (Number(dependencias.rows[0]?.total || 0) > 0) {
-    return { error: 'Este usuario tiene historial institucional y no puede eliminarse. Desactívalo para conservar la trazabilidad.', status: 409 };
+  const tx = await db.transaction('write');
+  try {
+    const result = await tx.execute({ sql: 'SELECT nombre, correo, rol FROM Usuario WHERE id = ?', args: [id] });
+    const usuario = result.rows[0];
+    if (!usuario) return { error: 'Usuario no encontrado', status: 404 };
+    // Algunas instalaciones aún no incluyen las tablas del módulo de convivencia.
+    const tablas = new Set((await tx.execute("SELECT name FROM sqlite_master WHERE type = 'table'")).rows.map(row => String(row.name)));
+    const relaciones = [
+      ['Reporte', 'docenteId'], ['ObservacionReporte', 'usuarioId'], ['Salida', 'registradoPorId'],
+      ['ConvivenciaReporte', 'creadoPorId'], ['ProcesoConvivencia', 'creadoPorId'],
+      ['AccionConvivencia', 'responsableId'], ['ProtocoloConvivencia', 'registradoPorId'], ['SiuceRegistro', 'responsableId'],
+    ];
+    for (const [tabla, columna] of relaciones) {
+      if (!tablas.has(tabla)) continue;
+      const refs = await tx.execute({ sql: `SELECT 1 FROM ${tabla} WHERE ${columna} = ? LIMIT 1`, args: [id] });
+      if (refs.rows.length) return { error: 'Este usuario tiene reportes, salidas u otro historial institucional. Desactívalo para conservar ese historial.', status: 409 };
+    }
+    if (borrarAuditoria) {
+      await tx.execute({ sql: 'DELETE FROM AuditLog WHERE usuarioId = ?', args: [id] });
+    } else {
+      await tx.execute({ sql: 'UPDATE AuditLog SET usuarioNombre = ?, usuarioId = NULL WHERE usuarioId = ?', args: [usuario.nombre, id] });
+    }
+    await tx.execute({ sql: 'DELETE FROM NotificacionUsuario WHERE usuarioId = ?', args: [id] });
+    await tx.execute({ sql: 'UPDATE GrupoEscolar SET directorId = NULL, actualizadoEn = CURRENT_TIMESTAMP WHERE directorId = ?', args: [id] });
+    await tx.execute({ sql: 'DELETE FROM Usuario WHERE id = ?', args: [id] });
+    await tx.execute({
+      sql: 'INSERT INTO AuditLog (usuarioId, accion, entidad, entidadId, detalle) VALUES (?, ?, ?, ?, ?)',
+      args: [actor.id, 'eliminar_usuario', 'Usuario', String(id), JSON.stringify({ nombre: usuario.nombre, correo: usuario.correo, rol: usuario.rol, borrarAuditoria })],
+    });
+    await tx.commit();
+    return { data: { id } };
+  } finally {
+    if (!tx.closed) await tx.rollback();
+    tx.close();
   }
-
-  await db.execute({ sql: 'DELETE FROM Usuario WHERE id = ?', args: [id] });
-  await registrarAccion({ usuarioId: actor.id, accion: 'eliminar_usuario', entidad: 'Usuario', entidadId: id, detalle: { nombre: usuario.nombre, correo: usuario.correo, rol: usuario.rol } });
-  return { data: { id } };
 }

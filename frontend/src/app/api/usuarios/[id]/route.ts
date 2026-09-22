@@ -58,7 +58,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   return NextResponse.json(result.data);
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   const auth = await requerirSesion(['Coordinador']);
   if (esErrorAuth(auth)) return auth.response;
 
@@ -68,7 +68,11 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Usuario no válido' }, { status: 400 });
   }
 
-  const result = await eliminarUsuario(usuarioId, auth.usuario);
+  const body = await req.json().catch(() => null);
+  if (body !== null && (typeof body !== 'object' || typeof body.borrarAuditoria !== 'boolean')) {
+    return NextResponse.json({ error: 'Indica si deseas borrar la auditoría' }, { status: 400 });
+  }
+  const result = await eliminarUsuario(usuarioId, auth.usuario, body?.borrarAuditoria === true);
   if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json(result.data);
 }

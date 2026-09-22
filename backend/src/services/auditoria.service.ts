@@ -26,9 +26,9 @@ export async function registrarAccion(input: AuditoriaInput) {
 
 export async function consultarLogs() {
   const result = await db.execute(`
-    SELECT a.id, a.usuarioId, u.nombre AS usuario, a.accion, a.entidad, a.entidadId, a.detalle, a.creadoEn
+    SELECT a.id, a.usuarioId, COALESCE(u.nombre, a.usuarioNombre, 'Usuario eliminado') AS usuario, a.accion, a.entidad, a.entidadId, a.detalle, a.creadoEn
     FROM AuditLog a
-    INNER JOIN Usuario u ON u.id = a.usuarioId
+    LEFT JOIN Usuario u ON u.id = a.usuarioId
     ORDER BY a.creadoEn DESC
     LIMIT 200
   `);

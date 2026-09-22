@@ -196,13 +196,14 @@ model Notificacion {
 
 model AuditLog {
   id        Int      @id @default(autoincrement())
-  usuarioId Int
+  usuarioId Int?
+  usuarioNombre String?
   accion    String
   entidad   String
   entidadId String?
   detalle   String?
   creadoEn  DateTime @default(now())
-  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  usuario   Usuario?  @relation(fields: [usuarioId], references: [id])
 }
 
 model ConfiguracionSistema {
