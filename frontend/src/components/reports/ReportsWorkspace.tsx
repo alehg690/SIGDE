@@ -1,5 +1,7 @@
 'use client';
 
+import ObservadorFields, { observadorVacio, ObservadorDetalle } from './ObservadorFields';
+import type { Observador } from '@backend/types/observador';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import type { Estudiante } from '@/types/students';
 import type {
@@ -12,11 +14,11 @@ import type {
 } from '@/types/reports';
 
 const TIPO_LABELS: Record<TipoFalta, string> = {
+  ACADEMICA: 'Académica',
   TIPO_I: 'Tipo I',
   TIPO_II: 'Tipo II',
   TIPO_III: 'Tipo III',
 };
-const FORM_TO_MANUAL = { '1': 'Tipo I', '2': 'Tipo II', '3': 'Tipo III' } as const;
 const ESTADO_LABELS: Record<EstadoReporte, string> = {
   Pendiente: 'Pendiente',
   EnRevision: 'En revisión',
@@ -41,6 +43,7 @@ function fechaLocalInput(value = new Date()) {
 
 function crearFormularioVacio(): ReporteFormData {
   return {
+    observador: observadorVacio(),
     estudianteId: '',
     tipoFalta: '1',
     fechaHecho: fechaLocalInput(),
@@ -280,7 +283,7 @@ export default function ReportsWorkspace({
   </section>;
 }
 
-function ReportCreateForm({ form, setForm, estudiantes, manual, guardando, onSubmit, onCancel }: {
+function ReportCreateForm({ form, setForm, estudiantes, guardando, onSubmit, onCancel }: {
   form: ReporteFormData;
   setForm: (form: ReporteFormData) => void;
   estudiantes: Estudiante[];
@@ -289,29 +292,18 @@ function ReportCreateForm({ form, setForm, estudiantes, manual, guardando, onSub
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onCancel: () => void;
 }) {
-  const tipoManual = FORM_TO_MANUAL[form.tipoFalta];
-  const regla = manual?.tipos.find((item) => item.tipo === tipoManual);
-  const situaciones = manual?.situacionesTipificadas[tipoManual] ?? [];
   return <form className="report-create-form" onSubmit={onSubmit}>
-    <div className="report-form-intro"><div><span>Nuevo registro</span><h3>Información verificable de la situación</h3><p>Registra hechos observables. La clasificación puede ser revisada por coordinación.</p></div><strong>Los campos con * son obligatorios</strong></div>
-    <fieldset className="report-form-section"><legend><span>1</span> Contexto del hecho</legend><div className="report-form-grid">
-      <label><span>Estudiante *</span><select value={form.estudianteId} onChange={(event) => setForm({ ...form, estudianteId: event.target.value })} required><option value="">Seleccionar estudiante</option>{estudiantes.map((item) => <option value={item.id} key={item.id}>{item.nombre} · {item.grado}-{item.grupo}</option>)}</select></label>
-      <label><span>Fecha y hora del hecho *</span><input type="datetime-local" value={form.fechaHecho} max={fechaLocalInput()} onChange={(event) => setForm({ ...form, fechaHecho: event.target.value })} required /></label>
-      <label><span>Lugar *</span><input value={form.lugar} minLength={3} maxLength={120} onChange={(event) => setForm({ ...form, lugar: event.target.value })} placeholder="Ej. Aula 11-2, patio central" required /></label>
-      <label><span>Clasificación inicial *</span><select value={form.tipoFalta} onChange={(event) => setForm({ ...form, tipoFalta: event.target.value as ReporteFormData['tipoFalta'], situacion: '' })}><option value="1">Tipo I · Manejo pedagógico</option><option value="2">Tipo II · Atención de coordinación</option><option value="3">Tipo III · Activación prioritaria</option></select></label>
-      <label className="report-situation-field"><span>Situación identificada *</span><select value={form.situacion} onChange={(event) => setForm({ ...form, situacion: event.target.value })} required><option value="">Seleccionar situación</option>{situaciones.map((item) => <option key={item}>{item}</option>)}<option value="Otra situación descrita en los hechos">Otra situación descrita en los hechos</option></select></label>
-      {regla && <aside className={`report-rule-note report-rule-note--${form.tipoFalta}`}><strong>{regla.tipo} · {regla.articulo}</strong><p>{regla.descripcion}</p><small>Instancia sugerida: {regla.instancia}</small>{regla.requiereSiuce && <em>Requiere valoración institucional para SIUCE</em>}</aside>}
-    </div></fieldset>
-    <fieldset className="report-form-section"><legend><span>2</span> Relato y actuación</legend><div className="report-form-grid">
-      <label className="report-description-field"><span>Descripción de los hechos *</span><textarea value={form.descripcion} minLength={20} maxLength={2000} onChange={(event) => setForm({ ...form, descripcion: event.target.value })} placeholder="Indica qué ocurrió, cómo se observó y quiénes estuvieron presentes. Evita diagnósticos o juicios personales." required /><small>{form.descripcion.length}/2000 caracteres</small></label>
-      <label className="report-description-field"><span>Actuación inicial realizada *</span><textarea value={form.actuacionInicial} minLength={3} maxLength={1000} onChange={(event) => setForm({ ...form, actuacionInicial: event.target.value })} placeholder="Ej. Se escucharon las partes, se detuvo la situación y se remitió a dirección de grupo." required /><small>{form.actuacionInicial.length}/1000 caracteres</small></label>
-    </div></fieldset>
-    <fieldset className="report-form-section"><legend><span>3</span> Evidencia y acceso</legend><div className="report-form-grid">
-      <label className="report-evidence-field"><span>Enlace de evidencia inicial <small>Opcional</small></span><input type="url" value={form.evidenciaUrl} onChange={(event) => setForm({ ...form, evidenciaUrl: event.target.value })} placeholder="https://drive.google.com/..." /><small>Debe ser un enlace institucional con permisos controlados.</small></label>
-      <label className="report-confidential-field"><input type="checkbox" checked={form.confidencial} onChange={(event) => setForm({ ...form, confidencial: event.target.checked })} /><span><strong>Acceso reservado</strong><small>Solo coordinación y quien registra podrán consultarlo.</small></span></label>
-      <p className="report-notification-note"><strong>Notificación automática</strong><span>Al guardar, SIGDE registra un aviso para el acudiente y para el director de grupo cuando esté configurado.</span></p>
-    </div></fieldset>
-    <div className="report-form-actions"><button type="button" onClick={onCancel}>Cancelar</button><button className="primary-button" type="submit" disabled={guardando || estudiantes.length === 0 || !manual}>{guardando ? 'Registrando...' : 'Registrar reporte'}</button></div>
+    <div className="report-form-intro"><div><span>Nuevo reporte</span><h3>Observador · Acta de reunión</h3><p>Completa las tres secciones del formato institucional.</p></div><strong>Los campos con * son obligatorios</strong></div>
+    <ObservadorFields value={form.observador} onChange={observador => setForm({ ...form, observador })} estudiante={<label><span>Estudiante *</span><select value={form.estudianteId} onChange={event => {
+      const alumno = estudiantes.find(item => String(item.id) === event.target.value);
+      setForm({ ...form, estudianteId: event.target.value, observador: { ...form.observador, jornada: alumno?.jornada === 'Sin registrar' ? '' : alumno?.jornada || '', grupo: alumno ? `${alumno.grado}-${alumno.grupo}` : '', acudiente: alumno?.acudiente.nombre === 'Pendiente de registrar' ? '' : alumno?.acudiente.nombre || '', cedulaAcudiente: alumno?.acudiente.documento || '' } });
+    }} required><option value="">Seleccionar estudiante</option>{estudiantes.map(item => <option key={item.id} value={item.id}>{item.nombre} · {item.grado}-{item.grupo}</option>)}</select></label>} />
+    <div className="report-form-grid">
+      <label className="report-evidence-field"><span>Enlace de evidencia (opcional)</span><input type="url" value={form.evidenciaUrl} onChange={e => setForm({ ...form, evidenciaUrl: e.target.value })} /></label>
+      <label className="report-confidential-field"><input type="checkbox" checked={form.confidencial} onChange={e => setForm({ ...form, confidencial: e.target.checked })} /><span>Acceso reservado</span></label>
+      <p className="report-notification-note">Al guardar se registra la notificación al acudiente y al director de grupo configurados.</p>
+    </div>
+    <div className="report-form-actions"><button type="button" onClick={onCancel}>Cancelar</button><button className="primary-button" type="submit" disabled={guardando || estudiantes.length === 0}>{guardando ? 'Registrando...' : 'Registrar reporte'}</button></div>
   </form>;
 }
 
@@ -321,6 +313,7 @@ function ReportDetail({ reporte, loading, currentUserId, onUpdated }: {
   currentUserId: number;
   onUpdated: (id: number, message: string) => Promise<void>;
 }) {
+  const [observadorEdicion, setObservadorEdicion] = useState<Observador | null>(null);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [editForm, setEditForm] = useState({ fechaHecho: '', lugar: '', situacion: '', descripcion: '', actuacionInicial: '', confidencial: false });
   const [estado, setEstado] = useState<EstadoReporte>('Pendiente');
@@ -334,6 +327,7 @@ function ReportDetail({ reporte, loading, currentUserId, onUpdated }: {
     if (!reporte) return;
     const timer = window.setTimeout(() => {
       setModoEdicion(false);
+      setObservadorEdicion(reporte.observador);
       setEditForm({
         fechaHecho: fechaLocalInput(new Date(reporte.fechaHecho || reporte.fecha)),
         lugar: reporte.lugar || '',
@@ -372,7 +366,7 @@ function ReportDetail({ reporte, loading, currentUserId, onUpdated }: {
     const guardado = await ejecutar(() => fetch(`/api/reportes/${reporte!.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...editForm, fechaHecho: new Date(editForm.fechaHecho).toISOString() }),
+      body: JSON.stringify({ ...editForm, ...(observadorEdicion ? { observador: observadorEdicion } : {}), fechaHecho: new Date(editForm.fechaHecho).toISOString() }),
     }), 'Reporte corregido y cambio registrado en auditoría.');
     if (guardado) setModoEdicion(false);
   }
@@ -411,14 +405,16 @@ function ReportDetail({ reporte, loading, currentUserId, onUpdated }: {
     <dl className="report-metadata"><div><dt>Estado</dt><dd><span className={`report-status report-status--${estadoClase(reporte.estado)}`}>{ESTADO_LABELS[reporte.estado]}</span></dd></div><div><dt>Hecho ocurrido</dt><dd>{fechaLegible(reporte.fechaHecho || reporte.fecha)}</dd></div><div><dt>Lugar</dt><dd>{reporte.lugar || 'Sin registrar'}</dd></div><div><dt>Registrado</dt><dd>{fechaLegible(reporte.fecha)}</dd></div></dl>
     {error && <p className="report-detail-error" role="alert">{error}</p>}
     {modoEdicion ? <div className="report-detail-editor">
+      {observadorEdicion ? <ObservadorFields value={observadorEdicion} onChange={setObservadorEdicion} /> : <>
       <label><span>Fecha y hora</span><input type="datetime-local" value={editForm.fechaHecho} max={fechaLocalInput()} onChange={(event) => setEditForm({ ...editForm, fechaHecho: event.target.value })} /></label>
       <label><span>Lugar</span><input value={editForm.lugar} onChange={(event) => setEditForm({ ...editForm, lugar: event.target.value })} /></label>
       <label><span>Situación</span><input value={editForm.situacion} onChange={(event) => setEditForm({ ...editForm, situacion: event.target.value })} /></label>
       <label><span>Descripción</span><textarea minLength={20} maxLength={2000} value={editForm.descripcion} onChange={(event) => setEditForm({ ...editForm, descripcion: event.target.value })} /></label>
       <label><span>Actuación inicial</span><textarea minLength={3} maxLength={1000} value={editForm.actuacionInicial} onChange={(event) => setEditForm({ ...editForm, actuacionInicial: event.target.value })} /></label>
+      </>}
       <label className="report-editor-private"><input type="checkbox" checked={editForm.confidencial} onChange={(event) => setEditForm({ ...editForm, confidencial: event.target.checked })} /><span>Acceso reservado</span></label>
       <div><button type="button" onClick={() => setModoEdicion(false)}>Cancelar</button><button type="button" className="primary-button" disabled={guardando || editForm.descripcion.trim().length < 20} onClick={() => void guardarEdicion()}>{guardando ? 'Guardando...' : 'Guardar corrección'}</button></div>
-    </div> : <>
+    </div> : reporte.observador ? <ObservadorDetalle value={reporte.observador} /> : <>
       <div className="report-detail-copy"><span>Situación identificada</span><strong>{reporte.situacion || 'Sin clasificación específica'}</strong></div>
       <div className="report-detail-copy"><span>Descripción de los hechos</span><p>{reporte.descripcion}</p></div>
       <div className="report-detail-copy"><span>Actuación inicial</span><p>{reporte.actuacionInicial || 'No registrada'}</p></div>

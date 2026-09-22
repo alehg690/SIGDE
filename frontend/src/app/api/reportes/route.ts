@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
 
   const result = await crearReporte(
     {
+      observador: body.observador,
       estudianteId: Number(body.estudianteId),
       tipoFalta: Number(body.tipoFalta),
       fechaHecho: body.fechaHecho ? String(body.fechaHecho) : undefined,

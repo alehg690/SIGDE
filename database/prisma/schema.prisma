@@ -13,6 +13,7 @@ enum RolUsuario {
 }
 
 enum TipoFalta {
+  ACADEMICA
   TIPO_I
   TIPO_II
   TIPO_III
@@ -117,6 +118,7 @@ model Estudiante {
 }
 
 model Reporte {
+  observador     String?
   id             Int       @id @default(autoincrement())
   estudianteId   Int
   docenteId      Int

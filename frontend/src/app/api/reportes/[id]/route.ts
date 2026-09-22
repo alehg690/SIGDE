@@ -58,6 +58,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   if (!body) return NextResponse.json({ error: 'Solicitud inválida' }, { status: 400 });
 
   const result = await editarReporte(reporteId, auth.usuario, {
+    observador: body.observador,
     fechaHecho: body.fechaHecho ? String(body.fechaHecho) : undefined,
     lugar: body.lugar === undefined ? undefined : String(body.lugar),
     situacion: body.situacion === undefined ? undefined : String(body.situacion),

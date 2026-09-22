@@ -1,3 +1,4 @@
+import { validarObservador, datosReporteObservador } from '@backend/services/observador.service';
 import { randomUUID } from 'crypto';
 import { db } from '@backend/config/database';
 import { evaluarAlertaEstudiante } from '@backend/services/alertas.service';
@@ -7,6 +8,7 @@ import { notificarAcudienteCambioReporte, notificarAcudientePorReporte } from '@
 import type { SesionUsuario } from '@backend/types/roles';
 
 export type ReporteInput = {
+  observador?: unknown;
   estudianteId: number;
   tipoFalta: number;
   fechaHecho?: string;
@@ -19,6 +21,7 @@ export type ReporteInput = {
 };
 
 export type EdicionReporteInput = {
+  observador?: unknown;
   fechaHecho?: string;
   lugar?: string;
   situacion?: string;
@@ -51,6 +54,7 @@ const TRANSICIONES_REPORTE: Record<string, string[]> = {
 };
 
 function normalizarTipoFalta(tipoFalta: number) {
+  if (tipoFalta === 0) return 'ACADEMICA';
   if (tipoFalta === 1) return 'TIPO_I';
   if (tipoFalta === 2) return 'TIPO_II';
   if (tipoFalta === 3) return 'TIPO_III';
@@ -131,7 +135,7 @@ export async function listarReportes(usuario: SesionUsuario) {
   const result = await db.execute({
     sql: `
       SELECT
-        r.id, r.tipoFalta, r.fechaHecho, r.lugar, r.situacion, r.descripcion,
+        r.observador, r.id, r.tipoFalta, r.fechaHecho, r.lugar, r.situacion, r.descripcion,
         r.actuacionInicial, r.evidenciaUrl, r.observaciones, r.fecha, r.estado,
         r.confidencial, r.editableHasta, r.creadoEn, r.actualizadoEn,
         e.id AS estudianteId, e.nombre AS estudiante, e.grado, e.grupo,
@@ -149,14 +153,14 @@ export async function listarReportes(usuario: SesionUsuario) {
     `,
     args: [usuario.rol, usuario.id],
   });
-  return { data: result.rows };
+  return { data: result.rows.map(row => ({ ...row, observador: row.observador ? JSON.parse(String(row.observador)) : null })) };
 }
 
 export async function obtenerReporte(id: number, usuario: SesionUsuario) {
   const result = await db.execute({
     sql: `
       SELECT
-        r.id, r.tipoFalta, r.fechaHecho, r.lugar, r.situacion, r.descripcion,
+        r.observador, r.id, r.tipoFalta, r.fechaHecho, r.lugar, r.situacion, r.descripcion,
         r.actuacionInicial, r.evidenciaUrl, r.observaciones, r.fecha, r.estado,
         r.confidencial, r.editableHasta, r.creadoEn, r.actualizadoEn,
         e.id AS estudianteId, e.nombre AS estudiante, e.grado, e.grupo,
@@ -224,6 +228,7 @@ export async function obtenerReporte(id: number, usuario: SesionUsuario) {
   return {
     data: {
       ...reporte,
+      observador: reporte.observador ? JSON.parse(String(reporte.observador)) : null,
       evidencias: evidencias.rows,
       observacionesLista: observaciones.rows,
       notificaciones,
@@ -239,6 +244,9 @@ export async function obtenerReporte(id: number, usuario: SesionUsuario) {
 }
 
 export async function crearReporte(input: ReporteInput, usuario: SesionUsuario) {
+  const acta = validarObservador(input.observador);
+  if ('error' in acta) return acta;
+  input = { ...input, ...datosReporteObservador(acta.data) };
   const validacion = validarReporte(input);
   if ('error' in validacion) return validacion;
   const data = validacion.data;
@@ -256,15 +264,15 @@ export async function crearReporte(input: ReporteInput, usuario: SesionUsuario) 
       sql: `
         INSERT INTO Reporte (
           estudianteId, docenteId, tipoFalta, fechaHecho, lugar, situacion,
-          descripcion, actuacionInicial, confidencial, evidenciaUrl, editableHasta
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        RETURNING id, estudianteId, docenteId, tipoFalta, fechaHecho, lugar, situacion,
+          descripcion, actuacionInicial, confidencial, evidenciaUrl, editableHasta, observador
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        RETURNING observador, id, estudianteId, docenteId, tipoFalta, fechaHecho, lugar, situacion,
           descripcion, actuacionInicial, evidenciaUrl, observaciones, fecha, estado,
           confidencial, editableHasta, creadoEn, actualizadoEn
       `,
       args: [data.estudianteId, usuario.id, data.tipoFalta, data.fechaHecho, data.lugar,
         data.situacion, data.descripcion, data.actuacionInicial, data.confidencial,
-        data.evidenciaUrl, editableHasta],
+        data.evidenciaUrl, editableHasta, JSON.stringify(acta.data)],
     });
     reporte = result.rows[0];
     if (data.evidenciaUrl) {
@@ -299,6 +307,7 @@ export async function crearReporte(input: ReporteInput, usuario: SesionUsuario) 
   return {
     data: {
       ...reporte,
+      observador: reporte.observador ? JSON.parse(String(reporte.observador)) : null,
       avisos: efectos.map((efecto, index) => efecto.status === 'rejected' ? `No se completó: ${nombres[index]}.` : null).filter(Boolean),
     },
     status: 201,
@@ -307,7 +316,7 @@ export async function crearReporte(input: ReporteInput, usuario: SesionUsuario) 
 
 export async function editarReporte(id: number, usuario: SesionUsuario, input: EdicionReporteInput) {
   const actual = await db.execute({
-    sql: `SELECT docenteId, editableHasta, estado, fechaHecho, lugar, situacion,
+    sql: `SELECT observador, docenteId, editableHasta, estado, fechaHecho, lugar, situacion,
                  descripcion, actuacionInicial, confidencial FROM Reporte WHERE id = ? LIMIT 1`,
     args: [id],
   });
@@ -316,6 +325,15 @@ export async function editarReporte(id: number, usuario: SesionUsuario, input: E
   if (Number(row.docenteId) !== usuario.id) return { error: 'Solo la persona que creó el reporte puede corregirlo', status: 403 } as const;
   if (!edicionVigente(row)) return { error: 'El reporte solo puede corregirse mientras esté pendiente y dentro de las primeras 24 horas', status: 403 } as const;
 
+  let observador = row.observador ? String(row.observador) : null;
+  let tipoActualizado: string | null = null;
+  if (observador || input.observador !== undefined) {
+    const acta = validarObservador(input.observador ?? JSON.parse(observador!));
+    if ('error' in acta) return acta;
+    input = { ...input, ...datosReporteObservador(acta.data) };
+    observador = JSON.stringify(acta.data);
+    tipoActualizado = normalizarTipoFalta(Number(acta.data.tipoSituacion));
+  }
   const fechaHecho = validarFechaHecho(input.fechaHecho ?? (row.fechaHecho ? String(row.fechaHecho) : undefined));
   if (!fechaHecho) return { error: 'Indica una fecha válida del hecho', status: 400 } as const;
   const lugar = (input.lugar ?? String(row.lugar || '')).trim();
@@ -331,12 +349,12 @@ export async function editarReporte(id: number, usuario: SesionUsuario, input: E
   const result = await db.execute({
     sql: `
       UPDATE Reporte SET fechaHecho = ?, lugar = ?, situacion = ?, descripcion = ?,
-        actuacionInicial = ?, confidencial = ?, actualizadoEn = CURRENT_TIMESTAMP WHERE id = ?
-      RETURNING id, estudianteId, docenteId, tipoFalta, fechaHecho, lugar, situacion,
+        actuacionInicial = ?, confidencial = ?, observador = ?, tipoFalta = COALESCE(?, tipoFalta), actualizadoEn = CURRENT_TIMESTAMP WHERE id = ?
+      RETURNING observador, id, estudianteId, docenteId, tipoFalta, fechaHecho, lugar, situacion,
         descripcion, actuacionInicial, evidenciaUrl, observaciones, fecha, estado,
         confidencial, editableHasta, creadoEn, actualizadoEn
     `,
-    args: [fechaHecho, lugar, situacion, descripcion, actuacionInicial, confidencial, id],
+    args: [fechaHecho, lugar, situacion, descripcion, actuacionInicial, confidencial, observador, tipoActualizado, id],
   });
   await registrarAccion({ usuarioId: usuario.id, accion: 'editar_reporte', entidad: 'Reporte', entidadId: id, detalle: { confidencial: Boolean(confidencial) } })
     .catch((error) => reportarEfectoFallido('auditoría de edición', error));
@@ -408,7 +426,7 @@ export async function cambiarEstadoReporte(id: number, estado: string, observaci
 
   const statements: Array<{ sql: string; args: Array<string | number | null> }> = [{
     sql: `UPDATE Reporte SET estado = ?, observaciones = COALESCE(?, observaciones), actualizadoEn = CURRENT_TIMESTAMP
-      WHERE id = ? RETURNING id, estudianteId, docenteId, tipoFalta, fechaHecho, lugar, situacion,
+      WHERE id = ? RETURNING observador, id, estudianteId, docenteId, tipoFalta, fechaHecho, lugar, situacion,
       descripcion, actuacionInicial, evidenciaUrl, observaciones, fecha, estado, confidencial,
       editableHasta, creadoEn, actualizadoEn`,
     args: [estadoLimpio, observacion || null, id],

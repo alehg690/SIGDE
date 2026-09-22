@@ -6,7 +6,7 @@ import type { SesionUsuario } from '@backend/types/roles';
 export async function notificarAcudientePorReporte(reporteId: number) {
   const result = await db.execute({
     sql: `
-      SELECT r.id, r.descripcion, e.nombre AS estudiante, e.grado, e.grupo,
+      SELECT r.id, r.tipoFalta, r.descripcion, e.nombre AS estudiante, e.grado, e.grupo,
              a.id AS acudienteId, a.nombre AS acudiente, COALESCE(a.correo, a.contacto) AS destino,
              director.id AS directorId, director.nombre AS directorNombre, director.correo AS directorCorreo,
              docente.nombre AS docenteReporta
@@ -25,8 +25,9 @@ export async function notificarAcudientePorReporte(reporteId: number) {
   const row = result.rows[0];
   if (!row) return;
 
-  const asunto = `Reporte de convivencia - ${row.estudiante}`;
-  const mensaje = `Se registró un reporte de convivencia para ${row.estudiante}. Descripción: ${row.descripcion}`;
+  const categoria = row.tipoFalta === 'ACADEMICA' ? 'académico' : 'de convivencia';
+  const asunto = `Reporte ${categoria} - ${row.estudiante}`;
+  const mensaje = `Se registró un reporte ${categoria} para ${row.estudiante}. Descripción: ${row.descripcion}`;
   const destino = String(row.destino || '');
   const canal = destino.includes('@') ? 'email' : 'app';
 

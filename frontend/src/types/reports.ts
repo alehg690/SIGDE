@@ -1,5 +1,6 @@
-export type TipoFalta = 'TIPO_I' | 'TIPO_II' | 'TIPO_III';
-export type TipoFaltaForm = '1' | '2' | '3';
+import type { Observador } from '@backend/types/observador';
+export type TipoFalta = 'TIPO_I' | 'TIPO_II' | 'TIPO_III' | 'ACADEMICA';
+export type TipoFaltaForm = '1' | '2' | '3' | '0';
 export type EstadoReporte = 'Pendiente' | 'EnRevision' | 'Cerrado' | 'Anulado';
 
 export type EvidenciaReporte = {
@@ -30,6 +31,7 @@ export type NotificacionReporte = {
 };
 
 export type Reporte = {
+  observador: Observador | null;
   id: number;
   estudianteId: number;
   estudiante: string;
@@ -69,6 +71,7 @@ export type ReporteDetalle = Reporte & {
 };
 
 export type ReporteFormData = {
+  observador: Observador;
   estudianteId: string;
   tipoFalta: TipoFaltaForm;
   fechaHecho: string;

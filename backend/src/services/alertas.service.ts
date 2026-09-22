@@ -13,6 +13,7 @@ export async function evaluarAlertaEstudiante(estudianteId: number, usuario: Ses
       FROM Reporte
       WHERE estudianteId = ?
         AND estado <> 'Anulado'
+        AND tipoFalta <> 'ACADEMICA'
         AND creadoEn >= datetime('now', ?)
     `,
     args: [estudianteId, `-${periodoDias} days`],
