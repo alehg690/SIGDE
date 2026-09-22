@@ -204,10 +204,14 @@ export default function ReportsWorkspace({
     setGuardando(true);
     setMensaje(null);
     try {
+      const ahora = new Date();
+      const fechaEquipo = fechaLocalInput(ahora);
       const response = await fetch('/api/reportes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, fechaHecho: new Date(form.fechaHecho).toISOString() }),
+        body: JSON.stringify({ ...form, fechaHecho: ahora.toISOString(), observador: {
+          ...form.observador, fecha: fechaEquipo.slice(0, 10), horaInicio: fechaEquipo.slice(11, 16), horaFinal: '',
+        } }),
       });
       if (!response.ok) throw new Error(await leerError(response, 'No se pudo registrar el reporte.'));
       const creado = await response.json() as { id: number; avisos?: string[] };
@@ -296,7 +300,7 @@ function ReportCreateForm({ form, setForm, estudiantes, guardando, onSubmit, onC
   return <form className="report-create-form" onSubmit={onSubmit}>
     <div className="report-form-intro"><div><span>Nuevo reporte</span><h3>Observador · Acta de reunión</h3><p>Completa las tres secciones del formato institucional.</p></div><strong>Los campos con * son obligatorios</strong></div>
     <ObservadorFields value={form.observador} onChange={observador => setForm({ ...form, observador })} estudiante={<StudentSearch estudiantes={estudiantes} value={form.estudianteId} onChange={alumno => {
-      setForm({ ...form, estudianteId: alumno ? String(alumno.id) : '', observador: { ...form.observador, jornada: alumno?.jornada === 'Sin registrar' ? '' : alumno?.jornada || '', grupo: alumno ? `${alumno.grado}-${alumno.grupo}` : '', acudiente: alumno?.acudiente.nombre === 'Pendiente de registrar' ? '' : alumno?.acudiente.nombre || '', cedulaAcudiente: alumno?.acudiente.documento || '' } });
+      setForm({ ...form, estudianteId: alumno ? String(alumno.id) : '' });
     }} />} />
     <div className="report-form-grid">
       <label className="report-evidence-field"><span>Enlace de evidencia (opcional)</span><input type="url" value={form.evidenciaUrl} onChange={e => setForm({ ...form, evidenciaUrl: e.target.value })} /></label>

@@ -244,17 +244,33 @@ export async function obtenerReporte(id: number, usuario: SesionUsuario) {
 }
 
 export async function crearReporte(input: ReporteInput, usuario: SesionUsuario) {
-  const acta = validarObservador(input.observador);
+  if (!Number.isInteger(input.estudianteId) || input.estudianteId <= 0) return { error: 'Selecciona un estudiante válido', status: 400 } as const;
+  if (!input.observador || typeof input.observador !== 'object' || Array.isArray(input.observador)) return { error: 'Completa el observador', status: 400 } as const;
+  const estudiante = await db.execute({
+    sql: `SELECT e.grado, e.grupo, e.jornada, a.nombre AS acudiente, a.documento AS cedulaAcudiente,
+      (SELECT valor FROM ConfiguracionSistema WHERE clave = 'institucion.sede' LIMIT 1) AS sede
+      FROM Estudiante e LEFT JOIN Acudiente a ON a.id = e.acudienteId
+      WHERE e.id = ? AND e.activo = 1 AND e.archivado = 0 LIMIT 1`,
+    args: [input.estudianteId],
+  });
+  const alumno = estudiante.rows[0];
+  if (!alumno) return { error: 'El estudiante no existe o no se encuentra activo', status: 404 } as const;
+  const raw = input.observador as Record<string, unknown>;
+  const acta = validarObservador({
+    ...raw,
+    fechaRegistro: input.fechaHecho,
+    horaFinal: '',
+    sede: String(alumno.sede || 'Sin registrar'),
+    jornada: String(alumno.jornada || 'Sin registrar'),
+    grupo: `${alumno.grado}-${alumno.grupo}`,
+    acudiente: alumno.acudiente && alumno.acudiente !== 'Pendiente de registrar' ? String(alumno.acudiente) : 'Sin registrar',
+    cedulaAcudiente: String(alumno.cedulaAcudiente || 'Sin registrar'),
+  });
   if ('error' in acta) return acta;
   input = { ...input, ...datosReporteObservador(acta.data) };
   const validacion = validarReporte(input);
   if ('error' in validacion) return validacion;
   const data = validacion.data;
-  const estudiante = await db.execute({
-    sql: 'SELECT id FROM Estudiante WHERE id = ? AND activo = 1 AND archivado = 0 LIMIT 1',
-    args: [data.estudianteId],
-  });
-  if (!estudiante.rows[0]) return { error: 'El estudiante no existe o no se encuentra activo', status: 404 } as const;
 
   const editableHasta = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   const transaction = await db.transaction('write');
@@ -328,7 +344,13 @@ export async function editarReporte(id: number, usuario: SesionUsuario, input: E
   let observador = row.observador ? String(row.observador) : null;
   let tipoActualizado: string | null = null;
   if (observador || input.observador !== undefined) {
-    const acta = validarObservador(input.observador ?? JSON.parse(observador!));
+    const anterior = observador ? JSON.parse(observador) : {};
+    const cambios = input.observador && typeof input.observador === 'object' ? input.observador : {};
+    const acta = validarObservador({ ...anterior, ...cambios,
+      fecha: anterior.fecha, horaInicio: anterior.horaInicio, horaFinal: anterior.horaFinal,
+      fechaRegistro: anterior.fechaRegistro, sede: anterior.sede, jornada: anterior.jornada,
+      grupo: anterior.grupo, acudiente: anterior.acudiente, cedulaAcudiente: anterior.cedulaAcudiente,
+    });
     if ('error' in acta) return acta;
     input = { ...input, ...datosReporteObservador(acta.data) };
     observador = JSON.stringify(acta.data);
