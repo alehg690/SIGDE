@@ -1,0 +1,16 @@
+.root { position: relative; display: grid; gap: 8px; min-width: 0; }
+.root > label { font-weight: 600; }
+.root > input { width: 100%; min-width: 0; }
+.help { color: #64748b; font-size: .8rem; line-height: 1.45; }
+.results { position: absolute; top: 76px; left: 0; right: 0; z-index: 30; max-height: 280px; overflow-y: auto; list-style: none; margin: 0; padding: 5px; background: #fff; color: #0a1628; border: 1px solid #b7c9da; border-radius: 12px; box-shadow: 0 10px 28px #0a162826; }
+.results li { display: grid; gap: 3px; padding: 12px; border-radius: 8px; cursor: pointer; overflow-wrap: anywhere; }
+.results li:hover, .results li.active { background: #eaf3fc; outline: 1px solid #1f6fb8; }
+.results small { color: #52657a; }
+.results li.empty { cursor: default; color: #52657a; }
+
+:global(.app-shell[data-theme='dark']) .results { background: #10253c; color: #e5edf5; border-color: #37536f; }
+:global(.app-shell[data-theme='dark']) .results small,
+:global(.app-shell[data-theme='dark']) .help,
+:global(.app-shell[data-theme='dark']) .results li.empty { color: #b1c2d4; }
+:global(.app-shell[data-theme='dark']) .results li:hover,
+:global(.app-shell[data-theme='dark']) .results li.active { background: #1a3c5c; }

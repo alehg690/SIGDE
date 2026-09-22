@@ -1,5 +1,6 @@
 'use client';
 
+import StudentSearch from './StudentSearch';
 import ObservadorFields, { observadorVacio, ObservadorDetalle } from './ObservadorFields';
 import type { Observador } from '@backend/types/observador';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
@@ -294,10 +295,9 @@ function ReportCreateForm({ form, setForm, estudiantes, guardando, onSubmit, onC
 }) {
   return <form className="report-create-form" onSubmit={onSubmit}>
     <div className="report-form-intro"><div><span>Nuevo reporte</span><h3>Observador · Acta de reunión</h3><p>Completa las tres secciones del formato institucional.</p></div><strong>Los campos con * son obligatorios</strong></div>
-    <ObservadorFields value={form.observador} onChange={observador => setForm({ ...form, observador })} estudiante={<label><span>Estudiante *</span><select value={form.estudianteId} onChange={event => {
-      const alumno = estudiantes.find(item => String(item.id) === event.target.value);
-      setForm({ ...form, estudianteId: event.target.value, observador: { ...form.observador, jornada: alumno?.jornada === 'Sin registrar' ? '' : alumno?.jornada || '', grupo: alumno ? `${alumno.grado}-${alumno.grupo}` : '', acudiente: alumno?.acudiente.nombre === 'Pendiente de registrar' ? '' : alumno?.acudiente.nombre || '', cedulaAcudiente: alumno?.acudiente.documento || '' } });
-    }} required><option value="">Seleccionar estudiante</option>{estudiantes.map(item => <option key={item.id} value={item.id}>{item.nombre} · {item.grado}-{item.grupo}</option>)}</select></label>} />
+    <ObservadorFields value={form.observador} onChange={observador => setForm({ ...form, observador })} estudiante={<StudentSearch estudiantes={estudiantes} value={form.estudianteId} onChange={alumno => {
+      setForm({ ...form, estudianteId: alumno ? String(alumno.id) : '', observador: { ...form.observador, jornada: alumno?.jornada === 'Sin registrar' ? '' : alumno?.jornada || '', grupo: alumno ? `${alumno.grado}-${alumno.grupo}` : '', acudiente: alumno?.acudiente.nombre === 'Pendiente de registrar' ? '' : alumno?.acudiente.nombre || '', cedulaAcudiente: alumno?.acudiente.documento || '' } });
+    }} />} />
     <div className="report-form-grid">
       <label className="report-evidence-field"><span>Enlace de evidencia (opcional)</span><input type="url" value={form.evidenciaUrl} onChange={e => setForm({ ...form, evidenciaUrl: e.target.value })} /></label>
       <label className="report-confidential-field"><input type="checkbox" checked={form.confidencial} onChange={e => setForm({ ...form, confidencial: e.target.checked })} /><span>Acceso reservado</span></label>
