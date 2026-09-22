@@ -57,6 +57,7 @@ export async function listarUsuarios() {
   const result = await db.execute(`
     SELECT id, nombre, correo, rol, activo, creadoEn, ultimoAcceso
     FROM Usuario
+    WHERE eliminadoEn IS NULL
     ORDER BY id ASC
   `);
 
@@ -65,7 +66,7 @@ export async function listarUsuarios() {
 
 export async function obtenerUsuarioPorId(id: number) {
   const result = await db.execute({
-    sql: 'SELECT id, nombre, correo, rol, activo, creadoEn, ultimoAcceso FROM Usuario WHERE id = ? LIMIT 1',
+    sql: 'SELECT id, nombre, correo, rol, activo, creadoEn, ultimoAcceso FROM Usuario WHERE id = ? AND eliminadoEn IS NULL LIMIT 1',
     args: [id],
   });
 
@@ -140,7 +141,7 @@ export async function actualizarUsuario(id: number, input: UsuarioInput, actor: 
       UPDATE Usuario
       SET nombre = ?, correo = ?, rol = ?, activo = ?${setContrasena},
           versionSesion = versionSesion + 1
-      WHERE id = ?
+      WHERE id = ? AND eliminadoEn IS NULL
       RETURNING id, nombre, correo, rol, activo, creadoEn, ultimoAcceso
     `,
     args,
@@ -158,7 +159,7 @@ export async function cambiarEstadoUsuario(id: number, activo: boolean, actor: S
     sql: `
       UPDATE Usuario
       SET activo = ?, versionSesion = versionSesion + 1
-      WHERE id = ?
+      WHERE id = ? AND eliminadoEn IS NULL
       RETURNING id, nombre, correo, rol, activo, creadoEn, ultimoAcceso
     `,
     args: [activo ? 1 : 0, id],
@@ -174,21 +175,9 @@ export async function eliminarUsuario(id: number, actor: SesionUsuario, borrarAu
   if (id === actor.id) return { error: 'No puedes eliminar la cuenta con la que estás trabajando', status: 400 };
   const tx = await db.transaction('write');
   try {
-    const result = await tx.execute({ sql: 'SELECT nombre, correo, rol FROM Usuario WHERE id = ?', args: [id] });
+    const result = await tx.execute({ sql: 'SELECT nombre, correo, rol FROM Usuario WHERE id = ? AND eliminadoEn IS NULL', args: [id] });
     const usuario = result.rows[0];
     if (!usuario) return { error: 'Usuario no encontrado', status: 404 };
-    // Algunas instalaciones aún no incluyen las tablas del módulo de convivencia.
-    const tablas = new Set((await tx.execute("SELECT name FROM sqlite_master WHERE type = 'table'")).rows.map(row => String(row.name)));
-    const relaciones = [
-      ['Reporte', 'docenteId'], ['ObservacionReporte', 'usuarioId'], ['Salida', 'registradoPorId'],
-      ['ConvivenciaReporte', 'creadoPorId'], ['ProcesoConvivencia', 'creadoPorId'],
-      ['AccionConvivencia', 'responsableId'], ['ProtocoloConvivencia', 'registradoPorId'], ['SiuceRegistro', 'responsableId'],
-    ];
-    for (const [tabla, columna] of relaciones) {
-      if (!tablas.has(tabla)) continue;
-      const refs = await tx.execute({ sql: `SELECT 1 FROM ${tabla} WHERE ${columna} = ? LIMIT 1`, args: [id] });
-      if (refs.rows.length) return { error: 'Este usuario tiene reportes, salidas u otro historial institucional. Desactívalo para conservar ese historial.', status: 409 };
-    }
     if (borrarAuditoria) {
       await tx.execute({ sql: 'DELETE FROM AuditLog WHERE usuarioId = ?', args: [id] });
     } else {
@@ -196,7 +185,13 @@ export async function eliminarUsuario(id: number, actor: SesionUsuario, borrarAu
     }
     await tx.execute({ sql: 'DELETE FROM NotificacionUsuario WHERE usuarioId = ?', args: [id] });
     await tx.execute({ sql: 'UPDATE GrupoEscolar SET directorId = NULL, actualizadoEn = CURRENT_TIMESTAMP WHERE directorId = ?', args: [id] });
-    await tx.execute({ sql: 'DELETE FROM Usuario WHERE id = ?', args: [id] });
+    // Conserva la identidad referenciada por reportes, sin mantener una cuenta utilizable.
+    await tx.execute({
+      sql: `UPDATE Usuario SET eliminadoEn = CURRENT_TIMESTAMP, activo = 0,
+        versionSesion = versionSesion + 1, contrasena = '', tokenRecuperacion = NULL,
+        tokenExpira = NULL, correo = ? WHERE id = ?`,
+      args: [`eliminado-${id}-${crypto.randomUUID()}@sigde.invalid`, id],
+    });
     await tx.execute({
       sql: 'INSERT INTO AuditLog (usuarioId, accion, entidad, entidadId, detalle) VALUES (?, ?, ?, ?, ?)',
       args: [actor.id, 'eliminar_usuario', 'Usuario', String(id), JSON.stringify({ nombre: usuario.nombre, correo: usuario.correo, rol: usuario.rol, borrarAuditoria })],

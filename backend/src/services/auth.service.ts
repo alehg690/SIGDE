@@ -52,7 +52,7 @@ export async function verificarPassword(contrasena: string, hash: string) {
 
 async function buscarUsuarioPorCorreo(correo: string) {
   const result = await db.execute({
-    sql: 'SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?) LIMIT 1',
+    sql: 'SELECT * FROM Usuario WHERE LOWER(correo) = LOWER(?) AND eliminadoEn IS NULL LIMIT 1',
     args: [correo],
   });
 

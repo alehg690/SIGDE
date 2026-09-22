@@ -62,7 +62,7 @@ export async function autorizarRoles(
     }
 
     const result = await db.execute({
-      sql: 'SELECT id, nombre, correo, rol, activo, versionSesion FROM Usuario WHERE id = ? LIMIT 1',
+      sql: 'SELECT id, nombre, correo, rol, activo, versionSesion FROM Usuario WHERE id = ? AND eliminadoEn IS NULL LIMIT 1',
       args: [id],
     });
     const cuenta = result.rows[0];

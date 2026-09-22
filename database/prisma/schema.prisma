@@ -57,6 +57,7 @@ model Usuario {
   rol               RolUsuario
   activo            Boolean   @default(true)
   creadoEn          DateTime  @default(now())
+  eliminadoEn       DateTime?
   ultimoAcceso      DateTime?
   tokenRecuperacion String?
   tokenExpira       DateTime?
