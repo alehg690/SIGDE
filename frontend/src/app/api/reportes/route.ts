@@ -2,11 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { crearReporte, listarReportes } from '@backend/services/reportes.service';
 import { esErrorAuth, requerirSesion } from '@/app/api/_utils/session';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const auth = await requerirSesion(['Coordinador', 'Docente']);
   if (esErrorAuth(auth)) return auth.response;
 
-  const result = await listarReportes(auth.usuario);
+  const parametro = req.nextUrl.searchParams.get('estudianteId');
+  const estudianteId = parametro === null ? undefined : Number(parametro);
+  if (estudianteId !== undefined && (!Number.isSafeInteger(estudianteId) || estudianteId <= 0)) {
+    return NextResponse.json({ error: 'Estudiante no válido' }, { status: 400 });
+  }
+
+  const result = await listarReportes(auth.usuario, estudianteId);
   return NextResponse.json(result.data);
 }
 

@@ -1,3 +1,4 @@
+import { crearCorreoRecuperacion } from '@backend/templates/recovery-email';
 import { randomInt } from 'crypto';
 import bcrypt from 'bcryptjs';
 import { db } from '@backend/config/database';
@@ -149,17 +150,7 @@ export async function enviarCodigoRecuperacion(correo: string, clienteId: string
       from: `"SIGDE" <${process.env.EMAIL_USER}>`,
       to: correo,
       subject: 'Código de verificación - SIGDE',
-      html: `
-      <div style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
-        <h2 style="color: #0a1628;">Recuperación de contraseña</h2>
-        <p style="color: #4a6280;">Tu código de verificación es:</p>
-        <div style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #0a1628; margin: 24px 0;">
-          ${codigo}
-        </div>
-        <p style="color: #7a90a8; font-size: 13px;">Este código expira en 15 minutos.</p>
-        <p style="color: #7a90a8; font-size: 13px;">Si no solicitaste este cambio, ignora este mensaje.</p>
-      </div>
-      `,
+      ...crearCorreoRecuperacion(codigo),
     });
   } catch (error) {
     console.error('No se pudo enviar el código de recuperación.', error);

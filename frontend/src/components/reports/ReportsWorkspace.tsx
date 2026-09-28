@@ -1,13 +1,13 @@
 'use client';
 
 import StudentSearch from './StudentSearch';
+import { parseReportDate } from '@/lib/report-dates';
 import ObservadorFields, { observadorVacio, ObservadorDetalle } from './ObservadorFields';
 import type { Observador } from '@backend/types/observador';
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Estudiante } from '@/types/students';
 import type {
   EstadoReporte,
-  ManualConvivencia,
   Reporte,
   ReporteDetalle,
   ReporteFormData,
@@ -64,7 +64,7 @@ async function leerError(response: Response, fallback: string) {
 
 function fechaLegible(value: string | null, soloFecha = false) {
   if (!value) return 'Sin registrar';
-  const date = new Date(value);
+  const date = parseReportDate(value);
   if (Number.isNaN(date.getTime())) return 'Fecha no disponible';
   return new Intl.DateTimeFormat('es-CO', {
     dateStyle: 'medium',
@@ -90,14 +90,18 @@ export default function ReportsWorkspace({
   currentUserId,
   canManage,
   initialSearch = '',
+  estudianteId,
 }: {
   currentUserId: number;
   canManage: boolean;
   initialSearch?: string;
+  estudianteId?: number;
 }) {
   const [reportes, setReportes] = useState<Reporte[]>([]);
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
-  const [manual, setManual] = useState<ManualConvivencia | null>(null);
+  const detalleSolicitud = useRef(0);
+  const enviando = useRef(false);
+  const consultaHistorial = estudianteId === undefined ? '' : `?estudianteId=${estudianteId}`;
   const [detalle, setDetalle] = useState<ReporteDetalle | null>(null);
   const [seleccionadoId, setSeleccionadoId] = useState<number | null>(null);
   const [vista, setVista] = useState<Vista>('consulta');
@@ -120,36 +124,37 @@ export default function ReportsWorkspace({
   }, [initialSearch]);
 
   const cargarDatos = useCallback(async (preferidoId?: number) => {
-    const [reportesResponse, estudiantesResponse, manualResponse] = await Promise.all([
-      fetch('/api/reportes', { cache: 'no-store' }),
+    const [reportesResponse, estudiantesResponse] = await Promise.all([
+      fetch(`/api/reportes${consultaHistorial}`, { cache: 'no-store' }),
       fetch('/api/estudiantes', { cache: 'no-store' }),
-      fetch('/api/manual-convivencia', { cache: 'no-store' }),
     ]);
     if (!reportesResponse.ok) throw new Error(await leerError(reportesResponse, 'No se pudieron cargar los reportes.'));
     if (!estudiantesResponse.ok) throw new Error(await leerError(estudiantesResponse, 'No se pudieron cargar los estudiantes.'));
-    if (!manualResponse.ok) throw new Error(await leerError(manualResponse, 'No se pudo cargar el manual de convivencia.'));
 
     const nuevosReportes = await reportesResponse.json() as Reporte[];
     const nuevosEstudiantes = await estudiantesResponse.json() as Estudiante[];
     setReportes(nuevosReportes);
     setEstudiantes(nuevosEstudiantes.filter((item) => item.activo && !item.archivado));
-    setManual(await manualResponse.json() as ManualConvivencia);
     setSeleccionadoId((actual) => {
       const objetivo = preferidoId ?? actual;
       return nuevosReportes.some((item) => item.id === objetivo) ? objetivo : nuevosReportes[0]?.id ?? null;
     });
-  }, []);
+  }, [consultaHistorial]);
 
   const cargarDetalle = useCallback(async (id: number) => {
+    const solicitud = ++detalleSolicitud.current;
     setCargandoDetalle(true);
     try {
-      const response = await fetch(`/api/reportes/${id}`, { cache: 'no-store' });
+      const response = await fetch(`/api/reportes/${id}${consultaHistorial}`, { cache: 'no-store' });
       if (!response.ok) throw new Error(await leerError(response, 'No se pudo cargar el detalle del reporte.'));
-      setDetalle(await response.json() as ReporteDetalle);
+      const nuevoDetalle = await response.json() as ReporteDetalle;
+      if (solicitud === detalleSolicitud.current) setDetalle(nuevoDetalle);
+    } catch (error) {
+      if (solicitud === detalleSolicitud.current) throw error;
     } finally {
-      setCargandoDetalle(false);
+      if (solicitud === detalleSolicitud.current) setCargandoDetalle(false);
     }
-  }, []);
+  }, [consultaHistorial]);
 
   useEffect(() => {
     let activo = true;
@@ -166,6 +171,7 @@ export default function ReportsWorkspace({
   useEffect(() => {
     const timer = window.setTimeout(() => {
       if (!seleccionadoId) {
+        setCargandoDetalle(false);
         setDetalle(null);
         return;
       }
@@ -174,7 +180,7 @@ export default function ReportsWorkspace({
         setMensaje({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo abrir el reporte.' });
       });
     }, 0);
-    return () => window.clearTimeout(timer);
+    return () => { detalleSolicitud.current += 1; window.clearTimeout(timer); };
   }, [cargarDetalle, seleccionadoId]);
 
   const estados = useMemo(() => [...new Set(reportes.map((item) => item.estado))].sort(), [reportes]);
@@ -185,7 +191,7 @@ export default function ReportsWorkspace({
     const ahora = new Date();
     return reportes.filter((reporte) => {
       const contenido = [reporte.estudiante, reporte.docente, reporte.grado, reporte.grupo, reporte.descripcion, reporte.situacion, reporte.lugar].join(' ').toLocaleLowerCase('es');
-      const fecha = new Date(reporte.fechaHecho || reporte.fecha);
+      const fecha = parseReportDate(reporte.fechaHecho || reporte.fecha);
       const dias = (ahora.getTime() - fecha.getTime()) / 86_400_000;
       const coincidePeriodo = periodo === 'Todos'
         || (periodo === 'mes' && fecha.getFullYear() === ahora.getFullYear() && fecha.getMonth() === ahora.getMonth())
@@ -201,28 +207,40 @@ export default function ReportsWorkspace({
 
   async function registrar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (enviando.current) return;
+    enviando.current = true;
     setGuardando(true);
     setMensaje(null);
     try {
+      const ahora = new Date();
+      const fechaEquipo = fechaLocalInput(ahora);
       const response = await fetch('/api/reportes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, fechaHecho: new Date(form.fechaHecho).toISOString() }),
+        body: JSON.stringify({ ...form, fechaHecho: ahora.toISOString(), observador: {
+          ...form.observador, fecha: fechaEquipo.slice(0, 10), horaInicio: fechaEquipo.slice(11, 16), horaFinal: '',
+        } }),
       });
       if (!response.ok) throw new Error(await leerError(response, 'No se pudo registrar el reporte.'));
       const creado = await response.json() as { id: number; avisos?: string[] };
-      await cargarDatos(creado.id);
       setForm(crearFormularioVacio());
       setVista('consulta');
+      setBusqueda(''); setTipo('Todos'); setEstado('Todos'); setDocente('Todos'); setCurso('Todos'); setPeriodo('Todos');
       setMensaje({
         tipo: 'success',
         texto: creado.avisos?.length
           ? `Reporte guardado. ${creado.avisos.join(' ')}`
           : 'Reporte registrado y trazabilidad iniciada correctamente.',
       });
+      try {
+        await cargarDatos(creado.id);
+      } catch {
+        setMensaje({ tipo: 'success', texto: `Reporte #${creado.id} guardado. No se pudo actualizar la lista; vuelve a abrir el módulo para consultarlo. ${creado.avisos?.join(' ') ?? ''}`.trim() });
+      }
     } catch (error) {
       setMensaje({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo registrar el reporte.' });
     } finally {
+      enviando.current = false;
       setGuardando(false);
     }
   }
@@ -235,7 +253,7 @@ export default function ReportsWorkspace({
   const pendientes = reportes.filter((item) => item.estado === 'Pendiente').length;
   const enRevision = reportes.filter((item) => item.estado === 'EnRevision').length;
   const esteMes = reportes.filter((item) => {
-    const fecha = new Date(item.fecha);
+    const fecha = parseReportDate(item.fecha);
     const actual = new Date();
     return fecha.getFullYear() === actual.getFullYear() && fecha.getMonth() === actual.getMonth();
   }).length;
@@ -243,11 +261,11 @@ export default function ReportsWorkspace({
 
   return <section className="workspace-panel reports-workspace">
     <header className="reports-heading">
-      <div className="module-title"><h2>Reportes disciplinarios</h2><p>Documenta los hechos, conserva evidencias y acompaña el seguimiento institucional.</p></div>
-      <div className="reports-view-switch" aria-label="Vista del módulo">
+      <div className="module-title"><h2>{estudianteId === undefined ? 'Reportes disciplinarios' : 'Historial de reportes del estudiante'}</h2><p>Documenta los hechos, conserva evidencias y acompaña el seguimiento institucional.</p></div>
+      {estudianteId === undefined && <div className="reports-view-switch" aria-label="Vista del módulo">
         <button type="button" className={vista === 'consulta' ? 'active' : ''} onClick={() => setVista('consulta')}>Consultar</button>
         <button type="button" className={vista === 'registro' ? 'active' : ''} onClick={() => setVista('registro')}>Nuevo reporte</button>
-      </div>
+      </div>}
     </header>
     {mensaje && <p className={`feedback ${mensaje.tipo}`} role={mensaje.tipo === 'error' ? 'alert' : 'status'}>{mensaje.texto}</p>}
     <div className="reports-summary" aria-label="Resumen de reportes">
@@ -257,7 +275,7 @@ export default function ReportsWorkspace({
       <article><span>Este mes</span><strong>{esteMes}</strong><small>Nuevos registros</small></article>
     </div>
     {vista === 'registro'
-      ? <ReportCreateForm form={form} setForm={setForm} estudiantes={estudiantes} manual={manual} guardando={guardando} onSubmit={registrar} onCancel={() => { setVista('consulta'); setMensaje(null); }} />
+      ? <ReportCreateForm form={form} setForm={setForm} estudiantes={estudiantes} guardando={guardando} onSubmit={registrar} onCancel={() => { setVista('consulta'); setMensaje(null); }} />
       : <div className="reports-consultation">
           <div className="reports-list-panel">
             <div className="reports-toolbar">
@@ -279,7 +297,7 @@ export default function ReportsWorkspace({
               </button>)}
             </div>
           </div>
-          <ReportDetail reporte={detalle} loading={cargandoDetalle} currentUserId={currentUserId} onUpdated={refrescarReporte} />
+          <ReportDetail key={seleccionadoId ?? 'ninguno'} reporte={detalle?.id === seleccionadoId ? detalle : null} loading={cargandoDetalle} currentUserId={currentUserId} onUpdated={refrescarReporte} />
         </div>}
   </section>;
 }
@@ -288,7 +306,6 @@ function ReportCreateForm({ form, setForm, estudiantes, guardando, onSubmit, onC
   form: ReporteFormData;
   setForm: (form: ReporteFormData) => void;
   estudiantes: Estudiante[];
-  manual: ManualConvivencia | null;
   guardando: boolean;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onCancel: () => void;
@@ -296,7 +313,7 @@ function ReportCreateForm({ form, setForm, estudiantes, guardando, onSubmit, onC
   return <form className="report-create-form" onSubmit={onSubmit}>
     <div className="report-form-intro"><div><span>Nuevo reporte</span><h3>Observador · Acta de reunión</h3><p>Completa las tres secciones del formato institucional.</p></div><strong>Los campos con * son obligatorios</strong></div>
     <ObservadorFields value={form.observador} onChange={observador => setForm({ ...form, observador })} estudiante={<StudentSearch estudiantes={estudiantes} value={form.estudianteId} onChange={alumno => {
-      setForm({ ...form, estudianteId: alumno ? String(alumno.id) : '', observador: { ...form.observador, jornada: alumno?.jornada === 'Sin registrar' ? '' : alumno?.jornada || '', grupo: alumno ? `${alumno.grado}-${alumno.grupo}` : '', acudiente: alumno?.acudiente.nombre === 'Pendiente de registrar' ? '' : alumno?.acudiente.nombre || '', cedulaAcudiente: alumno?.acudiente.documento || '' } });
+      setForm({ ...form, estudianteId: alumno ? String(alumno.id) : '' });
     }} />} />
     <div className="report-form-grid">
       <label className="report-evidence-field"><span>Enlace de evidencia (opcional)</span><input type="url" value={form.evidenciaUrl} onChange={e => setForm({ ...form, evidenciaUrl: e.target.value })} /></label>
@@ -329,7 +346,7 @@ function ReportDetail({ reporte, loading, currentUserId, onUpdated }: {
       setModoEdicion(false);
       setObservadorEdicion(reporte.observador);
       setEditForm({
-        fechaHecho: fechaLocalInput(new Date(reporte.fechaHecho || reporte.fecha)),
+        fechaHecho: fechaLocalInput(parseReportDate(reporte.fechaHecho || reporte.fecha)),
         lugar: reporte.lugar || '',
         situacion: reporte.situacion || '',
         descripcion: reporte.descripcion,

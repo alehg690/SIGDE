@@ -1,4 +1,5 @@
 export type Observador = {
+  fechaRegistro?: string;
   fecha: string;
   horaInicio: string;
   horaFinal: string;

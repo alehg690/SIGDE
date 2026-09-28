@@ -1,5 +1,6 @@
 "use client";
 
+import ReportsWorkspace from "@/components/reports/ReportsWorkspace";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   etiquetaGrupoAcademico,
@@ -134,9 +135,12 @@ function iniciales(nombre: string) {
 
 export default function StudentsWorkspace({
   canManage,
+  currentUserId,
 }: {
   canManage: boolean;
+  currentUserId: number;
 }) {
+  const [historial, setHistorial] = useState<Estudiante | null>(null);
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [filtroGrupo, setFiltroGrupo] = useState("Todos");
@@ -287,6 +291,14 @@ export default function StudentsWorkspace({
     }
   }
 
+  if (historial) return <>
+    <header className="reports-heading">
+      <div className="module-title"><h2>{historial.nombre}</h2><p>{etiquetaGrupoAcademico(historial.grado, historial.grupo)}</p></div>
+      <button type="button" className="module-primary-action" onClick={() => setHistorial(null)}>Volver a estudiantes</button>
+    </header>
+    <ReportsWorkspace key={historial.id} currentUserId={currentUserId} canManage={canManage} estudianteId={historial.id} />
+  </>;
+
   return (
     <section
       className="workspace-panel students-directory-workspace"
@@ -409,6 +421,10 @@ export default function StudentsWorkspace({
                         role="menu"
                         onClick={(event) => event.stopPropagation()}
                       >
+                        <button type="button" role="menuitem" onClick={() => { setHistorial(estudiante); setMenuId(null); }}>
+                          Ver historial de reportes
+                        </button>
+                        {canManage && <>
                         <button
                           type="button"
                           role="menuitem"
@@ -427,6 +443,7 @@ export default function StudentsWorkspace({
                         >
                           ⌫ Archivar
                         </button>
+                        </>}
                       </div>
                     )}
                   </td>

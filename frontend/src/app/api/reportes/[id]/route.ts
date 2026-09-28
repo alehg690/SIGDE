@@ -6,7 +6,7 @@ type Params = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export async function GET(req: NextRequest, { params }: Params) {
   const auth = await requerirSesion(['Coordinador', 'Docente']);
   if (esErrorAuth(auth)) return auth.response;
 
@@ -16,7 +16,13 @@ export async function GET(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Reporte no válido' }, { status: 400 });
   }
 
-  const result = await obtenerReporte(reporteId, auth.usuario);
+  const parametro = req.nextUrl.searchParams.get('estudianteId');
+  const estudianteId = parametro === null ? undefined : Number(parametro);
+  if (estudianteId !== undefined && (!Number.isSafeInteger(estudianteId) || estudianteId <= 0)) {
+    return NextResponse.json({ error: 'Estudiante no válido' }, { status: 400 });
+  }
+
+  const result = await obtenerReporte(reporteId, auth.usuario, estudianteId);
   if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json(result.data);
 }

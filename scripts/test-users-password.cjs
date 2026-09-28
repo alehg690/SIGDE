@@ -23,7 +23,7 @@ async function main() {
   const { autorizarRoles } = require('../backend/src/middleware/rol.middleware.ts');
   try {
     await db.executeMultiple(`
-      CREATE TABLE Usuario (id INTEGER PRIMARY KEY, nombre TEXT, correo TEXT, contrasena TEXT, rol TEXT, activo INTEGER DEFAULT 1, creadoEn TEXT DEFAULT CURRENT_TIMESTAMP, ultimoAcceso TEXT, versionSesion INTEGER DEFAULT 1, tokenRecuperacion TEXT, tokenExpira TEXT);
+      CREATE TABLE Usuario (id INTEGER PRIMARY KEY, nombre TEXT, correo TEXT, contrasena TEXT, rol TEXT, activo INTEGER DEFAULT 1, creadoEn TEXT DEFAULT CURRENT_TIMESTAMP, ultimoAcceso TEXT, versionSesion INTEGER DEFAULT 1, tokenRecuperacion TEXT, tokenExpira TEXT, eliminadoEn TEXT);
       CREATE TABLE AuditLog (id INTEGER PRIMARY KEY, usuarioId INTEGER, accion TEXT, entidad TEXT, entidadId TEXT, detalle TEXT);
     `);
     const oldHash = await hashPassword('AnteriorPrueba2026');

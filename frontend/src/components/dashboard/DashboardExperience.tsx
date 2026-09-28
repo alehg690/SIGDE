@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import StudentsWorkspace from '@/components/students/StudentsWorkspace';
 import CommunicationsWorkspace from '@/components/communications/CommunicationsWorkspace';
 import ReportsWorkspace from '@/components/reports/ReportsWorkspace';
@@ -15,6 +15,7 @@ import CalendarWorkspace from '@/components/calendar/CalendarWorkspace';
 import ProfileWorkspace from '@/components/profile/ProfileWorkspace';
 import MobileNavigation from '@/components/dashboard/MobileNavigation';
 import type { Estudiante } from '@/types/students';
+import { parseReportDate } from '@/lib/report-dates';
 
 export type DashboardUser = {
   id: number;
@@ -769,7 +770,7 @@ function DashboardContent({
     ? <p className="feedback error" role="alert">{statsError}</p>
     : <StatisticsWorkspace stats={stats ?? EMPTY_STATS} loading={!stats} canExport={role === 'coordinador'} />;
   if (section === 'personas') {
-    return <StudentsWorkspace canManage={role === 'coordinador'} />;
+    return <StudentsWorkspace currentUserId={usuario.id} canManage={role === 'coordinador'} />;
   }
 
   if (section === 'salidas') {
@@ -817,6 +818,7 @@ function ControlSalidasWorkspace({ role }: { role: DashboardRole }) {
   const [estudianteId, setEstudianteId] = useState('');
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const envioEnCurso = useRef(false);
   const [busqueda, setBusqueda] = useState('');
   const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
   const [recoge, setRecoge] = useState({ nombre: '', apellido: '', cedula: '', parentesco: '', correo: '' });
@@ -825,29 +827,48 @@ function ControlSalidasWorkspace({ role }: { role: DashboardRole }) {
 
   const cargar = useCallback(async () => {
     const [estudiantesRespuesta, salidasRespuesta] = await Promise.all([fetch('/api/estudiantes'), fetch('/api/salidas')]);
-    if (estudiantesRespuesta.ok) setEstudiantes(await estudiantesRespuesta.json() as Estudiante[]);
-    if (salidasRespuesta.ok) setSalidas(await salidasRespuesta.json() as SalidaRegistrada[]);
+    if (!estudiantesRespuesta.ok || !salidasRespuesta.ok) {
+      throw new Error('No se pudieron cargar los estudiantes o las salidas. Recarga la página para intentarlo de nuevo.');
+    }
+    const [estudiantesData, salidasData] = await Promise.all([estudiantesRespuesta.json(), salidasRespuesta.json()]);
+    setEstudiantes(estudiantesData as Estudiante[]);
+    setSalidas(salidasData as SalidaRegistrada[]);
   }, []);
 
-  useEffect(() => { void Promise.resolve().then(cargar); }, [cargar]);
+  useEffect(() => {
+    let activo = true;
+    void Promise.resolve().then(cargar).catch(() => {
+      if (activo) setMensaje({ tipo: 'error', texto: 'No se pudieron cargar los datos. Revisa tu conexión y recarga la página.' });
+    });
+    return () => { activo = false; };
+  }, [cargar]);
 
   async function registrarSalida(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setGuardando(true); setMensaje(null);
+    event.preventDefault();
+    if (envioEnCurso.current) return;
+    envioEnCurso.current = true;
+    setGuardando(true);
+    setMensaje(null);
     try {
       const response = await fetch('/api/salidas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estudianteId, recogeNombre: recoge.nombre, recogeApellido: recoge.apellido, recogeCedula: recoge.cedula, recogeParentesco: recoge.parentesco, recogeCorreo: recoge.correo }) });
       const data = await response.json().catch(() => null);
       if (!response.ok) throw new Error(typeof data?.error === 'string' ? data.error : 'No se pudo registrar la salida.');
-      setMensaje({ tipo: 'success', texto: data?.correoEnviado ? 'Salida registrada y correo de aviso enviado.' : 'Salida registrada. El correo no se envió porque no hay configuración disponible.' });
-      setRecoge({ nombre: '', apellido: '', cedula: '', parentesco: '', correo: '' }); setEstudianteId(''); setMostrarFormulario(false); await cargar();
+      setMensaje({ tipo: 'success', texto: data?.correoEnviado ? 'Salida registrada y correo de aviso enviado.' : 'Salida registrada, pero no se pudo enviar el aviso por correo.' });
+      setRecoge({ nombre: '', apellido: '', cedula: '', parentesco: '', correo: '' }); setEstudianteId(''); setMostrarFormulario(false);
+      try {
+        await cargar();
+      } catch {
+        setMensaje({ tipo: 'success', texto: 'La salida quedó registrada, pero no se pudo actualizar el historial. Recarga la página para consultarla. No necesitas registrarla de nuevo.' });
+      }
     } catch (error) { setMensaje({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo registrar la salida.' }); }
-    finally { setGuardando(false); }
+    finally { envioEnCurso.current = false; setGuardando(false); }
   }
 
   return <section className="workspace-panel exit-control-workspace">
     <div className="exit-page-heading"><div><h2>Salidas</h2><p>{role === 'portero' ? 'Consulta y registra las salidas del turno de hoy.' : 'Consulta el historial institucional y registra nuevas salidas.'}</p></div><button className="exit-register-trigger" type="button" onClick={() => { setMensaje(null); setMostrarFormulario(true); }}>↗ Registrar salida</button></div>
-    {mensaje && <p className={`feedback ${mensaje.tipo}`}>{mensaje.texto}</p>}
-    <div className="exit-history"><div><div><h3>{role === 'portero' ? 'Salidas de hoy' : 'Historial de salidas'}</h3><p>{salidas.length ? `${salidasVisibles.length} de ${salidas.length} registros` : 'Aún no hay registros'}</p></div><label className="exit-history-search"><span className="sr-only">Buscar salida</span><input type="search" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} placeholder="Buscar estudiante, acudiente o documento" /></label></div><div className="exit-table-wrap" tabIndex={0} role="region" aria-label="Historial de salidas"><table><thead><tr><th>Estudiante</th><th>Grado</th><th>Jornada</th><th>Acudiente</th><th>Persona que recoge</th><th>Estado</th><th>Fecha y hora</th></tr></thead><tbody>{salidasVisibles.length ? salidasVisibles.map((salida) => <tr key={salida.id}><td><strong>{salida.estudiante}</strong></td><td>{salida.grado} · {salida.grupo}</td><td>{salida.jornada === 'Sin registrar' ? 'Sin registrar' : salida.jornada}</td><td>{salida.acudiente}</td><td><strong>{salida.recogeNombre && salida.recogeApellido ? `${salida.recogeNombre} ${salida.recogeApellido}` : 'Sin registrar'}</strong><small>{salida.recogeParentesco && salida.recogeCedula ? `${salida.recogeParentesco} · ${salida.recogeCedula}` : 'Dato no disponible'}</small></td><td><span className="exit-status">{salida.estado}</span></td><td><strong>{new Date(salida.creadoEn).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}</strong><small>Registró: {salida.registradoPorNombre}</small></td></tr>) : <tr><td colSpan={7}>{salidas.length ? 'No hay salidas que coincidan con la búsqueda.' : 'Aún no hay salidas registradas.'}</td></tr>}</tbody></table></div></div>
-    {mostrarFormulario && <div className="exit-modal-backdrop" role="presentation" onMouseDown={() => setMostrarFormulario(false)}><form className="exit-modal" role="dialog" aria-modal="true" aria-labelledby="exit-modal-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={registrarSalida}><header><div><span aria-hidden="true">↗</span><h3 id="exit-modal-title">Registrar salida</h3></div><button type="button" aria-label="Cerrar" onClick={() => setMostrarFormulario(false)}>×</button></header><div className="exit-modal-body"><label className="exit-student-select"><span>Estudiante</span><select value={estudianteId} onChange={(event) => setEstudianteId(event.target.value)} required><option value="">Selecciona un estudiante...</option>{estudiantes.map((item) => <option key={item.id} value={item.id}>{item.nombre} · {item.grado} {item.grupo}</option>)}</select></label>{seleccionado && <div className="exit-student-summary"><strong>{seleccionado.nombre}</strong><span>{seleccionado.grado} · Grupo {seleccionado.grupo} · Jornada {seleccionado.jornada}</span><small>Acudiente: {seleccionado.acudiente.nombre}</small></div>}<div className="exit-modal-fields"><UserInput label="Nombre" value={recoge.nombre} onChange={(nombre) => setRecoge({ ...recoge, nombre })} required /><UserInput label="Apellido" value={recoge.apellido} onChange={(apellido) => setRecoge({ ...recoge, apellido })} required /><UserInput label="Cédula" value={recoge.cedula} onChange={(cedula) => setRecoge({ ...recoge, cedula })} required /><UserInput label="Parentesco" value={recoge.parentesco} onChange={(parentesco) => setRecoge({ ...recoge, parentesco })} required /><UserInput label="Correo electrónico" value={recoge.correo} onChange={(correo) => setRecoge({ ...recoge, correo })} type="email" required /></div><p className="exit-notice">Al guardar, se enviará un aviso al acudiente registrado y a la persona que recoge al estudiante.</p></div><footer><button type="button" className="exit-modal-cancel" onClick={() => setMostrarFormulario(false)}>Cancelar</button><button className="exit-modal-submit" type="submit" disabled={guardando}>{guardando ? 'Registrando...' : 'Registrar salida'}</button></footer></form></div>}
+    {mensaje && !mostrarFormulario && <p role="status" className={`feedback ${mensaje.tipo}`}>{mensaje.texto}</p>}
+    <div className="exit-history"><div><div><h3>{role === 'portero' ? 'Salidas de hoy' : 'Historial de salidas'}</h3><p>{salidas.length ? `${salidasVisibles.length} de ${salidas.length} registros` : 'Aún no hay registros'}</p></div><label className="exit-history-search"><span className="sr-only">Buscar salida</span><input type="search" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} placeholder="Buscar estudiante, acudiente o documento" /></label></div><div className="exit-table-wrap" tabIndex={0} role="region" aria-label="Historial de salidas"><table><thead><tr><th>Estudiante</th><th>Grado</th><th>Jornada</th><th>Acudiente</th><th>Persona que recoge</th><th>Estado</th><th>Fecha y hora</th></tr></thead><tbody>{salidasVisibles.length ? salidasVisibles.map((salida) => <tr key={salida.id}><td><strong>{salida.estudiante}</strong></td><td>{salida.grado} · {salida.grupo}</td><td>{salida.jornada === 'Sin registrar' ? 'Sin registrar' : salida.jornada}</td><td>{salida.acudiente}</td><td><strong>{salida.recogeNombre && salida.recogeApellido ? `${salida.recogeNombre} ${salida.recogeApellido}` : 'Sin registrar'}</strong><small>{salida.recogeParentesco && salida.recogeCedula ? `${salida.recogeParentesco} · ${salida.recogeCedula}` : 'Dato no disponible'}</small></td><td><span className="exit-status">{salida.estado}</span></td><td><strong>{parseReportDate(salida.creadoEn).toLocaleString('es-CO', { timeZone: 'America/Bogota', dateStyle: 'medium', timeStyle: 'short' })}</strong><small>Registró: {salida.registradoPorNombre}</small></td></tr>) : <tr><td colSpan={7}>{salidas.length ? 'No hay salidas que coincidan con la búsqueda.' : 'Aún no hay salidas registradas.'}</td></tr>}</tbody></table></div></div>
+    {mostrarFormulario && <div className="exit-modal-backdrop" role="presentation" onMouseDown={() => { if (!envioEnCurso.current) setMostrarFormulario(false); }}><form className="exit-modal" role="dialog" aria-modal="true" aria-labelledby="exit-modal-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={registrarSalida}><header><div><span aria-hidden="true">↗</span><h3 id="exit-modal-title">Registrar salida</h3></div><button type="button" aria-label="Cerrar" disabled={guardando} onClick={() => setMostrarFormulario(false)}>×</button></header><div className="exit-modal-body">{mensaje && <p role="alert" className={`feedback ${mensaje.tipo}`}>{mensaje.texto}</p>}<label className="exit-student-select"><span>Estudiante</span><select value={estudianteId} onChange={(event) => setEstudianteId(event.target.value)} required><option value="">Selecciona un estudiante...</option>{estudiantes.map((item) => <option key={item.id} value={item.id}>{item.nombre} · {item.grado} {item.grupo}</option>)}</select></label>{seleccionado && <div className="exit-student-summary"><strong>{seleccionado.nombre}</strong><span>{seleccionado.grado} · Grupo {seleccionado.grupo} · Jornada {seleccionado.jornada}</span><small>Acudiente: {seleccionado.acudiente.nombre}</small></div>}<div className="exit-modal-fields"><UserInput label="Nombre" value={recoge.nombre} onChange={(nombre) => setRecoge({ ...recoge, nombre })} required /><UserInput label="Apellido" value={recoge.apellido} onChange={(apellido) => setRecoge({ ...recoge, apellido })} required /><UserInput label="Cédula" value={recoge.cedula} onChange={(cedula) => setRecoge({ ...recoge, cedula })} required /><UserInput label="Parentesco" value={recoge.parentesco} onChange={(parentesco) => setRecoge({ ...recoge, parentesco })} required /><UserInput label="Correo electrónico" value={recoge.correo} onChange={(correo) => setRecoge({ ...recoge, correo })} type="email" required /></div><p className="exit-notice">Al guardar, se enviará un aviso al acudiente registrado y a la persona que recoge al estudiante.</p></div><footer><button type="button" className="exit-modal-cancel" disabled={guardando} onClick={() => setMostrarFormulario(false)}>Cancelar</button><button className="exit-modal-submit" type="submit" disabled={guardando}>{guardando ? 'Registrando...' : 'Registrar salida'}</button></footer></form></div>}
   </section>;
 }
 

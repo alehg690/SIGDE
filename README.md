@@ -23,7 +23,7 @@ Los acudientes no reciben cuentas de acceso. El sistema conserva sus datos de co
 
 ## Ejecución local
 
-Requisitos: Node.js 20 o superior y npm.
+Requisitos: Node.js 22 o superior y npm.
 
 ```bash
 npm install
@@ -51,13 +51,9 @@ El envío de correo requiere `EMAIL_USER` y `EMAIL_PASS`. Si no están configura
 npm run seed:dashboard
 ```
 
-El proceso es idempotente y reemplaza únicamente los registros identificados como `DEMO`.
+El proceso reemplaza únicamente los reportes identificados con la marca de demostración. Requiere un docente activo y al menos cinco estudiantes activos ya registrados. **No crea cuentas ni estudiantes**, y no hay credenciales de demostración predeterminadas.
 
-| Rol | Correo | Contraseña |
-| --- | --- | --- |
-| Coordinación | `demo.coordinacion@sigde.local` | `Demo2026` |
-| Docente | `demo.docente@sigde.local` | `Demo2026` |
-| Portería | `demo.porteria@sigde.local` | `Demo2026` |
+Ejecuta este comando únicamente contra una base de pruebas: los reportes son ficticios y se vinculan a los estudiantes existentes en esa base.
 
 Para retirar exclusivamente los datos de demostración:
 

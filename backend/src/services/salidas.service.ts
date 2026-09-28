@@ -35,7 +35,7 @@ async function obtenerEstudianteConAcudiente(estudianteId: number) {
 
 export async function listarSalidas(usuario: SesionUsuario) {
   const soloHoy = usuario.rol === 'Porteria';
-  const result = await db.execute({ sql: `SELECT s.id, s.estudianteId, e.nombre AS estudiante, e.grado, e.grupo, e.jornada, a.nombre AS acudiente, s.recogeNombre, s.recogeApellido, s.recogeCedula, s.recogeParentesco, s.recogeCorreo, s.estado, s.creadoEn, u.nombre AS registradoPorNombre FROM Salida s INNER JOIN Estudiante e ON e.id = s.estudianteId INNER JOIN Acudiente a ON a.id = s.acudienteId INNER JOIN Usuario u ON u.id = s.registradoPorId ${soloHoy ? "WHERE date(s.creadoEn) = date('now', 'localtime')" : ''} ORDER BY s.creadoEn DESC`, args: [] });
+  const result = await db.execute({ sql: `SELECT s.id, s.estudianteId, e.nombre AS estudiante, e.grado, e.grupo, e.jornada, a.nombre AS acudiente, s.recogeNombre, s.recogeApellido, s.recogeCedula, s.recogeParentesco, s.recogeCorreo, s.estado, s.creadoEn, u.nombre AS registradoPorNombre FROM Salida s INNER JOIN Estudiante e ON e.id = s.estudianteId INNER JOIN Acudiente a ON a.id = s.acudienteId INNER JOIN Usuario u ON u.id = s.registradoPorId ${soloHoy ? "WHERE date(s.creadoEn, '-5 hours') = date('now', '-5 hours')" : ''} ORDER BY s.creadoEn DESC`, args: [] });
   return { data: result.rows };
 }
 

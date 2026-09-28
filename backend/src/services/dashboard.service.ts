@@ -219,7 +219,7 @@ export async function obtenerEstadisticasDashboard(usuario: SesionUsuario) {
       FROM Reporte r
       INNER JOIN Estudiante e ON e.id = r.estudianteId
       INNER JOIN Usuario u ON u.id = r.docenteId
-      WHERE r.confidencial = 0 OR ? = 'Coordinador' OR r.docenteId = ?
+      WHERE ? = 'Coordinador' OR r.docenteId = ?
       ORDER BY r.fecha DESC
       LIMIT 6
     `, [usuario.rol, usuario.id]),

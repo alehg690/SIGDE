@@ -131,7 +131,7 @@ function reportarEfectoFallido(nombre: string, reason: unknown) {
   console.error(`No se pudo completar el efecto secundario del reporte: ${nombre}.`, reason);
 }
 
-export async function listarReportes(usuario: SesionUsuario) {
+export async function listarReportes(usuario: SesionUsuario, estudianteId?: number) {
   const result = await db.execute({
     sql: `
       SELECT
@@ -147,16 +147,17 @@ export async function listarReportes(usuario: SesionUsuario) {
       FROM Reporte r
       INNER JOIN Estudiante e ON e.id = r.estudianteId
       INNER JOIN Usuario u ON u.id = r.docenteId
-      WHERE r.confidencial = 0 OR ? = 'Coordinador' OR r.docenteId = ?
+      WHERE (? IS NULL OR r.estudianteId = ?)
+        AND (? = 'Coordinador' OR r.docenteId = ? OR (? IS NOT NULL AND r.confidencial = 0))
       ORDER BY datetime(r.fecha) DESC
-      LIMIT 500
+      LIMIT CASE WHEN ? IS NULL THEN 500 ELSE -1 END
     `,
-    args: [usuario.rol, usuario.id],
+    args: [estudianteId ?? null, estudianteId ?? null, usuario.rol, usuario.id, estudianteId ?? null, estudianteId ?? null],
   });
   return { data: result.rows.map(row => ({ ...row, observador: row.observador ? JSON.parse(String(row.observador)) : null })) };
 }
 
-export async function obtenerReporte(id: number, usuario: SesionUsuario) {
+export async function obtenerReporte(id: number, usuario: SesionUsuario, estudianteId?: number) {
   const result = await db.execute({
     sql: `
       SELECT
@@ -172,10 +173,11 @@ export async function obtenerReporte(id: number, usuario: SesionUsuario) {
       FROM Reporte r
       INNER JOIN Estudiante e ON e.id = r.estudianteId
       INNER JOIN Usuario u ON u.id = r.docenteId
-      WHERE r.id = ? AND (r.confidencial = 0 OR ? = 'Coordinador' OR r.docenteId = ?)
+      WHERE r.id = ? AND (? IS NULL OR r.estudianteId = ?)
+        AND (? = 'Coordinador' OR r.docenteId = ? OR (? IS NOT NULL AND r.confidencial = 0))
       LIMIT 1
     `,
-    args: [id, usuario.rol, usuario.id],
+    args: [id, estudianteId ?? null, estudianteId ?? null, usuario.rol, usuario.id, estudianteId ?? null],
   });
   const reporte = result.rows[0];
   if (!reporte) return { error: 'Reporte no encontrado', status: 404 } as const;
@@ -198,7 +200,7 @@ export async function obtenerReporte(id: number, usuario: SesionUsuario) {
   ]);
 
   let notificaciones: Array<Record<string, unknown>> = [];
-  if (puedeGestionarRegistro(usuario, Number(reporte.docenteId))) {
+  if (estudianteId !== undefined || puedeGestionarRegistro(usuario, Number(reporte.docenteId))) {
     const [acudiente, institucional] = await Promise.all([
       db.execute({
         sql: `
@@ -244,17 +246,33 @@ export async function obtenerReporte(id: number, usuario: SesionUsuario) {
 }
 
 export async function crearReporte(input: ReporteInput, usuario: SesionUsuario) {
-  const acta = validarObservador(input.observador);
+  if (!Number.isInteger(input.estudianteId) || input.estudianteId <= 0) return { error: 'Selecciona un estudiante válido', status: 400 } as const;
+  if (!input.observador || typeof input.observador !== 'object' || Array.isArray(input.observador)) return { error: 'Completa el observador', status: 400 } as const;
+  const estudiante = await db.execute({
+    sql: `SELECT e.grado, e.grupo, e.jornada, a.nombre AS acudiente, a.documento AS cedulaAcudiente,
+      (SELECT valor FROM ConfiguracionSistema WHERE clave = 'institucion.sede' LIMIT 1) AS sede
+      FROM Estudiante e LEFT JOIN Acudiente a ON a.id = e.acudienteId
+      WHERE e.id = ? AND e.activo = 1 AND e.archivado = 0 LIMIT 1`,
+    args: [input.estudianteId],
+  });
+  const alumno = estudiante.rows[0];
+  if (!alumno) return { error: 'El estudiante no existe o no se encuentra activo', status: 404 } as const;
+  const raw = input.observador as Record<string, unknown>;
+  const acta = validarObservador({
+    ...raw,
+    fechaRegistro: input.fechaHecho,
+    horaFinal: '',
+    sede: String(alumno.sede || 'Sin registrar'),
+    jornada: String(alumno.jornada || 'Sin registrar'),
+    grupo: `${alumno.grado}-${alumno.grupo}`,
+    acudiente: alumno.acudiente && alumno.acudiente !== 'Pendiente de registrar' ? String(alumno.acudiente) : 'Sin registrar',
+    cedulaAcudiente: String(alumno.cedulaAcudiente || 'Sin registrar'),
+  });
   if ('error' in acta) return acta;
   input = { ...input, ...datosReporteObservador(acta.data) };
   const validacion = validarReporte(input);
   if ('error' in validacion) return validacion;
   const data = validacion.data;
-  const estudiante = await db.execute({
-    sql: 'SELECT id FROM Estudiante WHERE id = ? AND activo = 1 AND archivado = 0 LIMIT 1',
-    args: [data.estudianteId],
-  });
-  if (!estudiante.rows[0]) return { error: 'El estudiante no existe o no se encuentra activo', status: 404 } as const;
 
   const editableHasta = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   const transaction = await db.transaction('write');
@@ -328,7 +346,13 @@ export async function editarReporte(id: number, usuario: SesionUsuario, input: E
   let observador = row.observador ? String(row.observador) : null;
   let tipoActualizado: string | null = null;
   if (observador || input.observador !== undefined) {
-    const acta = validarObservador(input.observador ?? JSON.parse(observador!));
+    const anterior = observador ? JSON.parse(observador) : {};
+    const cambios = input.observador && typeof input.observador === 'object' ? input.observador : {};
+    const acta = validarObservador({ ...anterior, ...cambios,
+      fecha: anterior.fecha, horaInicio: anterior.horaInicio, horaFinal: anterior.horaFinal,
+      fechaRegistro: anterior.fechaRegistro, sede: anterior.sede, jornada: anterior.jornada,
+      grupo: anterior.grupo, acudiente: anterior.acudiente, cedulaAcudiente: anterior.cedulaAcudiente,
+    });
     if ('error' in acta) return acta;
     input = { ...input, ...datosReporteObservador(acta.data) };
     observador = JSON.stringify(acta.data);
