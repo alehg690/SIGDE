@@ -11,7 +11,7 @@ export async function GET(_request: Request, { params }: Params) {
   if (!Number.isSafeInteger(id) || id <= 0) return NextResponse.json({ error: 'Comunicación inválida.' }, { status: 400 });
   const result = await db.execute({
     sql: `SELECT c.id, c.titulo, c.tipo, c.destinatarios, c.contenido, c.estado, c.autorId, c.creadoEn, c.publicadoEn, c.visualizaciones, u.nombre AS autor
-      FROM Comunicacion c JOIN Usuario u ON u.id = c.autorId WHERE c.id = ? AND (c.estado = 'Publicado' OR c.autorId = ? OR ? = 'Coordinador') LIMIT 1`,
+      FROM Comunicacion c JOIN Usuario u ON u.id = c.autorId WHERE c.id = ? AND (c.estado = 'Publicado' OR c.autorId = ? OR ? IN ('Coordinador', 'Admin')) LIMIT 1`,
     args: [id, auth.usuario.id, auth.usuario.rol],
   });
   const comunicacion = result.rows[0];

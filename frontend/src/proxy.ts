@@ -28,10 +28,6 @@ export async function proxy(request: NextRequest) {
   const isProtectedPath = PROTECTED_PATHS.some((path) => pathname.startsWith(path));
   const isAuthenticated = await hasValidSession(request);
 
-  if (pathname === '/' && isAuthenticated) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
   if (isProtectedPath && !isAuthenticated) {
     const response = NextResponse.redirect(new URL('/', request.url));
     response.cookies.delete('token');
@@ -42,5 +38,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/dashboard/:path*'],
+  matcher: ['/dashboard/:path*'],
 };

@@ -1,5 +1,5 @@
 import { db } from '@backend/config/database';
-import type { SesionUsuario } from '@backend/types/roles';
+import { esRolCoordinador, type SesionUsuario } from '@backend/types/roles';
 
 async function contar(sql: string) {
   const result = await db.execute(sql);
@@ -219,7 +219,7 @@ export async function obtenerEstadisticasDashboard(usuario: SesionUsuario) {
       FROM Reporte r
       INNER JOIN Estudiante e ON e.id = r.estudianteId
       INNER JOIN Usuario u ON u.id = r.docenteId
-      WHERE ? = 'Coordinador' OR r.docenteId = ?
+      WHERE ? IN ('Coordinador', 'Admin') OR r.docenteId = ?
       ORDER BY r.fecha DESC
       LIMIT 6
     `, [usuario.rol, usuario.id]),
@@ -268,7 +268,7 @@ export async function obtenerEstadisticasDashboard(usuario: SesionUsuario) {
     data: {
       usuario,
       metricas: {
-        usuarios: usuario.rol === 'Coordinador' ? usuarios : 0,
+        usuarios: esRolCoordinador(usuario.rol) ? usuarios : 0,
         estudiantes,
         reportes: esPorteria ? 0 : reportes,
         reportesPendientes: esPorteria ? 0 : reportesPendientes,
@@ -305,7 +305,7 @@ export async function obtenerResumenDashboard(usuario: SesionUsuario) {
 }
 
 function obtenerAccesosPorRol(rol: SesionUsuario['rol']) {
-  if (rol === 'Coordinador') {
+  if (esRolCoordinador(rol)) {
     return ['usuarios', 'estudiantes', 'reportes', 'alertas', 'convivencia', 'manual-convivencia', 'salidas', 'dashboard', 'auditoria', 'configuracion'];
   }
   if (rol === 'Docente') {

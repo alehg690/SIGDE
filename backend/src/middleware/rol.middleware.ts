@@ -3,6 +3,7 @@ import { db } from '@backend/config/database';
 import { verificarToken } from '@backend/utils/jwt';
 import {
   normalizarRol,
+  tieneRol,
   type RolUsuario,
   type SesionUsuario,
 } from '@backend/types/roles';
@@ -81,7 +82,7 @@ export async function autorizarRoles(
       versionSesion: Number(cuenta.versionSesion),
     };
 
-    if (rolesPermitidos && !rolesPermitidos.includes(usuario.rol)) {
+    if (rolesPermitidos && !tieneRol(usuario, rolesPermitidos)) {
       return {
         response: NextResponse.json({ error: 'No tienes permisos para esta accion' }, { status: 403 }),
       };

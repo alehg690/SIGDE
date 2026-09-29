@@ -15,7 +15,7 @@ export async function GET() {
     sql: `SELECT c.id, c.titulo, c.tipo, c.destinatarios, c.contenido, c.estado, c.autorId, c.creadoEn, c.publicadoEn, c.visualizaciones, u.nombre AS autor,
       (SELECT COUNT(*) FROM ComunicacionArchivo a WHERE a.comunicacionId = c.id) AS archivosCantidad
       FROM Comunicacion c JOIN Usuario u ON u.id = c.autorId
-      WHERE c.estado = 'Publicado' OR (c.estado = 'Borrador' AND (c.autorId = ? OR ? = 'Coordinador'))
+      WHERE c.estado = 'Publicado' OR (c.estado = 'Borrador' AND (c.autorId = ? OR ? IN ('Coordinador', 'Admin')))
       ORDER BY CASE WHEN c.estado = 'Publicado' THEN c.publicadoEn ELSE c.creadoEn END DESC, c.id DESC LIMIT 300`,
     args: [auth.usuario.id, auth.usuario.rol],
   });

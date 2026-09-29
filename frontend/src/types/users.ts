@@ -1,4 +1,4 @@
-export type RolUsuario = 'Coordinador' | 'Docente' | 'Porteria';
+export type RolUsuario = 'Admin' | 'Coordinador' | 'Docente' | 'Porteria';
 
 export type UsuarioSistema = {
   id: number;

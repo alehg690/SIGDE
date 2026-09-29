@@ -13,7 +13,7 @@ export async function GET(_request: Request, { params }: Params) {
   if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(archivoId) || archivoId <= 0) return NextResponse.json({ error: 'Archivo inválido.' }, { status: 400 });
   const result = await db.execute({
     sql: `SELECT a.nombre, a.mimeType, a.contenido FROM ComunicacionArchivo a JOIN Comunicacion c ON c.id = a.comunicacionId
-      WHERE a.id = ? AND c.id = ? AND (c.estado = 'Publicado' OR c.autorId = ? OR ? = 'Coordinador') LIMIT 1`,
+      WHERE a.id = ? AND c.id = ? AND (c.estado = 'Publicado' OR c.autorId = ? OR ? IN ('Coordinador', 'Admin')) LIMIT 1`,
     args: [archivoId, id, auth.usuario.id, auth.usuario.rol],
   });
   const file = result.rows[0];

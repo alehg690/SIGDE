@@ -5,7 +5,7 @@ import { evaluarAlertaEstudiante } from '@backend/services/alertas.service';
 import { registrarAccion } from '@backend/services/auditoria.service';
 import { normalizarTipoSituacion, obtenerReglaTipo } from '@backend/services/manual-convivencia.service';
 import { notificarAcudienteCambioReporte, notificarAcudientePorReporte } from '@backend/services/notificaciones.service';
-import type { SesionUsuario } from '@backend/types/roles';
+import { esRolCoordinador, type SesionUsuario } from '@backend/types/roles';
 
 export type ReporteInput = {
   observador?: unknown;
@@ -119,7 +119,7 @@ function validarReporte(input: ReporteInput) {
 }
 
 function puedeGestionarRegistro(usuario: SesionUsuario, docenteId: number) {
-  return usuario.rol === 'Coordinador' || usuario.id === docenteId;
+  return esRolCoordinador(usuario.rol) || usuario.id === docenteId;
 }
 
 function edicionVigente(row: Record<string, unknown>) {
@@ -149,7 +149,7 @@ export async function listarReportes(usuario: SesionUsuario, estudianteId?: numb
       INNER JOIN Estudiante e ON e.id = r.estudianteId
       INNER JOIN Usuario u ON u.id = r.docenteId
       WHERE (? IS NULL OR r.estudianteId = ?)
-        AND (? = 'Coordinador' OR r.docenteId = ? OR (? IS NOT NULL AND r.confidencial = 0))
+        AND (? IN ('Coordinador', 'Admin') OR r.docenteId = ? OR (? IS NOT NULL AND r.confidencial = 0))
       ORDER BY datetime(r.fecha) DESC
       LIMIT CASE WHEN ? IS NULL THEN 500 ELSE -1 END
     `,
@@ -175,7 +175,7 @@ export async function obtenerReporte(id: number, usuario: SesionUsuario, estudia
       INNER JOIN Estudiante e ON e.id = r.estudianteId
       INNER JOIN Usuario u ON u.id = r.docenteId
       WHERE r.id = ? AND (? IS NULL OR r.estudianteId = ?)
-        AND (? = 'Coordinador' OR r.docenteId = ? OR (? IS NOT NULL AND r.confidencial = 0))
+        AND (? IN ('Coordinador', 'Admin') OR r.docenteId = ? OR (? IS NOT NULL AND r.confidencial = 0))
       LIMIT 1
     `,
     args: [id, estudianteId ?? null, estudianteId ?? null, usuario.rol, usuario.id, estudianteId ?? null],
@@ -237,10 +237,10 @@ export async function obtenerReporte(id: number, usuario: SesionUsuario, estudia
       notificaciones,
       permisos: {
         puedeEditar: reporte.docenteId === usuario.id && edicionVigente(reporte),
-        puedeAgregarEvidencia: usuario.rol === 'Coordinador'
+        puedeAgregarEvidencia: esRolCoordinador(usuario.rol)
           || (reporte.docenteId === usuario.id && edicionVigente(reporte)),
         puedeObservar: puedeGestionarRegistro(usuario, Number(reporte.docenteId)),
-        puedeGestionarEstado: usuario.rol === 'Coordinador',
+        puedeGestionarEstado: esRolCoordinador(usuario.rol),
       },
     },
   };
@@ -393,7 +393,7 @@ export async function agregarEvidenciaReporte(id: number, input: EvidenciaReport
   });
   const reporte = reporteResult.rows[0];
   if (!reporte) return { error: 'Reporte no encontrado', status: 404 } as const;
-  if (usuario.rol !== 'Coordinador' && (Number(reporte.docenteId) !== usuario.id || !edicionVigente(reporte))) {
+  if (!esRolCoordinador(usuario.rol) && (Number(reporte.docenteId) !== usuario.id || !edicionVigente(reporte))) {
     return { error: 'No tienes permiso para agregar evidencias a este reporte', status: 403 } as const;
   }
   const nombre = input.nombre.trim();
@@ -420,7 +420,7 @@ export async function agregarArchivoEvidencia(id: number, input: ArchivoEvidenci
   });
   const reporte = reporteResult.rows[0];
   if (!reporte) return { error: 'Reporte no encontrado', status: 404 } as const;
-  if (usuario.rol !== 'Coordinador' && (Number(reporte.docenteId) !== usuario.id || !edicionVigente(reporte))) {
+  if (!esRolCoordinador(usuario.rol) && (Number(reporte.docenteId) !== usuario.id || !edicionVigente(reporte))) {
     return { error: 'No tienes permiso para agregar evidencias a este reporte', status: 403 } as const;
   }
   const nombre = input.nombre.trim();
@@ -484,7 +484,7 @@ export async function agregarObservacionReporte(id: number, texto: string, usuar
 }
 
 export async function cambiarEstadoReporte(id: number, estado: string, observaciones: string | undefined, usuario: SesionUsuario) {
-  if (usuario.rol !== 'Coordinador') {
+  if (!esRolCoordinador(usuario.rol)) {
     return { error: 'Solo coordinación puede gestionar el estado de un reporte', status: 403 } as const;
   }
   const estadoLimpio = estado.trim();

@@ -24,7 +24,7 @@ export type DashboardUser = {
   rol: string;
 };
 
-type DashboardRole = 'coordinador' | 'docente' | 'portero';
+type DashboardRole = 'admin' | 'coordinador' | 'docente' | 'portero';
 type DashboardSection = 'dashboard' | 'usuarios' | 'personas' | 'seguimiento' | 'estadisticas' | 'salidas' | 'comunicaciones' | 'calendario' | 'reportes' | 'convivencia' | 'configuracion' | 'perfil' | 'auditoria';
 
 const DASHBOARD_SECTIONS: DashboardSection[] = ['dashboard', 'usuarios', 'personas', 'seguimiento', 'estadisticas', 'salidas', 'comunicaciones', 'calendario', 'reportes', 'convivencia', 'configuracion', 'perfil', 'auditoria'];
@@ -163,6 +163,7 @@ const EMPTY_STATS: DashboardStats = {
 };
 
 const ROLE_LABELS: Record<DashboardRole, string> = {
+  admin: 'Admin',
   coordinador: 'Coordinador',
   docente: 'Docente',
   portero: 'Portero',
@@ -180,8 +181,16 @@ const NAV_GROUPS: Array<{
   { label: 'SEGURIDAD', items: [{ id: 'auditoria', label: 'Auditoría', roles: ['coordinador'] }] },
 ];
 
+function esRolGestor(role: DashboardRole) {
+  return role === 'admin' || role === 'coordinador';
+}
+
+function tieneAccesoSeccion(roles: DashboardRole[], role: DashboardRole) {
+  return roles.includes(role) || (role === 'admin' && roles.includes('coordinador'));
+}
+
 function puedeAbrirSeccion(section: DashboardSection, role: DashboardRole) {
-  return NAV_GROUPS.some((group) => group.items.some((item) => item.id === section && item.roles.includes(role)));
+  return NAV_GROUPS.some((group) => group.items.some((item) => item.id === section && tieneAccesoSeccion(item.roles, role)));
 }
 
 type SidebarIconName = 'dashboard' | 'users' | 'graduation' | 'document' | 'door' | 'message' | 'calendar' | 'chart' | 'settings' | 'profile' | 'logout' | 'chevron' | 'chevronDown' | 'search' | 'sparkles';
@@ -214,6 +223,7 @@ function SidebarIcon({ name }: { name: SidebarIconName }) {
 
 function normalizeRole(rol: string): DashboardRole {
   const value = rol.trim().toLowerCase();
+  if (value === 'admin' || value === 'administrador') return 'admin';
   if (value.includes('coord')) return 'coordinador';
   if (value.includes('doc')) return 'docente';
   if (value.includes('port')) return 'portero';
@@ -407,7 +417,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
 
 function DashboardNavigation({ role, section, onSelect }: { role: DashboardRole; section: DashboardSection; onSelect: (section: DashboardSection) => void }) {
   return <nav className="app-nav" aria-label="Módulos del sistema">
-    {NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => item.roles.includes(role)) })).filter((group) => group.items.length > 0).map((group) => <div className="app-nav-group" key={group.label}>
+    {NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => tieneAccesoSeccion(item.roles, role)) })).filter((group) => group.items.length > 0).map((group) => <div className="app-nav-group" key={group.label}>
       <span className="app-nav-group-label">{group.label}</span>
       {group.items.map((item) => <button key={item.id} type="button" data-tooltip={item.label} aria-label={item.label} aria-current={section === item.id ? 'page' : undefined} className={section === item.id ? 'app-nav-item app-nav-item--active' : 'app-nav-item'} onClick={() => onSelect(item.id)}><span className="app-nav-icon"><SidebarIcon name={ICON_BY_SECTION[item.id]} /></span><span className="app-nav-label">{item.label}</span></button>)}
     </div>)}
@@ -764,13 +774,13 @@ function DashboardContent({
   initialSearch: string;
 }) {
   if (section === 'convivencia') return <CoexistenceWorkspace />;
-  if (section === 'seguimiento') return <FollowUpWorkspace canManage={role === 'coordinador'} />;
-  if (section === 'calendario') return <CalendarWorkspace canManage={role === 'coordinador'} />;
+  if (section === 'seguimiento') return <FollowUpWorkspace canManage={esRolGestor(role)} />;
+  if (section === 'calendario') return <CalendarWorkspace canManage={esRolGestor(role)} />;
   if (section === 'estadisticas') return statsError
     ? <p className="feedback error" role="alert">{statsError}</p>
-    : <StatisticsWorkspace stats={stats ?? EMPTY_STATS} loading={!stats} canExport={role === 'coordinador'} />;
+    : <StatisticsWorkspace stats={stats ?? EMPTY_STATS} loading={!stats} canExport={esRolGestor(role)} />;
   if (section === 'personas') {
-    return <StudentsWorkspace currentUserId={usuario.id} canManage={role === 'coordinador'} />;
+    return <StudentsWorkspace currentUserId={usuario.id} canManage={esRolGestor(role)} />;
   }
 
   if (section === 'salidas') {
@@ -778,14 +788,14 @@ function DashboardContent({
   }
 
   if (section === 'comunicaciones') {
-    return <CommunicationsWorkspace canManage={role === 'coordinador'} />;
+    return <CommunicationsWorkspace canManage={esRolGestor(role)} />;
   }
 
   if (section === 'reportes') {
     return (
       <ReportsWorkspace
         currentUserId={usuario.id}
-        canManage={role === 'coordinador'}
+        canManage={esRolGestor(role)}
         initialSearch={initialSearch}
       />
     );

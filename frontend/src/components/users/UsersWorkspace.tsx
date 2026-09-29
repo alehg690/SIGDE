@@ -3,12 +3,12 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 
-type RolUsuario = 'Coordinador' | 'Docente' | 'Porteria';
+type RolUsuario = 'Admin' | 'Coordinador' | 'Docente' | 'Porteria';
 type Usuario = { id: number; nombre: string; correo: string; rol: RolUsuario; activo: boolean; creadoEn: string; ultimoAcceso: string | null };
 type UsuarioForm = { nombre: string; correo: string; rol: RolUsuario; contrasena: string; activo: boolean };
 type Feedback = { tipo: 'success' | 'error'; texto: string };
 
-const ROLES: RolUsuario[] = ['Coordinador', 'Docente', 'Porteria'];
+const ROLES: RolUsuario[] = ['Admin', 'Coordinador', 'Docente', 'Porteria'];
 const EMPTY_FORM: UsuarioForm = { nombre: '', correo: '', rol: 'Docente', contrasena: '', activo: true };
 
 async function leerError(response: Response, fallback: string) {
@@ -26,7 +26,7 @@ function iniciales(nombre: string) {
 }
 
 function colorRol(rol: RolUsuario) {
-  if (rol === 'Coordinador') return 'coordinator';
+  if (rol === 'Coordinador' || rol === 'Admin') return 'coordinator';
   if (rol === 'Porteria') return 'gatekeeper';
   return 'teacher';
 }
