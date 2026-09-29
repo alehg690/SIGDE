@@ -2,6 +2,11 @@
   "name": "sistema-escolar",
   "version": "0.1.0",
   "private": true,
+  "allowScripts": {
+    "@prisma/engines@7.9.1": true,
+    "prisma@7.9.1": true,
+    "unrs-resolver@1.11.1": true
+  },
   "scripts": {
     "dev": "next dev frontend",
     "build": "next build frontend --webpack",
