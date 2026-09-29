@@ -4,8 +4,8 @@ export function validarObservador(value: unknown): { data: Observador } | { erro
   const fail = (error: string) => ({ error, status: 400 as const });
   if (!value || typeof value !== 'object' || Array.isArray(value)) return fail('Completa las tres secciones del observador.');
   const raw = value as Record<string, unknown>;
-  const fields = ['fecha', 'horaInicio', 'motivo', 'tipoSituacion', 'ordenDia', 'desarrollo', 'documentoReferencia', 'referenciaNormativa'] as const;
-  const labels: Record<string, string> = { fecha: 'Fecha', horaInicio: 'Hora de inicio', horaFinal: 'Hora final', sede: 'Sede', jornada: 'Jornada', grupo: 'Grupo', acudiente: 'Padre de familia o acudiente legal', cedulaAcudiente: 'CC del acudiente', motivo: 'Motivo de la citación', tipoSituacion: 'Situación o condición tipo', ordenDia: 'Orden del día', desarrollo: 'Desarrollo de la reunión', documentoReferencia: 'Documento de referencia', referenciaNormativa: 'Artículo, numeral y/o literal' };
+  const fields = ['fecha', 'horaInicio', 'motivo', 'tipoSituacion', 'ordenDia', 'desarrollo'] as const;
+  const labels: Record<string, string> = { fecha: 'Fecha', horaInicio: 'Hora de inicio', horaFinal: 'Hora final', sede: 'Sede', jornada: 'Jornada', grupo: 'Grupo', acudiente: 'Padre de familia o acudiente legal', cedulaAcudiente: 'CC del acudiente', motivo: 'Motivo de la citación', tipoSituacion: 'Situación o condición tipo', ordenDia: 'Orden del día', desarrollo: 'Desarrollo de la reunión' };
   const data = {} as Observador;
   for (const field of fields) {
     if (typeof raw[field] !== 'string' || !raw[field].trim()) return fail(`Completa el campo obligatorio: ${labels[field]}.`);
@@ -19,6 +19,8 @@ export function validarObservador(value: unknown): { data: Observador } | { erro
     data.fechaRegistro = raw.fechaRegistro;
   }
   data.situacionAcademica = typeof raw.situacionAcademica === 'string' ? raw.situacionAcademica.trim() : '';
+  data.documentoReferencia = typeof raw.documentoReferencia === 'string' ? raw.documentoReferencia.trim() as Observador['documentoReferencia'] : '';
+  data.referenciaNormativa = typeof raw.referenciaNormativa === 'string' ? raw.referenciaNormativa.trim() : '';
   if (data.situacionAcademica.length > 2000 || (data.tipoSituacion === '0' && data.situacionAcademica.length < 3)) return fail('Explica qué pasó en la situación académica (máximo 2000 caracteres).');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data.fecha)) return fail('Indica una fecha válida.');
   const day = new Date(`${data.fecha}T12:00:00Z`);
@@ -26,8 +28,8 @@ export function validarObservador(value: unknown): { data: Observador } | { erro
   const time = /^([01]\d|2[0-3]):[0-5]\d$/;
   if (!time.test(data.horaInicio)) return fail('Hora inicial del equipo inválida.');
   if (!['0', '1', '2', '3'].includes(data.tipoSituacion)) return fail('Selecciona el tipo de situación.');
-  if (!['Manual de Convivencia', 'SIEE'].includes(data.documentoReferencia)) return fail('Selecciona el Manual de Convivencia o el SIEE.');
-  if (data.referenciaNormativa.length < 3 || data.referenciaNormativa.length > 300) return fail('Indica el artículo, numeral y/o literal de referencia (3 a 300 caracteres).');
+  if (!['', 'Manual de Convivencia', 'SIEE'].includes(data.documentoReferencia)) return fail('Documento de referencia inválido.');
+  if (data.referenciaNormativa.length > 300) return fail('La referencia institucional no puede superar 300 caracteres.');
   if (data.motivo.length < 3 || data.motivo.length > 2000) return fail('El motivo debe tener entre 3 y 2000 caracteres.');
   if (data.ordenDia.length < 3 || data.ordenDia.length > 1000) return fail('El orden del día debe tener entre 3 y 1000 caracteres.');
   if (data.desarrollo.length < 20 || data.desarrollo.length > 2000) return fail('El desarrollo debe tener entre 20 y 2000 caracteres.');

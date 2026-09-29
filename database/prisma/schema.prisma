@@ -69,6 +69,34 @@ model Usuario {
   salidasRegistradas Salida[] @relation("SalidaRegistrador")
   gruposDirigidos   GrupoEscolar[]
   notificacionesUsuario NotificacionUsuario[]
+  comunicaciones    Comunicacion[]
+}
+
+model Comunicacion {
+  id              Int      @id @default(autoincrement())
+  titulo          String
+  tipo            String
+  destinatarios   String
+  contenido       String
+  estado          String   @default("Borrador")
+  autorId         Int
+  autor           Usuario  @relation(fields: [autorId], references: [id])
+  creadoEn        DateTime @default(now())
+  publicadoEn     DateTime?
+  visualizaciones Int      @default(0)
+  archivos        ComunicacionArchivo[]
+
+  @@index([estado, publicadoEn])
+}
+
+model ComunicacionArchivo {
+  id             Int @id @default(autoincrement())
+  comunicacionId Int
+  nombre         String
+  mimeType       String
+  tamano         Int
+  contenido      Bytes
+  comunicacion   Comunicacion @relation(fields: [comunicacionId], references: [id], onDelete: Cascade)
 }
 
 model Acudiente {
@@ -271,6 +299,9 @@ model Evento {
   descripcion   String?
   ubicacion     String?
   iniciaEn      DateTime
+  tipo          String   @default("Evento")
+  color         String   @default("azul")
+  todoElDia     Boolean  @default(false)
   finalizaEn    DateTime?
   activo        Boolean  @default(true)
   creadoEn      DateTime @default(now())
@@ -285,6 +316,8 @@ model EvidenciaReporte {
   nombre    String
   tipo      String
   url       String
+  mimeType  String?
+  contenido Bytes?
   creadoEn  DateTime @default(now())
   reporte   Reporte  @relation(fields: [reporteId], references: [id], onDelete: Cascade)
 

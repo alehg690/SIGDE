@@ -1,145 +1,128 @@
 'use client';
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
-import type { Estudiante } from '@/types/students';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { GRUPOS_ACADEMICOS } from '@/lib/academic-groups';
 
-type Notificacion = {
-  id: number;
-  acudienteId: number;
-  reporteId: number | null;
-  canal: 'email' | 'app';
-  asunto: string;
-  mensaje: string;
-  leida: boolean | number;
-  enviadoEn: string;
-  acudiente: string;
-  correo: string;
-  telefono: string;
-  estudianteId: number | null;
-  estudiante: string | null;
-  grado: string | null;
-  grupo: string | null;
+type Tipo = 'Circular' | 'Comunicado' | 'Aviso' | 'Citación';
+type Comunicacion = {
+  id: number; titulo: string; tipo: Tipo; destinatarios: string; contenido: string;
+  estado: 'Borrador' | 'Publicado'; autor: string; autorId: number;
+  creadoEn: string; publicadoEn: string | null; visualizaciones: number; archivosCantidad: number;
 };
+type Archivo = { id: number; nombre: string; mimeType: string; tamano: number };
+type Detalle = Comunicacion & { archivos: Archivo[] };
+const TIPOS: Tipo[] = ['Circular', 'Comunicado', 'Aviso', 'Citación'];
+const DESTINATARIOS = ['Toda la comunidad', 'Solo docentes', 'Solo estudiantes', ...GRUPOS_ACADEMICOS.map((grupo) => grupo.etiqueta)];
+const FECHA = new Intl.DateTimeFormat('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
 
-type Feedback = { tipo: 'success' | 'error'; texto: string };
+export default function CommunicationsWorkspace({ canManage }: { canManage: boolean }) {
+  const [items, setItems] = useState<Comunicacion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const [query, setQuery] = useState('');
+  const [filtro, setFiltro] = useState<'Todos' | Tipo>('Todos');
+  const [selected, setSelected] = useState<Detalle | null>(null);
+  const selectionToken = useRef(0);
+  const [modal, setModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [titulo, setTitulo] = useState('');
+  const [tipo, setTipo] = useState<Tipo>('Circular');
+  const [destinatarios, setDestinatarios] = useState('Toda la comunidad');
+  const [contenido, setContenido] = useState('');
+  const [archivos, setArchivos] = useState<File[]>([]);
+  const [dragging, setDragging] = useState(false);
 
-async function leerError(response: Response, fallback: string) {
-  const body = await response.json().catch(() => null);
-  return typeof body?.error === 'string' ? body.error : fallback;
-}
-
-function fechaLegible(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Sin fecha';
-  return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' }).format(date);
-}
-
-export default function CommunicationsWorkspace() {
-  const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
-  const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
-  const [estudianteId, setEstudianteId] = useState('');
-  const [asunto, setAsunto] = useState('');
-  const [mensaje, setMensaje] = useState('');
-  const [canal, setCanal] = useState<'app' | 'email'>('app');
-  const [busqueda, setBusqueda] = useState('');
-  const [cargando, setCargando] = useState(true);
-  const [guardando, setGuardando] = useState(false);
-  const [feedback, setFeedback] = useState<Feedback | null>(null);
-
-  const cargar = useCallback(async () => {
-    const [estudiantesResponse, notificacionesResponse] = await Promise.all([
-      fetch('/api/estudiantes', { cache: 'no-store' }),
-      fetch('/api/notificaciones', { cache: 'no-store' }),
-    ]);
-    if (!estudiantesResponse.ok) throw new Error(await leerError(estudiantesResponse, 'No se pudieron cargar los estudiantes.'));
-    if (!notificacionesResponse.ok) throw new Error(await leerError(notificacionesResponse, 'No se pudo cargar el historial.'));
-    const dataEstudiantes = await estudiantesResponse.json() as Estudiante[];
-    setEstudiantes(dataEstudiantes.filter((item) => item.activo && !item.archivado));
-    setNotificaciones(await notificacionesResponse.json() as Notificacion[]);
-  }, []);
-
-  useEffect(() => {
-    let activa = true;
-    const timer = window.setTimeout(() => {
-      void cargar().catch((error) => {
-        if (activa) setFeedback({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo abrir comunicaciones.' });
-      }).finally(() => { if (activa) setCargando(false); });
-    }, 0);
-    return () => { activa = false; window.clearTimeout(timer); };
-  }, [cargar]);
-
-  const estudiante = estudiantes.find((item) => item.id === Number(estudianteId)) ?? null;
-  const filtradas = useMemo(() => {
-    const termino = busqueda.trim().toLocaleLowerCase('es');
-    if (!termino) return notificaciones;
-    return notificaciones.filter((item) => [item.asunto, item.mensaje, item.acudiente, item.estudiante, item.correo].join(' ').toLocaleLowerCase('es').includes(termino));
-  }, [busqueda, notificaciones]);
-
-  async function enviar(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!estudiante) return;
-    setGuardando(true);
-    setFeedback(null);
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const response = await fetch('/api/notificaciones', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ acudienteId: estudiante.acudiente.id, asunto, mensaje, canal }),
-      });
-      if (!response.ok) throw new Error(await leerError(response, 'No se pudo registrar el comunicado.'));
-      const creada = await response.json() as { correoEnviado?: boolean; aviso?: string | null };
-      setAsunto('');
-      setMensaje('');
-      setFeedback({
-        tipo: 'success',
-        texto: creada.aviso || (canal === 'email' && creada.correoEnviado ? 'Comunicado registrado y enviado por correo.' : 'Comunicado registrado en el historial institucional.'),
-      });
-      await cargar();
-    } catch (error) {
-      setFeedback({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo registrar el comunicado.' });
-    } finally {
-      setGuardando(false);
-    }
+      const response = await fetch('/api/comunicaciones', { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'No fue posible cargar las comunicaciones.');
+      setItems(data);
+      setError('');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No fue posible cargar las comunicaciones.');
+    } finally { setLoading(false); }
+  }, []);
+  useEffect(() => { void Promise.resolve().then(load); }, [load]);
+
+  const visibles = useMemo(() => items.filter((item) => {
+    const coincideTipo = filtro === 'Todos' || item.tipo === filtro;
+    const term = query.trim().toLocaleLowerCase('es');
+    return coincideTipo && (!term || [item.titulo, item.contenido, item.destinatarios, item.autor].some((value) => value.toLocaleLowerCase('es').includes(term)));
+  }), [items, filtro, query]);
+  const publicados = items.filter((item) => item.estado === 'Publicado').length;
+
+  async function verDetalle(id: number) {
+    const item = items.find((comunicacion) => comunicacion.id === id);
+    if (!item) return;
+    const token = ++selectionToken.current;
+    setSelected({ ...item, archivos: [] });
+    setError('');
+    try {
+      const response = await fetch(`/api/comunicaciones/${id}`, { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'No fue posible abrir la comunicación.');
+      if (selectionToken.current === token) setSelected(data);
+      setItems((current) => current.map((item) => item.id === id ? { ...item, visualizaciones: data.visualizaciones } : item));
+    } catch (cause) { if (selectionToken.current === token) setError(cause instanceof Error ? cause.message : 'No fue posible cargar los adjuntos.'); }
   }
 
-  async function marcarLeida(id: number) {
-    const response = await fetch(`/api/notificaciones/${id}`, { method: 'PATCH' });
-    if (response.ok) setNotificaciones((actuales) => actuales.map((item) => item.id === id ? { ...item, leida: true } : item));
+  function resetForm() {
+    setTitulo(''); setTipo('Circular'); setDestinatarios('Toda la comunidad'); setContenido(''); setArchivos([]);
+  }
+  function agregarArchivos(input: FileList | File[]) {
+    const nuevos = Array.from(input);
+    setArchivos((actual) => [...actual, ...nuevos].slice(0, 5));
+  }
+  async function guardar(estado: 'Borrador' | 'Publicado') {
+    setSaving(true); setError('');
+    try {
+      const form = new FormData();
+      form.set('titulo', titulo); form.set('tipo', tipo); form.set('destinatarios', destinatarios);
+      form.set('contenido', contenido); form.set('estado', estado);
+      archivos.forEach((file) => form.append('archivos', file));
+      const response = await fetch('/api/comunicaciones', { method: 'POST', body: form });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'No fue posible guardar la comunicación.');
+      setModal(false); resetForm();
+      setFeedback(estado === 'Publicado' ? 'Comunicación publicada.' : 'Borrador guardado.');
+      await load();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'No fue posible guardar la comunicación.'); }
+    finally { setSaving(false); }
+  }
+  async function publicarBorrador(id: number) {
+    setSaving(true); setError('');
+    try {
+      const response = await fetch(`/api/comunicaciones/${id}`, { method: 'PATCH' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'No fue posible publicar el borrador.');
+      setSelected(null); setFeedback('Comunicación publicada.'); await load();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'No fue posible publicar el borrador.'); }
+    finally { setSaving(false); }
   }
 
-  const correos = notificaciones.filter((item) => item.canal === 'email').length;
-  const noLeidas = notificaciones.filter((item) => !Boolean(item.leida)).length;
-
-  return <section className="workspace-panel communications-workspace">
-    <header className="module-page-heading"><div className="module-title"><h2>Comunicaciones</h2><p>Registra mensajes a acudientes y conserva su trazabilidad institucional.</p></div></header>
-    {feedback && <p className={`feedback ${feedback.tipo}`} role="status">{feedback.texto}</p>}
-    <div className="module-kpi-grid">
-      <article><span>Comunicaciones</span><strong>{notificaciones.length}</strong><small>Historial registrado</small></article>
-      <article><span>Canal correo</span><strong>{correos}</strong><small>Intentos de envío documentados</small></article>
-      <article><span>Sin revisar</span><strong>{noLeidas}</strong><small>Registros internos pendientes</small></article>
-    </div>
-    <div className="communications-layout">
-      <form className="communications-compose" onSubmit={enviar}>
-        <div className="compose-heading"><span>Nuevo comunicado</span><h3>Mensaje al acudiente</h3><p>Usa información necesaria, clara y respetuosa.</p></div>
-        <label><span>Estudiante *</span><select value={estudianteId} onChange={(event) => setEstudianteId(event.target.value)} required><option value="">Seleccionar estudiante</option>{estudiantes.map((item) => <option key={item.id} value={item.id}>{item.nombre} · {item.grado}-{item.grupo}</option>)}</select></label>
-        {estudiante && <div className="communication-recipient"><span>{estudiante.acudiente.nombre.slice(0, 1).toUpperCase()}</span><div><strong>{estudiante.acudiente.nombre}</strong><small>{estudiante.acudiente.correo || estudiante.acudiente.telefono || estudiante.acudiente.contacto}</small></div></div>}
-        <label><span>Canal *</span><select value={canal} onChange={(event) => setCanal(event.target.value as 'app' | 'email')}><option value="app">Registro interno</option><option value="email">Correo electrónico</option></select><small>{canal === 'email' ? 'El envío requiere credenciales de correo configuradas.' : 'Queda documentado sin afirmar una entrega externa.'}</small></label>
-        <label><span>Asunto *</span><input value={asunto} minLength={4} maxLength={160} onChange={(event) => setAsunto(event.target.value)} placeholder="Ej. Citación de seguimiento" required /></label>
-        <label><span>Mensaje *</span><textarea value={mensaje} minLength={10} maxLength={3000} onChange={(event) => setMensaje(event.target.value)} placeholder="Escribe el motivo, fecha y próximos pasos." required /><small>{mensaje.length}/3000</small></label>
-        <button type="submit" className="module-primary-action" disabled={guardando || !estudiante}>{guardando ? 'Registrando...' : canal === 'email' ? 'Registrar y enviar' : 'Registrar comunicado'}</button>
-      </form>
-      <div className="communications-history">
-        <div className="module-filter-bar"><label className="module-search-field"><span>Buscar historial</span><input type="search" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} placeholder="Asunto, estudiante o acudiente" /></label></div>
-        <div className="module-list-heading"><strong>Historial</strong><span>{cargando ? 'Cargando...' : `${filtradas.length} registros`}</span></div>
-        <div className="communications-list">
-          {!cargando && filtradas.length === 0 && <div className="module-empty-state"><strong>Sin comunicaciones</strong><p>Los mensajes registrados aparecerán aquí.</p></div>}
-          {filtradas.map((item) => <article key={item.id} className={Boolean(item.leida) ? 'communication-row communication-row--read' : 'communication-row'}>
-            <span className={`communication-channel communication-channel--${item.canal}`}>{item.canal === 'email' ? '@' : '✓'}</span>
-            <div><div className="communication-row-heading"><strong>{item.asunto}</strong><span>{item.canal === 'email' ? 'Correo' : 'Interno'}</span></div><p>{item.mensaje}</p><small>{item.acudiente}{item.estudiante ? ` · ${item.estudiante}` : ''} · {fechaLegible(item.enviadoEn)}</small></div>
-            {!Boolean(item.leida) && <button type="button" onClick={() => void marcarLeida(item.id)}>Marcar revisada</button>}
-          </article>)}
-        </div>
-      </div>
-    </div>
+  return <section className="institutional-comms">
+      {feedback && <p className="feedback success" role="status">{feedback}</p>}
+      {error && <p className="feedback error" role="alert">{error}</p>}
+      {selected ? <>
+        <button className="institutional-comms-back" type="button" onClick={() => { selectionToken.current += 1; setSelected(null); }}>‹ &nbsp;Volver a comunicaciones</button>
+        <article className="institutional-comms-detail">
+          <header>
+            <div className="institutional-comms-tags"><span className={`institutional-comms-tag tag-${selected.tipo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`}>{selected.tipo}</span><span className={`institutional-comms-tag ${selected.estado === 'Publicado' ? 'tag-active' : 'tag-draft'}`}>{selected.estado === 'Publicado' ? 'Activo' : 'Borrador'}</span></div>
+            <h2>{selected.titulo}</h2>
+            <div className="institutional-comms-meta"><span>♧ {selected.destinatarios}</span><span>▣ {FECHA.format(new Date(selected.publicadoEn || selected.creadoEn))}</span><span>◉ {selected.visualizaciones} visualizaciones</span><span>Por: <strong>{selected.autor}</strong></span></div>
+          </header>
+          <div className="institutional-comms-body">{selected.contenido || 'Sin contenido todavía.'}</div>
+          {selected.archivos.length > 0 && <div className="institutional-comms-files"><h3>Adjuntos</h3>{selected.archivos.map((file) => <a key={file.id} href={`/api/comunicaciones/${selected.id}/archivos/${file.id}`}>📎 {file.nombre}</a>)}</div>}
+          {canManage && selected.estado === 'Borrador' && <footer><button type="button" className="institutional-comms-primary" disabled={saving || !selected.contenido.trim()} onClick={() => void publicarBorrador(selected.id)}>Publicar borrador</button></footer>}
+        </article>
+      </> : <>
+        <div className="institutional-comms-header"><div><h2>Comunicaciones</h2><p>{publicados} comunicaciones publicadas{items.length > publicados ? ` · ${items.length - publicados} borradores` : ''}</p></div>{canManage && <button type="button" className="institutional-comms-primary" onClick={() => { setError(''); setModal(true); }}>＋ Nueva comunicación</button>}</div>
+        <div className="institutional-comms-controls"><label className="institutional-comms-search"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar comunicación…" aria-label="Buscar comunicación" /></label><div className="institutional-comms-filters" aria-label="Filtrar por tipo">{(['Todos', ...TIPOS] as const).map((value) => <button key={value} type="button" className={filtro === value ? 'active' : ''} onClick={() => setFiltro(value)}>{value}</button>)}</div></div>
+        {loading ? <p className="institutional-comms-empty">Cargando comunicaciones…</p> : visibles.length === 0 ? <p className="institutional-comms-empty">{items.length ? 'No hay comunicaciones que coincidan con la búsqueda.' : 'Aún no hay comunicaciones publicadas.'}</p> : <div className="institutional-comms-list">{visibles.map((item) => <button key={item.id} type="button" className="institutional-comms-card" onClick={() => void verDetalle(item.id)}><div className="institutional-comms-card-main"><div className="institutional-comms-tags"><span className={`institutional-comms-tag tag-${item.tipo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`}>{item.tipo}</span><span>{item.destinatarios}</span>{item.estado === 'Borrador' && <span className="institutional-comms-tag tag-draft">Borrador</span>}</div><h3>{item.titulo}</h3><p>{item.contenido || 'Sin contenido todavía.'}</p></div><div className="institutional-comms-card-side"><span>{FECHA.format(new Date(item.publicadoEn || item.creadoEn))}</span><span>◉ {item.visualizaciones}</span><span>{item.autor}</span></div></button>)}</div>}
+      </>}
+      {modal && <div className="institutional-comms-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setModal(false); }}><div className="institutional-comms-modal" role="dialog" aria-modal="true" aria-labelledby="comms-modal-title"><form onSubmit={(event) => { event.preventDefault(); void guardar('Publicado'); }}><header><h2 id="comms-modal-title">Nueva comunicación</h2><button type="button" aria-label="Cerrar" onClick={() => setModal(false)}>×</button></header><div className="institutional-comms-form-body">{error && <p className="feedback error" role="alert">{error}</p>}<label>Título<input required maxLength={160} value={titulo} onChange={(event) => setTitulo(event.target.value)} placeholder="Título de la comunicación" /></label><div className="institutional-comms-form-row"><label>Tipo<select value={tipo} onChange={(event) => setTipo(event.target.value as Tipo)}>{TIPOS.map((value) => <option key={value}>{value}</option>)}</select></label><label>Destinatarios<select value={destinatarios} onChange={(event) => setDestinatarios(event.target.value)}>{DESTINATARIOS.map((value) => <option key={value}>{value}</option>)}</select></label></div><label>Contenido<textarea value={contenido} onChange={(event) => setContenido(event.target.value)} rows={5} maxLength={10000} placeholder="Escribe el contenido de la comunicación…" /></label><div><span className="institutional-comms-field-label">Adjuntos (opcional)</span><label className={`institutional-comms-dropzone ${dragging ? 'dragging' : ''}`} onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={(event) => { event.preventDefault(); setDragging(false); agregarArchivos(event.dataTransfer.files); }}>📎 &nbsp;Arrastrar archivos o hacer clic para adjuntar<input type="file" multiple accept=".pdf,.docx,image/jpeg,image/png,image/webp" onChange={(event) => { if (event.target.files) agregarArchivos(event.target.files); event.target.value = ''; }} /></label><small>Hasta 5 archivos PDF, DOCX o imágenes de 4 MB cada uno.</small>{archivos.map((file, index) => <div className="institutional-comms-file" key={`${file.name}-${index}`}>{file.name} <button type="button" aria-label={`Quitar ${file.name}`} onClick={() => setArchivos((current) => current.filter((_, position) => position !== index))}>×</button></div>)}</div></div><footer><button type="button" disabled={saving || !titulo.trim()} onClick={() => void guardar('Borrador')}>Guardar borrador</button><div><button type="button" disabled={saving} onClick={() => setModal(false)}>Cancelar</button><button type="submit" className="institutional-comms-primary" disabled={saving || !titulo.trim() || !contenido.trim()}>{saving ? 'Guardando…' : 'Publicar'}</button></div></footer></form></div></div>}
   </section>;
 }

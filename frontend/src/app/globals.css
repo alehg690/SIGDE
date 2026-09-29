@@ -4068,6 +4068,22 @@ button {
 .report-confidential-field small { display: block; }
 .report-confidential-field strong { color: var(--text); font-size: .73rem; }
 
+.report-reserved-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: .73rem;
+  cursor: pointer;
+}
+
+.report-reserved-option input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--primary);
+}
+
 .report-rule-note,
 .report-notification-note {
   grid-column: 1 / -1;
@@ -4981,3 +4997,129 @@ button {
   .exit-history > div:first-child { align-items: stretch; flex-direction: column; }
   .exit-history-search { width: 100%; }
 }
+
+/* Calendario institucional */
+.calendar-workspace { display: grid; gap: 20px; }
+.calendar-heading, .calendar-heading-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.calendar-heading-actions { justify-content: flex-end; }
+.calendar-view-switch { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 9px; background: rgba(80, 106, 144, .1); }
+.calendar-view-switch button { border: 0; border-radius: 6px; padding: 8px 14px; background: transparent; color: var(--muted); font-weight: 700; cursor: pointer; }
+.calendar-view-switch button.active { background: rgba(80, 104, 238, .2); color: #8093ff; }
+.calendar-new-button, .calendar-modal footer button[type='submit'] { border: 0; border-radius: 8px; padding: 10px 16px; background: #505feb; color: #fff; font-weight: 700; cursor: pointer; }
+.calendar-new-button:hover, .calendar-modal footer button[type='submit']:hover { background: #6573f6; }
+.calendar-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, .95fr); gap: 20px; align-items: start; }
+.calendar-board, .calendar-side-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: rgba(12, 24, 42, .35); }
+.calendar-period { display: flex; justify-content: space-between; align-items: center; padding: 14px 22px; border-bottom: 1px solid var(--line); }
+.calendar-period h3 { margin: 0; color: var(--text); font-size: 1.08rem; }
+.calendar-period button { border: 0; background: transparent; color: var(--muted); font-size: 1.7rem; line-height: 1; cursor: pointer; }
+.calendar-period button:hover { color: var(--text); }
+.calendar-weekdays, .calendar-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.calendar-weekdays { border-bottom: 1px solid var(--line); }
+.calendar-weekdays span { padding: 10px 5px; color: var(--muted); font-size: .76rem; font-weight: 700; text-align: center; }
+.calendar-day { display: flex; flex-direction: column; align-items: stretch; min-width: 0; min-height: 112px; padding: 9px 7px; border: 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: transparent; color: var(--muted); text-align: left; cursor: pointer; }
+.calendar-day:nth-child(7n) { border-right: 0; }
+.calendar-day:hover, .calendar-day--selected { background: rgba(90, 106, 240, .12); }
+.calendar-day--outside { opacity: .38; }
+.calendar-day-number { align-self: flex-end; margin: 0 2px 8px; font-size: .8rem; font-weight: 700; }
+.calendar-day--today .calendar-day-number { display: grid; place-items: center; width: 24px; height: 24px; margin-top: -3px; margin-bottom: 4px; border-radius: 50%; background: #505feb; color: #fff; }
+.calendar-day-events { display: grid; gap: 3px; min-width: 0; }
+.calendar-event-chip { display: block; overflow: hidden; border-radius: 4px; padding: 4px 5px; font-size: .67rem; font-weight: 700; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.calendar-more { padding: 1px 4px; color: var(--muted); font-size: .66rem; }
+.calendar-days--semana .calendar-day { min-height: 350px; }
+.calendar-sidebar { display: grid; gap: 18px; }
+.calendar-side-card { padding: 20px; }
+.calendar-side-card h3 { margin: 0 0 16px; color: var(--text); font-size: .98rem; }
+.calendar-side-card > h3:last-child { margin-bottom: 0; }
+.calendar-selected-list, .calendar-upcoming-list { display: grid; gap: 14px; }
+.calendar-selected-list > p, .calendar-upcoming-list > p { margin: 0; color: var(--muted); font-size: .8rem; }
+.calendar-selected-list article, .calendar-upcoming-list article { display: grid; grid-template-columns: 9px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.calendar-selected-list article { grid-template-columns: 9px minmax(0, 1fr); align-items: start; }
+.calendar-dot { display: block; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+.calendar-selected-list strong, .calendar-upcoming-list strong { display: block; color: var(--text); font-size: .77rem; line-height: 1.35; }
+.calendar-selected-list span, .calendar-upcoming-list span { display: block; margin-top: 3px; color: var(--muted); font-size: .7rem; }
+.calendar-selected-list p { margin: 7px 0 0; color: var(--muted); font-size: .72rem; }
+.calendar-type { border-radius: 5px; padding: 4px 6px; font-size: .65rem; font-style: normal; font-weight: 700; }
+.calendar-color--azul { color: #6d83ff; background-color: rgba(79, 98, 233, .17); }
+.calendar-color--verde { color: #16c69b; background-color: rgba(16, 185, 129, .14); }
+.calendar-color--amarillo { color: #efa411; background-color: rgba(245, 158, 11, .14); }
+.calendar-color--rojo { color: #fa565c; background-color: rgba(239, 68, 68, .13); }
+.calendar-color--morado { color: #9c65f8; background-color: rgba(139, 92, 246, .15); }
+.calendar-color--cian { color: #0dbbd5; background-color: rgba(6, 182, 212, .15); }
+.calendar-dot.calendar-color--azul { background: #6d83ff; }.calendar-dot.calendar-color--verde { background: #16c69b; }.calendar-dot.calendar-color--amarillo { background: #efa411; }.calendar-dot.calendar-color--rojo { background: #fa565c; }.calendar-dot.calendar-color--morado { background: #9c65f8; }.calendar-dot.calendar-color--cian { background: #0dbbd5; }
+.calendar-loading { display: block; padding: 8px 14px; color: var(--muted); font-size: .7rem; }
+.calendar-modal-backdrop { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: rgba(0, 0, 0, .65); }
+.calendar-modal { width: min(100%, 560px); max-height: calc(100dvh - 40px); overflow: auto; border: 1px solid var(--line); border-radius: 16px; background: #101827; box-shadow: 0 22px 70px rgba(0, 0, 0, .4); color: #edf1f8; }
+.calendar-modal > header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid rgba(160, 174, 200, .16); }
+.calendar-modal h3 { margin: 0; font-size: 1.1rem; }.calendar-modal > header button { border: 0; background: transparent; color: #9aa6bb; font-size: 1.5rem; cursor: pointer; }
+.calendar-modal form { display: grid; gap: 18px; padding: 24px; }.calendar-modal form label { display: grid; gap: 7px; color: #a2acc0; font-size: .77rem; font-weight: 700; }
+.calendar-modal form input, .calendar-modal form select, .calendar-modal form textarea { width: 100%; min-height: 45px; border: 1px solid rgba(155, 171, 198, .2); border-radius: 8px; background: #1a2232; color: #edf1f8; padding: 9px 11px; font: inherit; }
+.calendar-modal form textarea { min-height: 78px; resize: vertical; }.calendar-modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.calendar-color-options { display: flex; gap: 10px; min-width: 0; margin: 0; padding: 0; border: 0; }.calendar-color-options legend { margin-bottom: 9px; color: #a2acc0; font-size: .77rem; font-weight: 700; }
+.calendar-color-choice { display: inline-grid !important; width: 30px; height: 30px; place-items: center; cursor: pointer; }.calendar-color-choice input { position: absolute; width: 1px !important; height: 1px !important; opacity: 0; }.calendar-color-choice span { display: block; width: 26px; height: 26px; border-radius: 50%; background: currentColor; }.calendar-color-choice input:checked + span { outline: 2px solid currentColor; outline-offset: 3px; }
+.calendar-modal form .calendar-color-choice { background: transparent; }
+.calendar-modal form .calendar-color-choice.calendar-color--azul { color: #6d83ff; }.calendar-modal form .calendar-color-choice.calendar-color--verde { color: #16c69b; }.calendar-modal form .calendar-color-choice.calendar-color--amarillo { color: #efa411; }.calendar-modal form .calendar-color-choice.calendar-color--rojo { color: #fa565c; }.calendar-modal form .calendar-color-choice.calendar-color--morado { color: #9c65f8; }.calendar-modal form .calendar-color-choice.calendar-color--cian { color: #0dbbd5; }
+.calendar-modal footer { display: flex; justify-content: flex-end; gap: 10px; margin: 6px -24px -24px; padding: 15px 24px; border-top: 1px solid rgba(160, 174, 200, .16); }.calendar-modal footer button[type='button'] { border: 1px solid rgba(155, 171, 198, .2); border-radius: 8px; padding: 10px 16px; background: transparent; color: #a2acc0; cursor: pointer; }
+@media (max-width: 1100px) { .calendar-layout { grid-template-columns: minmax(0, 1fr); }.calendar-sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 650px) { .calendar-heading { align-items: stretch; flex-direction: column; }.calendar-heading-actions { justify-content: space-between; }.calendar-board { overflow-x: auto; }.calendar-weekdays, .calendar-days { min-width: 630px; }.calendar-sidebar { grid-template-columns: minmax(0, 1fr); }.calendar-modal-row { grid-template-columns: 1fr; } }
+
+/* Comunicaciones institucionales */
+.institutional-comms { color: #e9edf8; }
+.institutional-comms button { cursor: pointer; }
+.institutional-comms-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 28px; }
+.institutional-comms-header h2 { margin: 0 0 5px; color: #f3f6ff; font-size: 29px; }
+.institutional-comms-header p { margin: 0; color: #95a0b7; }
+.institutional-comms-primary { border: 0; border-radius: 9px; background: #4f61e8; color: white; padding: 12px 18px; font-weight: 700; white-space: nowrap; }
+.institutional-comms-primary:hover { background: #6474f5; }
+.institutional-comms-primary:disabled { opacity: .55; cursor: not-allowed; }
+.institutional-comms-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
+.institutional-comms-search { display: flex; align-items: center; gap: 10px; width: min(100%, 360px); padding: 0 13px; border: 1px solid #2c3a52; border-radius: 9px; background: #172336; color: #8f9ab3; }
+.institutional-comms-search span { font-size: 25px; }
+.institutional-comms-search input { width: 100%; border: 0; outline: 0; background: transparent; color: #e9edf8; padding: 12px 0; }
+.institutional-comms-filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.institutional-comms-filters button { border: 1px solid #2d3851; border-radius: 8px; background: #1b2840; color: #aeb7c9; padding: 11px 14px; font-weight: 700; }
+.institutional-comms-filters button.active { border-color: #6176fb; background: #202955; color: #9aabff; }
+.institutional-comms-list { display: grid; gap: 13px; }
+.institutional-comms-card { display: flex; justify-content: space-between; width: 100%; gap: 22px; text-align: left; padding: 22px 25px; border: 1px solid #263346; border-radius: 14px; background: #111e30; color: inherit; }
+.institutional-comms-card:hover { border-color: #5a6d9b; background: #17263d; }
+.institutional-comms-card-main { min-width: 0; }
+.institutional-comms-card-main h3 { margin: 11px 0 8px; font-size: 18px; color: #f2f5fd; }
+.institutional-comms-card-main p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin: 0; color: #a8b3c7; line-height: 1.55; }
+.institutional-comms-card-side { display: grid; align-content: start; gap: 8px; min-width: 150px; color: #a4aec4; text-align: right; font-size: 13px; }
+.institutional-comms-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; color: #9ca9bf; font-size: 13px; }
+.institutional-comms-tag { display: inline-flex; align-items: center; border-radius: 30px; padding: 5px 10px; font-size: 12px; font-weight: 700; }
+.tag-circular { color: #91a4ff; background: #222c53; }.tag-comunicado { color: #2bcee6; background: #113c49; }.tag-aviso { color: #f4ab18; background: #493711; }.tag-citacion { color: #b090ff; background: #392a54; }.tag-active { color: #2bd9a3; background: #163d38; }.tag-draft { color: #f2bf64; background: #45351c; }
+.institutional-comms-empty { padding: 36px; border: 1px dashed #34445d; border-radius: 12px; color: #a7b3c8; text-align: center; }
+.institutional-comms-back { margin: 4px 0 22px; border: 0; background: transparent; color: #a8b4d2; font-weight: 700; }
+.institutional-comms-detail { overflow: hidden; max-width: 1000px; margin: 0 auto; border: 1px solid #28364c; border-radius: 15px; background: #111e30; }
+.institutional-comms-detail header { padding: 28px 30px; border-bottom: 1px solid #28364c; }
+.institutional-comms-detail h2 { color: #f6f8ff; margin: 17px 0; }
+.institutional-comms-meta { display: flex; flex-wrap: wrap; gap: 10px 22px; color: #a6b1c6; font-size: 14px; }
+.institutional-comms-meta strong { color: #e9edf8; }
+.institutional-comms-body { white-space: pre-wrap; padding: 31px; line-height: 1.75; color: #e0e6f0; }
+.institutional-comms-files { padding: 0 31px 28px; display: grid; gap: 7px; }
+.institutional-comms-files h3 { margin: 0 0 4px; font-size: 15px; }
+.institutional-comms-files a { color: #9eb1ff; text-decoration: none; }
+.institutional-comms-detail footer { padding: 0 31px 25px; }
+.institutional-comms-overlay { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(1, 6, 17, .8); }
+.institutional-comms-modal { width: min(100%, 650px); max-height: min(90vh, 850px); overflow: auto; border: 1px solid #2b3950; border-radius: 17px; background: #111a2a; box-shadow: 0 30px 90px #0009; }
+.institutional-comms-modal form > header { display: flex; justify-content: space-between; align-items: center; padding: 21px 28px; border-bottom: 1px solid #29374d; }
+.institutional-comms-modal h2 { margin: 0; font-size: 22px; }
+.institutional-comms-modal form > header button { border: 0; background: transparent; color: #a8b4ca; font-size: 27px; }
+.institutional-comms-form-body { display: grid; gap: 20px; padding: 25px 28px; }
+.institutional-comms-form-body label:not(.institutional-comms-dropzone) { display: grid; gap: 8px; color: #aebad0; font-size: 14px; font-weight: 700; }
+.institutional-comms-form-body input:not([type=file]), .institutional-comms-form-body select, .institutional-comms-form-body textarea { width: 100%; padding: 13px; border: 1px solid #344159; border-radius: 8px; background: #1a2739; color: #f2f5fd; outline: none; }
+.institutional-comms-form-body :is(input,select,textarea):focus { border-color: #697eff; }
+.institutional-comms-form-body textarea { resize: vertical; min-height: 140px; }
+.institutional-comms-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.institutional-comms-field-label { display: block; margin-bottom: 8px; color: #aebad0; font-size: 14px; font-weight: 700; }
+.institutional-comms-dropzone { display: block; position: relative; padding: 17px; border: 1px dashed #3c4c68; border-radius: 8px; color: #aebad0; cursor: pointer; }
+.institutional-comms-dropzone.dragging { border-color: #7b8cff; background: #243455; }
+.institutional-comms-dropzone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.institutional-comms-form-body small { display: block; margin-top: 7px; color: #8190aa; }
+.institutional-comms-file { display: flex; justify-content: space-between; padding: 6px 0; color: #d7e2f2; font-size: 13px; }
+.institutional-comms-file button { border: 0; background: transparent; color: #dd9ca5; }
+.institutional-comms-modal footer { display: flex; justify-content: space-between; gap: 12px; padding: 19px 28px; border-top: 1px solid #29374d; }
+.institutional-comms-modal footer > div { display: flex; gap: 9px; }
+.institutional-comms-modal footer button:not(.institutional-comms-primary) { padding: 11px 14px; border: 1px solid #35425a; border-radius: 8px; background: transparent; color: #b9c4d8; font-weight: 700; }
+.institutional-comms-modal footer button:disabled { opacity: .5; cursor: not-allowed; }
+@media (max-width: 650px) { .institutional-comms-header, .institutional-comms-card { flex-direction: column; }.institutional-comms-card-side { display: flex; text-align: left; }.institutional-comms-form-row { grid-template-columns: 1fr; }.institutional-comms-modal footer { flex-wrap: wrap; }.institutional-comms-header h2 { font-size: 24px; } }

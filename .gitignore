@@ -52,3 +52,7 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# Local imports contain student and staff personal data; keep them off the public remote.
+/scripts/db/import-*.mjs
+/scripts/db/assign-director-*.mjs

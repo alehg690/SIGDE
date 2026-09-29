@@ -2,7 +2,7 @@ import type { Observador } from '@backend/types/observador';
 
 export function observadorVacio(): Observador {
   const now = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-  return { fecha: now, horaInicio: '', horaFinal: '', sede: '', jornada: '', grupo: '', acudiente: '', cedulaAcudiente: '', motivo: '', tipoSituacion: '1', situacionAcademica: '', ordenDia: '', desarrollo: '', documentoReferencia: 'Manual de Convivencia', referenciaNormativa: '' };
+  return { fecha: now, horaInicio: '', horaFinal: '', sede: '', jornada: '', grupo: '', acudiente: '', cedulaAcudiente: '', motivo: '', tipoSituacion: '1', situacionAcademica: '', ordenDia: '', desarrollo: '', documentoReferencia: '', referenciaNormativa: '' };
 }
 
 export default function ObservadorFields({ value, onChange, estudiante }: { value: Observador; onChange: (value: Observador) => void; estudiante?: React.ReactNode }) {
@@ -16,10 +16,7 @@ export default function ObservadorFields({ value, onChange, estudiante }: { valu
     </div></fieldset>
     <fieldset className="report-form-section"><legend><span>2</span> Orden del día</legend><div className="report-form-grid"><label className="report-description-field"><span>Temas que se tratarán *</span><textarea value={value.ordenDia} minLength={3} maxLength={1000} onChange={e => change('ordenDia', e.target.value)} placeholder="1. Presentación del caso. 2. Escucha de las partes. 3. Acuerdos." required /></label></div></fieldset>
     <fieldset className="report-form-section"><legend><span>3</span> Desarrollo de la reunión</legend><div className="report-form-grid">
-      <p className="report-description-field">Quien presida la reunión debe relacionar la situación o condición que motiva el caso con el Manual de Convivencia o el SIEE, indicando artículo, numeral y/o literal.</p>
-      <label><span>Documento de referencia *</span><select value={value.documentoReferencia} onChange={e => change('documentoReferencia', e.target.value)}><option>Manual de Convivencia</option><option>SIEE</option></select></label>
-      <label><span>Artículo, numeral y/o literal *</span><input value={value.referenciaNormativa} minLength={3} maxLength={300} onChange={e => change('referenciaNormativa', e.target.value)} placeholder="Indica la referencia del documento institucional" required /></label>
-      <label className="report-description-field"><span>Desarrollo de la reunión *</span><textarea value={value.desarrollo} minLength={20} maxLength={2000} onChange={e => change('desarrollo', e.target.value)} placeholder="Describe lo conversado, su relación con la referencia citada y los acuerdos." required /></label>
+      <label className="report-description-field"><span>Desarrollo de la reunión *</span><textarea value={value.desarrollo} minLength={20} maxLength={2000} onChange={e => change('desarrollo', e.target.value)} placeholder="Describe lo conversado y los acuerdos alcanzados." required /></label>
     </div></fieldset>
   </>;
 }
@@ -27,7 +24,8 @@ export default function ObservadorFields({ value, onChange, estudiante }: { valu
 export function ObservadorDetalle({ value }: { value: Observador }) {
   const fields: [string, string][] = [
     ['Fecha', value.fecha], ['Hora de inicio', value.horaInicio], ['Sede', value.sede], ['Jornada', value.jornada], ['Grupo', value.grupo], ['Padre de familia o acudiente legal', value.acudiente], ['CC', value.cedulaAcudiente], ['Motivo de la citación', value.motivo], ['Situación académica', value.situacionAcademica || 'No aplica'],
-    ['2. Orden del día', value.ordenDia], ['3. Desarrollo de la reunión', value.desarrollo], ['Referencia obligatoria', `${value.documentoReferencia}: ${value.referenciaNormativa}`],
+    ['2. Orden del día', value.ordenDia], ['3. Desarrollo de la reunión', value.desarrollo],
   ];
+  if (value.documentoReferencia || value.referenciaNormativa) fields.push(['Referencia institucional', [value.documentoReferencia, value.referenciaNormativa].filter(Boolean).join(': ')]);
   return <section aria-label="Acta del observador"><h4>1. Estudiante y motivo de la citación</h4>{fields.map(([label, text]) => <div className="report-detail-copy" key={label}><span>{label}</span><p style={{ whiteSpace: 'pre-wrap' }}>{text}</p></div>)}</section>;
 }

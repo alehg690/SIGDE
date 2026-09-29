@@ -78,6 +78,7 @@ function estadoClase(estado: EstadoReporte) {
 }
 
 function urlSegura(value: string) {
+  if (/^\/api\/reportes\/\d+\/evidencias\/\d+\/archivo$/.test(value)) return true;
   try {
     const url = new URL(value);
     return url.protocol === 'http:' || url.protocol === 'https:';
@@ -106,6 +107,7 @@ export default function ReportsWorkspace({
   const [seleccionadoId, setSeleccionadoId] = useState<number | null>(null);
   const [vista, setVista] = useState<Vista>('consulta');
   const [form, setForm] = useState<ReporteFormData>(() => crearFormularioVacio());
+  const [archivo, setArchivo] = useState<File | null>(null);
   const [busqueda, setBusqueda] = useState(initialSearch);
   const [tipo, setTipo] = useState('Todos');
   const [estado, setEstado] = useState('Todos');
@@ -208,6 +210,10 @@ export default function ReportsWorkspace({
   async function registrar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (enviando.current) return;
+    if (archivo && (archivo.size > 4 * 1024 * 1024 || !['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(archivo.type))) {
+      setMensaje({ tipo: 'error', texto: 'Adjunta un PDF, imagen o DOCX de máximo 4 MB.' });
+      return;
+    }
     enviando.current = true;
     setGuardando(true);
     setMensaje(null);
@@ -223,14 +229,22 @@ export default function ReportsWorkspace({
       });
       if (!response.ok) throw new Error(await leerError(response, 'No se pudo registrar el reporte.'));
       const creado = await response.json() as { id: number; avisos?: string[] };
+      let avisoArchivo = '';
+      if (archivo) {
+        const adjunto = new FormData();
+        adjunto.set('archivo', archivo);
+        const subida = await fetch(`/api/reportes/${creado.id}/evidencias/archivo`, { method: 'POST', body: adjunto }).catch(() => null);
+        if (!subida?.ok) avisoArchivo = ` El reporte se guardó, pero no se pudo adjuntar el archivo: ${subida ? await leerError(subida, 'inténtalo desde el detalle del reporte') : 'inténtalo desde el detalle del reporte'}.`;
+      }
       setForm(crearFormularioVacio());
+      setArchivo(null);
       setVista('consulta');
       setBusqueda(''); setTipo('Todos'); setEstado('Todos'); setDocente('Todos'); setCurso('Todos'); setPeriodo('Todos');
       setMensaje({
         tipo: 'success',
         texto: creado.avisos?.length
-          ? `Reporte guardado. ${creado.avisos.join(' ')}`
-          : 'Reporte registrado y trazabilidad iniciada correctamente.',
+          ? `Reporte guardado. ${creado.avisos.join(' ')}${avisoArchivo}`
+          : `Reporte registrado y trazabilidad iniciada correctamente.${avisoArchivo}`,
       });
       try {
         await cargarDatos(creado.id);
@@ -275,7 +289,7 @@ export default function ReportsWorkspace({
       <article><span>Este mes</span><strong>{esteMes}</strong><small>Nuevos registros</small></article>
     </div>
     {vista === 'registro'
-      ? <ReportCreateForm form={form} setForm={setForm} estudiantes={estudiantes} guardando={guardando} onSubmit={registrar} onCancel={() => { setVista('consulta'); setMensaje(null); }} />
+      ? <ReportCreateForm form={form} setForm={setForm} archivo={archivo} setArchivo={setArchivo} estudiantes={estudiantes} guardando={guardando} onSubmit={registrar} onCancel={() => { setVista('consulta'); setMensaje(null); }} />
       : <div className="reports-consultation">
           <div className="reports-list-panel">
             <div className="reports-toolbar">
@@ -302,9 +316,11 @@ export default function ReportsWorkspace({
   </section>;
 }
 
-function ReportCreateForm({ form, setForm, estudiantes, guardando, onSubmit, onCancel }: {
+function ReportCreateForm({ form, setForm, archivo, setArchivo, estudiantes, guardando, onSubmit, onCancel }: {
   form: ReporteFormData;
   setForm: (form: ReporteFormData) => void;
+  archivo: File | null;
+  setArchivo: (file: File | null) => void;
   estudiantes: Estudiante[];
   guardando: boolean;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
@@ -316,10 +332,10 @@ function ReportCreateForm({ form, setForm, estudiantes, guardando, onSubmit, onC
       setForm({ ...form, estudianteId: alumno ? String(alumno.id) : '' });
     }} />} />
     <div className="report-form-grid">
-      <label className="report-evidence-field"><span>Enlace de evidencia (opcional)</span><input type="url" value={form.evidenciaUrl} onChange={e => setForm({ ...form, evidenciaUrl: e.target.value })} /></label>
-      <label className="report-confidential-field"><input type="checkbox" checked={form.confidencial} onChange={e => setForm({ ...form, confidencial: e.target.checked })} /><span>Acceso reservado</span></label>
+      <label className="report-evidence-field report-description-field"><span>Adjuntar evidencia (opcional)</span><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.docx" onChange={e => setArchivo(e.target.files?.[0] ?? null)} /><small>{archivo ? archivo.name : 'PDF, imagen o DOCX · máximo 4 MB'}</small></label>
       <p className="report-notification-note">Al guardar se registra la notificación al acudiente y al director de grupo configurados.</p>
     </div>
+    <label className="report-reserved-option"><input type="checkbox" checked={form.confidencial} onChange={e => setForm({ ...form, confidencial: e.target.checked })} /><span>Acceso reservado · solo autor y coordinación</span></label>
     <div className="report-form-actions"><button type="button" onClick={onCancel}>Cancelar</button><button className="primary-button" type="submit" disabled={guardando || estudiantes.length === 0}>{guardando ? 'Registrando...' : 'Registrar reporte'}</button></div>
   </form>;
 }
@@ -336,7 +352,7 @@ function ReportDetail({ reporte, loading, currentUserId, onUpdated }: {
   const [estado, setEstado] = useState<EstadoReporte>('Pendiente');
   const [justificacion, setJustificacion] = useState('');
   const [observacion, setObservacion] = useState('');
-  const [evidencia, setEvidencia] = useState({ nombre: '', tipo: 'Documento', url: '' });
+  const [archivoEvidencia, setArchivoEvidencia] = useState<File | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
@@ -356,7 +372,7 @@ function ReportDetail({ reporte, loading, currentUserId, onUpdated }: {
       setEstado(reporte.estado);
       setJustificacion('');
       setObservacion('');
-      setEvidencia({ nombre: '', tipo: 'Documento', url: '' });
+      setArchivoEvidencia(null);
       setError('');
     }, 0);
     return () => window.clearTimeout(timer);
@@ -407,10 +423,17 @@ function ReportDetail({ reporte, loading, currentUserId, onUpdated }: {
 
   async function agregarEvidencia(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const guardado = await ejecutar(() => fetch(`/api/reportes/${reporte!.id}/evidencias`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(evidencia),
-    }), 'Evidencia vinculada al reporte.');
-    if (guardado) setEvidencia({ nombre: '', tipo: 'Documento', url: '' });
+    if (!archivoEvidencia) return;
+    const formElement = event.currentTarget;
+    const adjunto = new FormData();
+    adjunto.set('archivo', archivoEvidencia);
+    const guardado = await ejecutar(() => fetch(`/api/reportes/${reporte!.id}/evidencias/archivo`, {
+      method: 'POST', body: adjunto,
+    }), 'Archivo adjuntado al reporte.');
+    if (guardado) {
+      setArchivoEvidencia(null);
+      formElement.reset();
+    }
   }
 
   if (loading) return <aside className="report-detail-panel report-detail-loading" aria-live="polite"><span /><span /><span /><p>Cargando trazabilidad...</p></aside>;
@@ -429,7 +452,7 @@ function ReportDetail({ reporte, loading, currentUserId, onUpdated }: {
       <label><span>Descripción</span><textarea minLength={20} maxLength={2000} value={editForm.descripcion} onChange={(event) => setEditForm({ ...editForm, descripcion: event.target.value })} /></label>
       <label><span>Actuación inicial</span><textarea minLength={3} maxLength={1000} value={editForm.actuacionInicial} onChange={(event) => setEditForm({ ...editForm, actuacionInicial: event.target.value })} /></label>
       </>}
-      <label className="report-editor-private"><input type="checkbox" checked={editForm.confidencial} onChange={(event) => setEditForm({ ...editForm, confidencial: event.target.checked })} /><span>Acceso reservado</span></label>
+      <label className="report-editor-private"><input type="checkbox" checked={editForm.confidencial} onChange={(event) => setEditForm({ ...editForm, confidencial: event.target.checked })} /><span>Acceso reservado · solo autor y coordinación</span></label>
       <div><button type="button" onClick={() => setModoEdicion(false)}>Cancelar</button><button type="button" className="primary-button" disabled={guardando || editForm.descripcion.trim().length < 20} onClick={() => void guardarEdicion()}>{guardando ? 'Guardando...' : 'Guardar corrección'}</button></div>
     </div> : reporte.observador ? <ObservadorDetalle value={reporte.observador} /> : <>
       <div className="report-detail-copy"><span>Situación identificada</span><strong>{reporte.situacion || 'Sin clasificación específica'}</strong></div>
@@ -438,9 +461,9 @@ function ReportDetail({ reporte, loading, currentUserId, onUpdated }: {
     </>}
     {!modoEdicion && reporte.permisos.puedeEditar && <button type="button" className="report-edit-button" onClick={() => setModoEdicion(true)}>Corregir reporte <small>Disponible hasta {fechaLegible(reporte.editableHasta)}</small></button>}
 
-    <section className="report-trace-section"><header><div><span>Evidencias</span><strong>{reporte.evidencias.length}</strong></div>{reporte.permisos.puedeAgregarEvidencia && <small>Enlaces institucionales</small>}</header>
+    <section className="report-trace-section"><header><div><span>Evidencias</span><strong>{reporte.evidencias.length}</strong></div>{reporte.permisos.puedeAgregarEvidencia && <small>Archivos adjuntos</small>}</header>
       <div className="report-evidence-list">{reporte.evidencias.length ? reporte.evidencias.map((item) => urlSegura(item.url) && <a href={item.url} target="_blank" rel="noreferrer" key={item.id}><span>{item.tipo}</span><strong>{item.nombre}</strong><small>{fechaLegible(item.creadoEn)}</small></a>) : <p>Sin evidencias vinculadas.</p>}</div>
-      {reporte.permisos.puedeAgregarEvidencia && <details className="report-inline-form"><summary>Vincular evidencia</summary><form onSubmit={agregarEvidencia}><label><span>Nombre</span><input value={evidencia.nombre} minLength={2} maxLength={120} onChange={(event) => setEvidencia({ ...evidencia, nombre: event.target.value })} required /></label><label><span>Tipo</span><select value={evidencia.tipo} onChange={(event) => setEvidencia({ ...evidencia, tipo: event.target.value })}><option>Documento</option><option>Imagen</option><option>Video</option><option>Audio</option><option>Otro</option></select></label><label className="wide"><span>Enlace</span><input type="url" value={evidencia.url} onChange={(event) => setEvidencia({ ...evidencia, url: event.target.value })} required /></label><button type="submit" disabled={guardando}>{guardando ? 'Guardando...' : 'Agregar evidencia'}</button></form></details>}
+      {reporte.permisos.puedeAgregarEvidencia && <details className="report-inline-form"><summary>Adjuntar archivo</summary><form onSubmit={agregarEvidencia}><label className="wide"><span>Archivo (PDF, imagen o DOCX · máximo 4 MB)</span><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.docx" onChange={(event) => setArchivoEvidencia(event.target.files?.[0] ?? null)} required /></label><button type="submit" disabled={guardando || !archivoEvidencia}>{guardando ? 'Guardando...' : 'Adjuntar archivo'}</button></form></details>}
     </section>
 
     <section className="report-trace-section"><header><div><span>Historial de observaciones</span><strong>{reporte.observacionesLista.length}</strong></div></header>

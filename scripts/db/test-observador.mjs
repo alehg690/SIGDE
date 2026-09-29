@@ -16,11 +16,12 @@ const {validarObservador,datosReporteObservador}=helpers;
 const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
 const acta={fecha:yesterday,horaInicio:'08:00',horaFinal:'09:00',sede:'Sede principal',jornada:'Mañana',grupo:'11-1',acudiente:'Acudiente de prueba',cedulaAcudiente:'12345678',motivo:'Revisión de compromisos',tipoSituacion:'1',situacionAcademica:'',ordenDia:'Escucha de las partes y acuerdos.',desarrollo:'Se escucharon las partes y se acordó realizar seguimiento.',documentoReferencia:'Manual de Convivencia',referenciaNormativa:'Artículo 20, literal a'};
 assert.ok(validarObservador(acta).data);
-for(const change of [{referenciaNormativa:''},{fecha:'2026-02-30'},{ordenDia:''},{desarrollo:'Breve'},{tipoSituacion:'0',situacionAcademica:''}]) assert.equal(validarObservador({...acta,...change}).status,400);
+for(const change of [{documentoReferencia:'Documento inválido'},{fecha:'2026-02-30'},{ordenDia:''},{desarrollo:'Breve'},{tipoSituacion:'0',situacionAcademica:''}]) assert.equal(validarObservador({...acta,...change}).status,400);
+assert.equal(validarObservador({...acta,documentoReferencia:'',referenciaNormativa:''}).data.referenciaNormativa,'');
 assert.equal(datosReporteObservador(acta).fechaHecho,`${yesterday}T13:00:00.000Z`);
 const db=createClient({url:pathToFileURL(join(mkdtempSync(join(tmpdir(),'sigde-observador-')),'test.db')).href});
 globalThis.observadorTest={db,...helpers};
-const {crearReporte,editarReporte,listarReportes,obtenerReporte,agregarObservacionReporte,agregarEvidenciaReporte}=await load('backend/src/services/reportes.service.ts',`const {db,validarObservador,datosReporteObservador}=globalThis.observadorTest;const registrarAccion=async()=>{};const notificarAcudientePorReporte=async()=>{};const evaluarAlertaEstudiante=async()=>{};\n`);
+const {crearReporte,editarReporte,listarReportes,obtenerReporte,agregarObservacionReporte,agregarEvidenciaReporte,agregarArchivoEvidencia,obtenerArchivoEvidencia}=await load('backend/src/services/reportes.service.ts',`const {db,validarObservador,datosReporteObservador}=globalThis.observadorTest;const registrarAccion=async()=>{};const notificarAcudientePorReporte=async()=>{};const evaluarAlertaEstudiante=async()=>{};\n`);
 await db.batch([
 'CREATE TABLE Usuario(id INTEGER PRIMARY KEY,nombre TEXT,rol TEXT)',
 'CREATE TABLE Estudiante(id INTEGER PRIMARY KEY,nombre TEXT,grado TEXT,grupo TEXT,activo INTEGER,archivado INTEGER,jornada TEXT,acudienteId INTEGER)',
@@ -36,17 +37,26 @@ await db.batch([
 "INSERT INTO Acudiente VALUES(1,'Acudiente vinculado','87654321')"
 ],'write');
 await db.execute(readFileSync('database/prisma/migrations/20260922020000_observador_reuniones/migration.sql','utf8'));
+for(const sql of readFileSync('database/prisma/migrations/20260929020000_archivos_evidencia/migration.sql','utf8').split(';').map(item=>item.trim()).filter(Boolean)) await db.execute(sql);
 const actor={id:1,rol:'Docente',nombre:'Docente de prueba'};
 const payload={estudianteId:1,tipoFalta:1,descripcion:'',fechaHecho:`${yesterday}T13:00:00.000Z`,observador:acta};
 const esperado={...acta,fechaRegistro:payload.fechaHecho,horaFinal:'',sede:'Sin registrar',acudiente:'Acudiente vinculado',cedulaAcudiente:'87654321'};
 const created=await crearReporte(payload,actor);assert.equal(created.status,201);assert.deepEqual(created.data.observador,esperado);
+const bytes=new Uint8Array([37,80,68,70,45,49,46,55]);
+const attached=await agregarArchivoEvidencia(created.data.id,{nombre:'evidencia.pdf',mimeType:'application/pdf',contenido:bytes},actor);
+assert.equal(attached.status,201);
+assert.deepEqual((await obtenerArchivoEvidencia(created.data.id,attached.data.id,actor)).data.contenido,bytes);
 assert.deepEqual((await listarReportes(actor)).data[0].observador,esperado);
 assert.deepEqual((await obtenerReporte(created.data.id,actor)).data.observador,esperado);
 const edited=await editarReporte(created.data.id,actor,{observador:{...acta,ordenDia:'Orden corregido con compromisos.'}});assert.ok(edited.data);
 assert.equal((await obtenerReporte(created.data.id,actor)).data.observador.ordenDia,'Orden corregido con compromisos.');
 assert.equal((await obtenerReporte(created.data.id,actor)).data.observador.cedulaAcudiente,'87654321');
 assert.equal((await obtenerReporte(created.data.id,actor)).data.observador.horaFinal,'');
-assert.equal((await editarReporte(created.data.id,actor,{observador:{...acta,referenciaNormativa:''}})).status,400);
+assert.ok((await editarReporte(created.data.id,actor,{observador:{...acta,referenciaNormativa:''}})).data);
+const withoutReference=await crearReporte({...payload,observador:{...acta,documentoReferencia:undefined,referenciaNormativa:undefined}},actor);
+assert.equal(withoutReference.status,201);
+assert.equal(withoutReference.data.observador.documentoReferencia,'');
+assert.equal(withoutReference.data.observador.referenciaNormativa,'');
 assert.equal((await crearReporte({...payload,observador:undefined},actor)).status,400);
 const academic=await crearReporte({...payload,observador:{...acta,tipoSituacion:'0',situacionAcademica:'No entregó las actividades acordadas.',documentoReferencia:'SIEE'}},actor);
 assert.equal(academic.data.tipoFalta,'ACADEMICA');
@@ -63,6 +73,8 @@ await db.batch([
 ], 'write');
 const other = { ...actor, id: 2, nombre: 'Otro docente' };
 const coordinator = { ...actor, id: 3, rol: 'Coordinador' };
+assert.equal((await obtenerArchivoEvidencia(created.data.id,attached.data.id,other)).status,404);
+assert.deepEqual((await obtenerArchivoEvidencia(created.data.id,attached.data.id,coordinator)).data.contenido,bytes);
 const publicReport = await crearReporte(payload, other);
 const privateReport = await crearReporte({ ...payload, confidencial: true }, other);
 const anotherStudent = await crearReporte({ ...payload, estudianteId: 2 }, other);

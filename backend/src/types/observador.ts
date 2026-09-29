@@ -13,6 +13,6 @@ export type Observador = {
   situacionAcademica: string;
   ordenDia: string;
   desarrollo: string;
-  documentoReferencia: 'Manual de Convivencia' | 'SIEE';
+  documentoReferencia: 'Manual de Convivencia' | 'SIEE' | '';
   referenciaNormativa: string;
 };

@@ -778,7 +778,7 @@ function DashboardContent({
   }
 
   if (section === 'comunicaciones') {
-    return <CommunicationsWorkspace />;
+    return <CommunicationsWorkspace canManage={role === 'coordinador'} />;
   }
 
   if (section === 'reportes') {

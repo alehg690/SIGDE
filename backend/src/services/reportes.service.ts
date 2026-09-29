@@ -31,6 +31,7 @@ export type EdicionReporteInput = {
 };
 
 export type EvidenciaReporteInput = { nombre: string; tipo: string; url: string };
+export type ArchivoEvidenciaInput = { nombre: string; mimeType: string; contenido: Uint8Array };
 
 export type ConvivenciaInput = {
   estudianteId: string;
@@ -410,6 +411,59 @@ export async function agregarEvidenciaReporte(id: number, input: EvidenciaReport
   await registrarAccion({ usuarioId: usuario.id, accion: 'agregar_evidencia_reporte', entidad: 'EvidenciaReporte', entidadId: Number(evidencia.id), detalle: { reporteId: id, tipo } })
     .catch((error) => reportarEfectoFallido('auditoría de evidencia', error));
   return { data: evidencia, status: 201 };
+}
+
+export async function agregarArchivoEvidencia(id: number, input: ArchivoEvidenciaInput, usuario: SesionUsuario) {
+  const reporteResult = await db.execute({
+    sql: 'SELECT id, docenteId, editableHasta, estado FROM Reporte WHERE id = ? LIMIT 1',
+    args: [id],
+  });
+  const reporte = reporteResult.rows[0];
+  if (!reporte) return { error: 'Reporte no encontrado', status: 404 } as const;
+  if (usuario.rol !== 'Coordinador' && (Number(reporte.docenteId) !== usuario.id || !edicionVigente(reporte))) {
+    return { error: 'No tienes permiso para agregar evidencias a este reporte', status: 403 } as const;
+  }
+  const nombre = input.nombre.trim();
+  if (!nombre || nombre.length > 120) return { error: 'El nombre del archivo debe tener entre 1 y 120 caracteres', status: 400 } as const;
+  if (!['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(input.mimeType)) {
+    return { error: 'Adjunta un archivo PDF, imagen JPG, PNG o WebP, o documento DOCX', status: 400 } as const;
+  }
+  if (!input.contenido.length || input.contenido.length > 4 * 1024 * 1024) return { error: 'El archivo debe ocupar entre 1 byte y 4 MB', status: 400 } as const;
+
+  const transaction = await db.transaction('write');
+  let evidenciaId: number;
+  try {
+    const inserted = await transaction.execute({
+      sql: 'INSERT INTO EvidenciaReporte (reporteId, nombre, tipo, url, mimeType, contenido) VALUES (?, ?, ?, ?, ?, ?) RETURNING id',
+      args: [id, nombre, 'Archivo', '', input.mimeType, input.contenido],
+    });
+    evidenciaId = Number(inserted.rows[0].id);
+    await transaction.execute({
+      sql: 'UPDATE EvidenciaReporte SET url = ? WHERE id = ?',
+      args: [`/api/reportes/${id}/evidencias/${evidenciaId}/archivo`, evidenciaId],
+    });
+    await transaction.commit();
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+  await registrarAccion({ usuarioId: usuario.id, accion: 'agregar_evidencia_reporte', entidad: 'EvidenciaReporte', entidadId: evidenciaId, detalle: { reporteId: id, tipo: 'Archivo' } })
+    .catch((error) => reportarEfectoFallido('auditoría de evidencia', error));
+  return { data: { id: evidenciaId, url: `/api/reportes/${id}/evidencias/${evidenciaId}/archivo` }, status: 201 } as const;
+}
+
+export async function obtenerArchivoEvidencia(reporteId: number, evidenciaId: number, usuario: SesionUsuario) {
+  const reporte = await obtenerReporte(reporteId, usuario);
+  if (!('data' in reporte)) return { error: 'Reporte no encontrado', status: 404 } as const;
+  const result = await db.execute({
+    sql: 'SELECT nombre, mimeType, contenido FROM EvidenciaReporte WHERE id = ? AND reporteId = ? LIMIT 1',
+    args: [evidenciaId, reporteId],
+  });
+  const archivo = result.rows[0];
+  if (!archivo?.contenido || !archivo.mimeType) return { error: 'Archivo no encontrado', status: 404 } as const;
+  const contenido = archivo.contenido;
+  if (!(contenido instanceof ArrayBuffer)) return { error: 'Archivo no disponible', status: 500 } as const;
+  return { data: { nombre: String(archivo.nombre), mimeType: String(archivo.mimeType), contenido: new Uint8Array(contenido) }, status: 200 } as const;
 }
 
 export async function agregarObservacionReporte(id: number, texto: string, usuario: SesionUsuario) {
