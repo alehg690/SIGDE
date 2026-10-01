@@ -27,14 +27,13 @@ Requisitos: Node.js 22 y npm. El proyecto fija esta versión en `.nvmrc` y `pack
 
 ```bash
 npm install
-copy .env.example .env
 npx prisma migrate deploy --schema database/prisma/schema.prisma
 npm run dev
 ```
 
 Abre [http://localhost:3000](http://localhost:3000).
 
-Para usar SQLite local durante el desarrollo, configura en `.env`:
+Antes de aplicar las migraciones, crea un archivo `.env` en la raíz del proyecto. Para usar SQLite local durante el desarrollo, configúralo así:
 
 ```env
 DATABASE_URL="file:./database/prisma/dev.db"
@@ -74,7 +73,7 @@ npm run build
 SIGDE es una aplicación web, no una APK. La entrega desplegada debe realizarse mediante un enlace web, por ejemplo en Vercel.
 
 1. Crea una base de datos Turso y configura `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`.
-2. Define `JWT_SECRET` y los datos institucionales indicados en `.env.example`.
+2. Define `JWT_SECRET` en las variables de entorno del despliegue.
 3. Configura `EMAIL_USER` y `EMAIL_PASS` únicamente si se habilitará correo.
 4. Aplica las migraciones contra la base de producción. Para el endurecimiento de autenticación ejecuta `npm run migrate:security` con las variables de Turso configuradas.
 5. Importa el repositorio en Vercel y ejecuta la compilación con `npm run build`.
