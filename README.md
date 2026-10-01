@@ -23,7 +23,7 @@ Los acudientes no reciben cuentas de acceso. El sistema conserva sus datos de co
 
 ## Ejecución local
 
-Requisitos: Node.js 22 o superior y npm.
+Requisitos: Node.js 22 y npm. El proyecto fija esta versión en `.nvmrc` y `package.json`.
 
 ```bash
 npm install
