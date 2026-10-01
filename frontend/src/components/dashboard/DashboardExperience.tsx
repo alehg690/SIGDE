@@ -241,6 +241,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
   const router = useRouter();
   const searchParams = useSearchParams();
   const [section, setSection] = useState<DashboardSection>(() => sectionFromUrl(searchParams.get('seccion') || searchParams.get('dashboard')));
+  const [studentsViewKey, setStudentsViewKey] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -300,6 +301,9 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
   }, [searchParams]);
 
   function seleccionarSeccion(nextSection: DashboardSection) {
+    if (nextSection === 'personas' && section === 'personas') {
+      setStudentsViewKey((current) => current + 1);
+    }
     setSection(nextSection);
     const params = new URLSearchParams(searchParams.toString());
     params.delete('dashboard');
@@ -403,6 +407,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
             stats={dashboardSnapshot}
             statsError={dashboardError}
             section={section}
+            studentsViewKey={studentsViewKey}
             usuario={usuario}
             role={role}
             initialSearch={searchParams.get('buscar') ?? globalSearch}
@@ -760,6 +765,7 @@ function DashboardContent({
   stats,
   statsError,
   section,
+  studentsViewKey,
   usuario,
   onCurrentUserUpdated,
   role,
@@ -768,6 +774,7 @@ function DashboardContent({
   stats: DashboardStats | null;
   statsError: string;
   section: DashboardSection;
+  studentsViewKey: number;
   usuario: DashboardUser;
   onCurrentUserUpdated: () => void;
   role: DashboardRole;
@@ -780,7 +787,7 @@ function DashboardContent({
     ? <p className="feedback error" role="alert">{statsError}</p>
     : <StatisticsWorkspace stats={stats ?? EMPTY_STATS} loading={!stats} canExport={esRolGestor(role)} />;
   if (section === 'personas') {
-    return <StudentsWorkspace currentUserId={usuario.id} canManage={esRolGestor(role)} />;
+    return <StudentsWorkspace key={studentsViewKey} currentUserId={usuario.id} canManage={esRolGestor(role)} />;
   }
 
   if (section === 'salidas') {

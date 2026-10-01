@@ -23,7 +23,7 @@ async function main() {
   const { autorizarRoles } = require('../backend/src/middleware/rol.middleware.ts');
   try {
     await db.executeMultiple(`
-      CREATE TABLE Usuario (id INTEGER PRIMARY KEY, nombre TEXT, correo TEXT, contrasena TEXT, rol TEXT, activo INTEGER DEFAULT 1, creadoEn TEXT DEFAULT CURRENT_TIMESTAMP, ultimoAcceso TEXT, versionSesion INTEGER DEFAULT 1, tokenRecuperacion TEXT, tokenExpira TEXT, eliminadoEn TEXT);
+      CREATE TABLE Usuario (id INTEGER PRIMARY KEY, nombre TEXT, correo TEXT, contrasena TEXT, rol TEXT, activo INTEGER DEFAULT 1, creadoEn TEXT DEFAULT CURRENT_TIMESTAMP, ultimoAcceso TEXT, versionSesion INTEGER DEFAULT 1, requiereCambioContrasena INTEGER DEFAULT 0, tokenRecuperacion TEXT, tokenExpira TEXT, eliminadoEn TEXT);
       CREATE TABLE AuditLog (id INTEGER PRIMARY KEY, usuarioId INTEGER, accion TEXT, entidad TEXT, entidadId TEXT, detalle TEXT);
     `);
     const oldHash = await hashPassword('AnteriorPrueba2026');
@@ -51,6 +51,7 @@ async function main() {
     assert.equal(await verificarPassword('AnteriorPrueba2026',changed.contrasena),false);
     assert.equal(changed.tokenRecuperacion,null);
     assert.equal(changed.tokenExpira,null);
+    assert.equal(Number(changed.requiereCambioContrasena),1);
     assert.equal(Number(changed.versionSesion),Number(unchanged.versionSesion)+1);
     assert.equal((await autorizarRoles(beforeResetToken)).response.status,401);
     assert.ok((await autorizarRoles(actorToken,['Coordinador'])).usuario);

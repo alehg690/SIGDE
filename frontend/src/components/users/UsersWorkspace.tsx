@@ -31,13 +31,18 @@ function colorRol(rol: RolUsuario) {
   return 'teacher';
 }
 
-function generarContrasena(nombre: string) {
-  const partes = nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9 ]/g, '').trim().split(/\s+/).filter(Boolean);
-  let base = `${partes[0] || 'Usuario'}${partes[1]?.[0] || ''}`;
-  if (base.length < 4) base = `${base}Sigde`;
-  base = `${base[0]?.toUpperCase() || 'U'}${base.slice(1).toLowerCase()}`;
-  const numero = crypto.getRandomValues(new Uint32Array(1))[0] % 9000 + 1000;
-  return `${base}${numero}`;
+function generarContrasena() {
+  const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  const numeros = '23456789';
+  const caracteres = letras + numeros;
+  const indices = crypto.getRandomValues(new Uint32Array(18));
+  const clave = [letras[indices[0] % letras.length], numeros[indices[1] % numeros.length]];
+  for (let i = 2; i < indices.length; i++) clave.push(caracteres[indices[i] % caracteres.length]);
+  for (let i = clave.length - 1; i > 0; i--) {
+    const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1);
+    [clave[i], clave[j]] = [clave[j], clave[i]];
+  }
+  return clave.join('');
 }
 
 function fechaAcceso(value: string | null) {
@@ -128,8 +133,7 @@ export default function UsersWorkspace({ currentUserId }: { currentUserId: numbe
   }
 
   function generarTemporal() {
-    if (!formCrear.nombre.trim()) return;
-    setFormCrear((actual) => ({ ...actual, contrasena: generarContrasena(actual.nombre) }));
+    setFormCrear((actual) => ({ ...actual, contrasena: generarContrasena() }));
     setMostrarContrasena(true);
     setContrasenaCopiada(false);
   }
@@ -181,7 +185,7 @@ export default function UsersWorkspace({ currentUserId }: { currentUserId: numbe
         await cerrarSesion('Cuenta actualizada. Inicia sesión con tus credenciales vigentes.');
         return;
       }
-      setFeedback({ tipo: 'success', texto: formEditar.contrasena ? 'Usuario y contraseña actualizados. Sus sesiones anteriores se cerraron.' : 'Usuario actualizado correctamente.' });
+      setFeedback({ tipo: 'success', texto: formEditar.contrasena ? 'Usuario y contraseña temporal actualizados. Deberá cambiarla al ingresar; sus sesiones anteriores se cerraron.' : 'Usuario actualizado correctamente.' });
       await cargarUsuarios();
     } catch (error) {
       setFeedback({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo actualizar el usuario.' });
@@ -239,7 +243,7 @@ export default function UsersWorkspace({ currentUserId }: { currentUserId: numbe
       </div>
     </div>
 
-    {modal === 'crear' && <div className="users-modal-backdrop" role="presentation" onMouseDown={cerrarModal}><form className="users-modal" role="dialog" aria-modal="true" aria-labelledby="create-user-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={crearUsuario}><header><h3 id="create-user-title">Crear usuario</h3><button type="button" aria-label="Cerrar" onClick={cerrarModal}>×</button></header><div className="users-modal-body">{feedback && <p className={`feedback ${feedback.tipo}`} role="alert">{feedback.texto}</p>}<UserField label="Nombre completo" value={formCrear.nombre} placeholder="Nombre y apellido" onChange={(nombre) => { setFormCrear({ ...formCrear, nombre }); setContrasenaCopiada(false); }} required /><UserField label="Correo electrónico" type="email" value={formCrear.correo} placeholder="correo@institucion.edu.co" onChange={(correo) => setFormCrear({ ...formCrear, correo })} required /><RoleField value={formCrear.rol} onChange={(rol) => setFormCrear({ ...formCrear, rol })} /><label className="users-modal-field"><span>Contraseña temporal</span><div className="users-password-field"><input type={mostrarContrasena ? 'text' : 'password'} value={formCrear.contrasena} minLength={8} maxLength={128} onChange={(event) => { setFormCrear({ ...formCrear, contrasena: event.target.value }); setContrasenaCopiada(false); }} placeholder="Genera o escribe una contraseña" required /><button type="button" onClick={() => setMostrarContrasena((actual) => !actual)}>{mostrarContrasena ? 'Ocultar' : 'Ver'}</button></div><div className="users-password-actions"><button type="button" disabled={!formCrear.nombre.trim()} onClick={generarTemporal}>Generar con el nombre</button><button type="button" disabled={!formCrear.contrasena} onClick={() => void copiarContrasena()}>{contrasenaCopiada ? 'Copiada' : 'Copiar'}</button></div><small>Combina el nombre con números aleatorios y cumple la política mínima de seguridad.</small></label></div><footer><button type="button" onClick={cerrarModal}>Cancelar</button><button type="submit" className="primary" disabled={guardando || !formCrear.contrasena}>{guardando ? 'Creando...' : '✓  Crear usuario'}</button></footer></form></div>}
+    {modal === 'crear' && <div className="users-modal-backdrop" role="presentation" onMouseDown={cerrarModal}><form className="users-modal" role="dialog" aria-modal="true" aria-labelledby="create-user-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={crearUsuario}><header><h3 id="create-user-title">Crear usuario</h3><button type="button" aria-label="Cerrar" onClick={cerrarModal}>×</button></header><div className="users-modal-body">{feedback && <p className={`feedback ${feedback.tipo}`} role="alert">{feedback.texto}</p>}<UserField label="Nombre completo" value={formCrear.nombre} placeholder="Nombre y apellido" onChange={(nombre) => { setFormCrear({ ...formCrear, nombre }); setContrasenaCopiada(false); }} required /><UserField label="Correo electrónico" type="email" value={formCrear.correo} placeholder="correo@institucion.edu.co" onChange={(correo) => setFormCrear({ ...formCrear, correo })} required /><RoleField value={formCrear.rol} onChange={(rol) => setFormCrear({ ...formCrear, rol })} /><label className="users-modal-field"><span>Contraseña temporal</span><div className="users-password-field"><input type={mostrarContrasena ? 'text' : 'password'} value={formCrear.contrasena} minLength={8} maxLength={128} onChange={(event) => { setFormCrear({ ...formCrear, contrasena: event.target.value }); setContrasenaCopiada(false); }} placeholder="Genera o escribe una contraseña" required /><button type="button" onClick={() => setMostrarContrasena((actual) => !actual)}>{mostrarContrasena ? 'Ocultar' : 'Ver'}</button></div><div className="users-password-actions"><button type="button" onClick={generarTemporal}>Generar contraseña segura</button><button type="button" disabled={!formCrear.contrasena} onClick={() => void copiarContrasena()}>{contrasenaCopiada ? 'Copiada' : 'Copiar'}</button></div><small>Clave aleatoria de 18 caracteres. Compártela de forma privada; se cambiará en el primer ingreso.</small></label></div><footer><button type="button" onClick={cerrarModal}>Cancelar</button><button type="submit" className="primary" disabled={guardando || !formCrear.contrasena}>{guardando ? 'Creando...' : '✓  Crear usuario'}</button></footer></form></div>}
 
     {modal === 'editar' && usuarioEditar && <div className="users-modal-backdrop" role="presentation" onMouseDown={cerrarModal}>
       <form className="users-modal" role="dialog" aria-modal="true" aria-labelledby="edit-user-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={actualizarUsuario}>
@@ -255,7 +259,7 @@ export default function UsersWorkspace({ currentUserId }: { currentUserId: numbe
             <input id="edit-user-password" type={mostrarContrasena ? 'text' : 'password'} autoComplete="new-password" value={formEditar.contrasena} minLength={8} maxLength={128} disabled={guardando} aria-describedby="edit-password-help" onChange={(event) => setFormEditar({ ...formEditar, contrasena: event.target.value })} />
             <button type="button" aria-label={mostrarContrasena ? 'Ocultar nueva contraseña' : 'Mostrar nueva contraseña'} aria-pressed={mostrarContrasena} onClick={() => setMostrarContrasena((actual) => !actual)}>{mostrarContrasena ? 'Ocultar' : 'Ver'}</button>
           </div>
-          <p className="users-current-account-note" id="edit-password-help">Déjala vacía para conservar la actual. Usa entre 8 y 128 caracteres, con letras y números. El cambio cierra las sesiones anteriores del usuario.</p>
+          <p className="users-current-account-note" id="edit-password-help">Déjala vacía para conservar la actual. Usa entre 8 y 128 caracteres, con letras y números. El cambio cierra las sesiones anteriores del usuario y exige crear una contraseña propia al ingresar.</p>
           <label className="users-modal-field" htmlFor="edit-user-password-confirm"><span>Confirmar nueva contraseña</span></label>
           <div className="users-password-field">
             <input id="edit-user-password-confirm" type={mostrarConfirmacion ? 'text' : 'password'} autoComplete="new-password" value={confirmarContrasena} required={Boolean(formEditar.contrasena)} maxLength={128} disabled={guardando} onChange={(event) => setConfirmarContrasena(event.target.value)} />

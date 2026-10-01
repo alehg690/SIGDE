@@ -93,8 +93,8 @@ export async function crearUsuario(input: UsuarioInput, actor: SesionUsuario) {
 
   const result = await db.execute({
     sql: `
-      INSERT INTO Usuario (nombre, correo, contrasena, rol, activo)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO Usuario (nombre, correo, contrasena, rol, activo, requiereCambioContrasena)
+      VALUES (?, ?, ?, ?, ?, 1)
       RETURNING id, nombre, correo, rol, activo, creadoEn, ultimoAcceso
     `,
     args: [nombre, correo, contrasenaHash, rol, activo],
@@ -130,7 +130,7 @@ export async function actualizarUsuario(id: number, input: UsuarioInput, actor: 
   let setContrasena = '';
 
   if (input.contrasena) {
-    setContrasena = ', contrasena = ?, tokenRecuperacion = NULL, tokenExpira = NULL';
+    setContrasena = ', contrasena = ?, tokenRecuperacion = NULL, tokenExpira = NULL, requiereCambioContrasena = 1';
     args.push(await hashPassword(input.contrasena));
   }
 
@@ -185,7 +185,6 @@ export async function eliminarUsuario(id: number, actor: SesionUsuario, borrarAu
     }
     await tx.execute({ sql: 'DELETE FROM NotificacionUsuario WHERE usuarioId = ?', args: [id] });
     await tx.execute({ sql: 'UPDATE GrupoEscolar SET directorId = NULL, actualizadoEn = CURRENT_TIMESTAMP WHERE directorId = ?', args: [id] });
-    // Conserva la identidad referenciada por reportes, sin mantener una cuenta utilizable.
     await tx.execute({
       sql: `UPDATE Usuario SET eliminadoEn = CURRENT_TIMESTAMP, activo = 0,
         versionSesion = versionSesion + 1, contrasena = '', tokenRecuperacion = NULL,

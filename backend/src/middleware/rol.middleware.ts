@@ -30,7 +30,8 @@ export function extraerBearerToken(headers: Headers) {
 
 export async function autorizarRoles(
   token: string | null | undefined,
-  rolesPermitidos?: RolUsuario[]
+  rolesPermitidos?: RolUsuario[],
+  permitirCambioPendiente = false
 ): Promise<ResultadoAutorizacion> {
   if (!token) {
     return {
@@ -63,7 +64,7 @@ export async function autorizarRoles(
     }
 
     const result = await db.execute({
-      sql: 'SELECT id, nombre, correo, rol, activo, versionSesion FROM Usuario WHERE id = ? AND eliminadoEn IS NULL LIMIT 1',
+      sql: 'SELECT id, nombre, correo, rol, activo, versionSesion, requiereCambioContrasena FROM Usuario WHERE id = ? AND eliminadoEn IS NULL LIMIT 1',
       args: [id],
     });
     const cuenta = result.rows[0];
@@ -80,7 +81,14 @@ export async function autorizarRoles(
       correo: String(cuenta.correo || ''),
       rol: rolActual,
       versionSesion: Number(cuenta.versionSesion),
+      requiereCambioContrasena: Boolean(cuenta.requiereCambioContrasena),
     };
+
+    if (usuario.requiereCambioContrasena && !permitirCambioPendiente) {
+      return {
+        response: NextResponse.json({ error: 'Debes cambiar tu contraseña temporal antes de continuar', requiereCambioContrasena: true }, { status: 403 }),
+      };
+    }
 
     if (rolesPermitidos && !tieneRol(usuario, rolesPermitidos)) {
       return {

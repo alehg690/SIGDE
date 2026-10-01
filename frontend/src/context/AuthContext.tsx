@@ -34,7 +34,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setCargando(true);
     try {
       if (!sessionStorage.getItem(TAB_SESSION_KEY)) {
-        await logout().catch(() => undefined);
         setUsuario(null);
         setExpiraEn(null);
         return;
@@ -44,7 +43,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUsuario(session.autenticado ? session.usuario ?? null : null);
       setExpiraEn(session.autenticado ? session.expiraEn ?? null : null);
     } catch (error) {
-      if (!(error instanceof ApiError) || error.status !== 401) {
+      if (error instanceof ApiError && error.status === 401) {
+        sessionStorage.removeItem(TAB_SESSION_KEY);
+        sessionStorage.setItem(SESSION_MESSAGE_KEY, 'Tu sesión expiró. Inicia sesión nuevamente.');
+        router.replace('/');
+      } else {
         console.error(error);
       }
       setUsuario(null);
@@ -52,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setCargando(false);
     }
-  }, []);
+  }, [router]);
 
   const cerrarSesion = useCallback(async (message = 'Sesion cerrada correctamente.') => {
     sessionStorage.removeItem(TAB_SESSION_KEY);

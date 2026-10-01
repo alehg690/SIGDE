@@ -6,6 +6,7 @@ export type SesionUsuario = {
   correo: string;
   rol: RolUsuario;
   versionSesion: number;
+  requiereCambioContrasena: boolean;
 };
 
 const ROLES_VALIDOS: RolUsuario[] = ['Admin', 'Coordinador', 'Docente', 'Porteria'];

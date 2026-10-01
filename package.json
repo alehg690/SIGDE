@@ -19,6 +19,7 @@
     "migrate:salidas": "node scripts/db/apply-salidas-autorizadas-migration.mjs",
     "migrate:reportes": "node --env-file=.env scripts/db/apply-reportes-migration.mjs",
     "migrate:security": "node --env-file=.env scripts/db/apply-auth-security-migration.mjs",
+    "migrate:initial-password": "node --env-file=.env scripts/db/apply-initial-password-migration.mjs",
     "auth:unlock": "node --env-file=.env scripts/db/unlock-auth-account.mjs"
   },
   "dependencies": {

@@ -5123,3 +5123,48 @@ button {
 .institutional-comms-modal footer button:not(.institutional-comms-primary) { padding: 11px 14px; border: 1px solid #35425a; border-radius: 8px; background: transparent; color: #b9c4d8; font-weight: 700; }
 .institutional-comms-modal footer button:disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 650px) { .institutional-comms-header, .institutional-comms-card { flex-direction: column; }.institutional-comms-card-side { display: flex; text-align: left; }.institutional-comms-form-row { grid-template-columns: 1fr; }.institutional-comms-modal footer { flex-wrap: wrap; }.institutional-comms-header h2 { font-size: 24px; } }
+/* Cambio obligatorio sobre el fondo ilustrado de SIGDE. */
+.first-password-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: linear-gradient(rgba(3, 16, 34, .36), rgba(3, 16, 34, .52)), #06152f url('/sigde-space-background.png') center / cover fixed no-repeat;
+}
+.first-password-dialog {
+  width: min(100%, 510px);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  border: 1px solid rgba(214, 223, 235, .9);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 28px 72px rgba(0, 11, 29, .36);
+  padding: 28px 32px 24px;
+  color: #172b40;
+}
+.first-password-loading {
+  margin: 0;
+  border-radius: 14px;
+  background: rgba(8, 31, 57, .88);
+  box-shadow: 0 20px 44px rgba(0, 11, 29, .2);
+  padding: 18px 24px;
+  color: #edf7ff;
+}
+.first-password-badge { display: inline-block; margin-bottom: 12px; padding: 6px 10px; border-radius: 30px; background: #e8f3fc; color: #145b88; font-size: .78rem; font-weight: 700; }
+.first-password-dialog .form-header { margin-bottom: 20px; text-align: left; }
+.first-password-dialog .form-header h1 { font-size: 1.45rem; color: #172b40; }
+.first-password-dialog .form-header p { color: #526476; }
+.first-password-form { gap: 13px; }
+.first-password-form .field-group { margin: 0; }
+.first-password-form .field-group label { color: #172b40; }
+.first-password-form .password-field input { color: #172b40; background: #fff; }
+.first-password-form .password-strength { margin: -6px 0 0; }
+.first-password-help { margin: 0; color: #526476; font-size: .82rem; line-height: 1.4; }
+.first-password-form .feedback.error { margin: 0; padding: 14px 16px; }
+.first-password-logout { display: block; margin: 16px auto 0; border: 0; background: none; color: #145b88; font: inherit; cursor: pointer; }
+@media (max-width: 768px) {
+  .first-password-screen { padding: 16px; }
+  .first-password-dialog { max-height: calc(100dvh - 32px); padding: 24px 20px; }
+  .first-password-form .strength-bars span { background: #dfe7f0; }
+  .first-password-form .feedback.error { background: #fff0f0; color: #d14343; }
+}

@@ -5,6 +5,7 @@ export type SessionUser = {
   nombre: string;
   correo: string;
   rol: string;
+  requiereCambioContrasena: boolean;
 };
 
 export type SessionResponse = {

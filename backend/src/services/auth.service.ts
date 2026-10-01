@@ -19,6 +19,7 @@ type UsuarioAuthRow = {
   rol: string;
   activo: number;
   versionSesion: number;
+  requiereCambioContrasena: number;
   tokenRecuperacion: string | null;
   tokenExpira: string | null;
 };
@@ -106,6 +107,7 @@ export async function login(correo: string, contrasena: string, clienteId: strin
       correo: usuario.correo,
       rol: usuario.rol,
       versionSesion: Number(usuario.versionSesion || 1),
+      requiereCambioContrasena: Boolean(usuario.requiereCambioContrasena),
     },
   };
 }
@@ -225,6 +227,7 @@ export async function cambiarContrasena(
       SET contrasena = ?,
           tokenRecuperacion = NULL,
           tokenExpira = NULL,
+          requiereCambioContrasena = 0,
           versionSesion = versionSesion + 1
       WHERE id = ?
     `,
@@ -232,4 +235,36 @@ export async function cambiarContrasena(
   });
 
   return { data: { mensaje: 'Contraseña actualizada correctamente' } };
+}
+
+export async function cambiarContrasenaTemporal(usuarioId: number, versionSesion: number, contrasenaActual: string, nuevaContrasena: string) {
+  const claveLimite = crearClaveLimite('cambio-temporal', String(usuarioId));
+  const limite = await consultarLimite(claveLimite);
+  if (limite.bloqueado) return respuestaBloqueo(limite.reintentarEnSegundos);
+  const error = validarContrasenaSegura(nuevaContrasena);
+  if (error) return { error, status: 400 };
+  const result = await db.execute({
+    sql: 'SELECT contrasena, requiereCambioContrasena FROM Usuario WHERE id = ? AND activo = 1 AND eliminadoEn IS NULL LIMIT 1',
+    args: [usuarioId],
+  });
+  const cuenta = result.rows[0];
+  if (!cuenta || !cuenta.requiereCambioContrasena) return { error: 'La cuenta no requiere este cambio', status: 409 };
+  if (!await verificarPassword(contrasenaActual, String(cuenta.contrasena))) {
+    const fallo = await registrarIntento(claveLimite, 'cambio-temporal', LIMITES_AUTH.loginCuenta);
+    if (fallo.bloqueado) return respuestaBloqueo(fallo.reintentarEnSegundos);
+    return { error: 'La contraseña temporal es incorrecta', status: 400 };
+  }
+  if (await verificarPassword(nuevaContrasena, String(cuenta.contrasena))) {
+    return { error: 'La nueva contraseña debe ser diferente de la temporal', status: 400 };
+  }
+  const hash = await hashPassword(nuevaContrasena);
+  const cambio = await db.execute({
+    sql: `UPDATE Usuario SET contrasena = ?, requiereCambioContrasena = 0,
+      tokenRecuperacion = NULL, tokenExpira = NULL, versionSesion = versionSesion + 1
+      WHERE id = ? AND versionSesion = ? AND requiereCambioContrasena = 1`,
+    args: [hash, usuarioId, versionSesion],
+  });
+  if (!cambio.rowsAffected) return { error: 'La sesión cambió. Inicia sesión de nuevo', status: 409 };
+  await limpiarLimite(claveLimite);
+  return { data: { mensaje: 'Contraseña actualizada correctamente', versionSesion: versionSesion + 1 } };
 }

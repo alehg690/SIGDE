@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   cambiarContrasena,
+  cambiarContrasenaTemporal,
   enviarCodigoRecuperacion,
   login,
   validarContrasenaSegura,
@@ -23,6 +24,7 @@ function serializarSesion(usuario: SesionUsuario) {
     correo: usuario.correo,
     rol: usuario.rol,
     versionSesion: usuario.versionSesion,
+    requiereCambioContrasena: usuario.requiereCambioContrasena,
   };
 }
 
@@ -49,7 +51,7 @@ export async function GET() {
 
   try {
     const payload = await verificarToken(token);
-    const auth = await autorizarRoles(token);
+    const auth = await autorizarRoles(token, undefined, true);
     if (esErrorAutorizacion(auth)) return auth.response;
     return NextResponse.json({
       autenticado: true,
@@ -103,6 +105,7 @@ export async function POST(req: NextRequest) {
       correo: usuario.correo,
       rol: usuario.rol,
       versionSesion: usuario.versionSesion,
+      requiereCambioContrasena: usuario.requiereCambioContrasena,
     });
 
     const cookieStore = await cookies();
@@ -127,7 +130,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const auth = await autorizarRoles(tokenActual);
+      const auth = await autorizarRoles(tokenActual, undefined, true);
       if (esErrorAutorizacion(auth)) return auth.response;
       const token = await crearToken(serializarSesion(auth.usuario));
       const sesion = await verificarToken(token);
@@ -155,6 +158,25 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     cookieStore.delete('token');
     return NextResponse.json({ mensaje: 'Sesión cerrada' });
+  }
+
+  if (accion === 'cambiarContrasenaTemporal') {
+    const cookieStore = await cookies();
+    const auth = await autorizarRoles(cookieStore.get('token')?.value, undefined, true);
+    if (esErrorAutorizacion(auth)) return auth.response;
+    const contrasenaActual = typeof body.contrasenaActual === 'string' ? body.contrasenaActual : '';
+    const nuevaContrasena = typeof body.nuevaContrasena === 'string' ? body.nuevaContrasena : '';
+    if (!contrasenaActual || !nuevaContrasena || contrasenaActual.length > PASSWORD_MAX_LENGTH || nuevaContrasena.length > PASSWORD_MAX_LENGTH) {
+      return NextResponse.json({ error: 'Ingresa contraseñas válidas' }, { status: 400 });
+    }
+    const r = await cambiarContrasenaTemporal(auth.usuario.id, auth.usuario.versionSesion, contrasenaActual, nuevaContrasena);
+    if ('error' in r) return NextResponse.json({ error: r.error }, { status: r.status });
+    const token = await crearToken({ ...serializarSesion(auth.usuario), versionSesion: r.data.versionSesion, requiereCambioContrasena: false });
+    cookieStore.set('token', token, {
+      httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict',
+      maxAge: SESSION_MAX_AGE_SECONDS, path: '/', priority: 'high',
+    });
+    return NextResponse.json({ mensaje: r.data.mensaje });
   }
 
   if (accion === 'recuperar') {
