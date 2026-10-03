@@ -1,0 +1,54 @@
+name: Database backup
+
+on:
+  schedule:
+    - cron: '23 5 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: database-backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup-and-restore-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      APP_ENV: production
+      NODE_ENV: production
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Export and verify restoration
+        run: node scripts/db/backup-libsql.mjs --output-dir "$RUNNER_TEMP/sigde-backup"
+      - name: Encrypt backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$BACKUP_ENCRYPTION_KEY"
+          tar -C "$RUNNER_TEMP/sigde-backup" -czf "$RUNNER_TEMP/sigde-backup.tar.gz" .
+          openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 \
+            -in "$RUNNER_TEMP/sigde-backup.tar.gz" \
+            -out "$RUNNER_TEMP/sigde-backup.tar.gz.enc" \
+            -pass env:BACKUP_ENCRYPTION_KEY
+      - name: Store encrypted backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: sigde-database-backup-${{ github.run_id }}
+          path: ${{ runner.temp }}/sigde-backup.tar.gz.enc
+          if-no-files-found: error
+          retention-days: 30
+      - name: Remove plaintext copies
+        if: always()
+        shell: bash
+        run: rm -rf "$RUNNER_TEMP/sigde-backup" "$RUNNER_TEMP/sigde-backup.tar.gz"
