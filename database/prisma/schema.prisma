@@ -28,9 +28,11 @@ enum EstadoReporte {
 }
 
 enum EstadoAlerta {
-  activa
-  en_seguimiento
-  resuelta
+  new
+  reviewed
+  monitoring
+  resolved
+  dismissed
 }
 
 enum TipoSalida {
@@ -72,6 +74,8 @@ model Usuario {
   gruposDirigidos   GrupoEscolar[]
   notificacionesUsuario NotificacionUsuario[]
   comunicaciones    Comunicacion[]
+  alertasRevisadas  Alerta[] @relation("AlertaRevisadaPor")
+  cambiosAlertas    AlertaHistorial[]
 }
 
 model Comunicacion {
@@ -172,6 +176,7 @@ model Reporte {
   observacionesLista ObservacionReporte[]
   notificaciones Notificacion[]
   notificacionesUsuario NotificacionUsuario[]
+  alertasEvidencia AlertaEvidencia[]
 
   @@index([docenteId, fecha])
   @@index([estudianteId, fecha])
@@ -179,14 +184,70 @@ model Reporte {
 }
 
 model Alerta {
-  id               Int      @id @default(autoincrement())
-  estudianteId     Int
-  cantidadReportes Int
-  estado           EstadoAlerta @default(activa)
-  notas            String?
-  creadoEn         DateTime @default(now())
-  actualizadoEn    DateTime @default(now())
-  estudiante       Estudiante @relation(fields: [estudianteId], references: [id])
+  id                 Int      @id @default(autoincrement())
+  estudianteId       Int
+  ruleId             String   @default("REPORT_RECURRENCE_30D")
+  tipo               String   @default("reincidencia_reportes")
+  titulo             String   @default("Reincidencia detectada")
+  resumenCorto       String   @default("")
+  cantidadReportes   Int
+  estado             EstadoAlerta @default(new)
+  nivelAtencion      String   @default("medium")
+  confianza          Float?
+  periodoInicio      DateTime?
+  periodoFin         DateTime?
+  evidenciaJson      String?
+  analisisIaJson     String?
+  primerDetectadoEn  DateTime @default(now())
+  ultimoDetectadoEn  DateTime @default(now())
+  revisadoEn         DateTime?
+  revisadoPorId      Int?
+  resueltoEn         DateTime?
+  notaResolucion     String?
+  versionReglas      String   @default("1")
+  versionPrompt      String?
+  analisisGeneradoEn DateTime?
+  huellaAnalisis     String?
+  origen             String   @default("rule")
+  notas              String?
+  creadoEn           DateTime @default(now())
+  actualizadoEn      DateTime @default(now())
+  estudiante         Estudiante @relation(fields: [estudianteId], references: [id])
+  revisadoPor        Usuario? @relation("AlertaRevisadaPor", fields: [revisadoPorId], references: [id])
+  evidencias         AlertaEvidencia[]
+  historial          AlertaHistorial[]
+
+  @@index([estudianteId, ruleId])
+  @@index([estado, nivelAtencion, actualizadoEn])
+}
+
+model AlertaEvidencia {
+  id              Int      @id @default(autoincrement())
+  alertaId        Int
+  reporteId       Int?
+  tipoEvidencia   String   @default("reporte")
+  instantaneaJson String?
+  creadoEn        DateTime @default(now())
+  alerta          Alerta   @relation(fields: [alertaId], references: [id], onDelete: Cascade)
+  reporte         Reporte? @relation(fields: [reporteId], references: [id], onDelete: SetNull)
+
+  @@unique([alertaId, tipoEvidencia, reporteId])
+  @@index([reporteId])
+}
+
+model AlertaHistorial {
+  id             Int      @id @default(autoincrement())
+  alertaId       Int
+  estadoAnterior String?
+  estadoNuevo    String
+  motivo         String?
+  usuarioId      Int?
+  proceso        String?
+  creadoEn       DateTime @default(now())
+  alerta         Alerta   @relation(fields: [alertaId], references: [id], onDelete: Cascade)
+  usuario        Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([alertaId, creadoEn])
 }
 
 model Salida {

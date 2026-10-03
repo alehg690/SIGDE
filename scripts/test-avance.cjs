@@ -23,11 +23,21 @@ async function main() {
       INSERT INTO Usuario VALUES (1, 'Docente demo', 'demo@example.test', 'Docente', 1), (2, 'Otra persona', 'otra@example.test', 'Coordinador', 1);
       CREATE TABLE ConfiguracionSistema (clave TEXT PRIMARY KEY, valor TEXT, actualizadoEn TEXT);
       CREATE TABLE AuditLog (id INTEGER PRIMARY KEY, usuarioId INTEGER, accion TEXT, entidad TEXT, entidadId TEXT, detalle TEXT);
-      CREATE TABLE Evento (id INTEGER PRIMARY KEY, titulo TEXT, descripcion TEXT, ubicacion TEXT, iniciaEn TEXT, activo INTEGER DEFAULT 1);
+      CREATE TABLE Evento (id INTEGER PRIMARY KEY, titulo TEXT, descripcion TEXT, ubicacion TEXT, iniciaEn TEXT,
+        tipo TEXT DEFAULT 'Evento', color TEXT DEFAULT 'azul', todoElDia INTEGER DEFAULT 0, finalizaEn TEXT,
+        activo INTEGER DEFAULT 1, creadoEn TEXT DEFAULT CURRENT_TIMESTAMP, actualizadoEn TEXT DEFAULT CURRENT_TIMESTAMP);
       CREATE TABLE Estudiante (id INTEGER PRIMARY KEY, nombre TEXT, grado TEXT, grupo TEXT);
-      CREATE TABLE Alerta (id INTEGER PRIMARY KEY, estudianteId INTEGER, estado TEXT, creadoEn TEXT);
+      CREATE TABLE GrupoEscolar (id INTEGER PRIMARY KEY, grado TEXT, grupo TEXT, directorId INTEGER);
+      CREATE TABLE Reporte (id INTEGER PRIMARY KEY, estudianteId INTEGER, docenteId INTEGER);
+      CREATE TABLE Alerta (id INTEGER PRIMARY KEY, estudianteId INTEGER, ruleId TEXT, tipo TEXT, titulo TEXT,
+        resumenCorto TEXT, cantidadReportes INTEGER, estado TEXT, nivelAtencion TEXT, confianza REAL,
+        periodoInicio TEXT, periodoFin TEXT, origen TEXT, primerDetectadoEn TEXT, ultimoDetectadoEn TEXT,
+        revisadoEn TEXT, resueltoEn TEXT, creadoEn TEXT, actualizadoEn TEXT);
       INSERT INTO Estudiante VALUES (1, 'Estudiante demo', '11', '2');
-      INSERT INTO Alerta VALUES (1, 1, 'activa', '2026-01-01'), (2, 1, 'resuelta', '2026-01-02');
+      INSERT INTO Reporte VALUES (1, 1, 1);
+      INSERT INTO Alerta VALUES
+        (1, 1, 'REPORT_RECURRENCE_30D', 'reincidencia_reportes', 'Reincidencia', '3 reportes', 3, 'new', 'medium', NULL, NULL, NULL, 'rule', '2026-01-01', '2026-01-01', NULL, NULL, '2026-01-01', '2026-01-01'),
+        (2, 1, 'REPORT_RECURRENCE_30D', 'reincidencia_reportes', 'Reincidencia', '3 reportes', 3, 'resolved', 'medium', NULL, NULL, NULL, 'rule', '2026-01-02', '2026-01-02', NULL, '2026-01-02', '2026-01-02', '2026-01-02');
     `);
     const usuario = { id: 1, nombre: 'Docente demo', correo: 'demo@example.test', rol: 'Docente', versionSesion: 1 };
     const { actualizarPerfil } = require('../backend/src/services/perfil.service.ts');
@@ -57,8 +67,8 @@ async function main() {
     const agenda = (await listarEventosProximos()).data;
     assert.equal(agenda.length, 1); assert.equal(agenda[0].iniciaEn, futuro);
     const { listarAlertasActivas } = require('../backend/src/services/alertas.service.ts');
-    assert.equal((await listarAlertasActivas()).data.length, 1);
-    assert.equal((await listarAlertasActivas(true)).data.length, 2);
+    assert.equal((await listarAlertasActivas(false, usuario)).data.length, 1);
+    assert.equal((await listarAlertasActivas(true, usuario)).data.length, 2);
     console.log('OK: perfil aislado por sesión; validación y rollback de configuración; fechas y persistencia de eventos; historial de alertas.');
   } finally { db.close(); }
 }

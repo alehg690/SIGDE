@@ -201,7 +201,12 @@ export async function obtenerEstadisticasDashboard(usuario: SesionUsuario) {
     contar("SELECT COUNT(*) AS total FROM Reporte WHERE estado = 'Pendiente'"),
     contarSiExiste('ConvivenciaReporte', "SELECT COUNT(*) AS total FROM ConvivenciaReporte WHERE estado = 'abierto'"),
     contar("SELECT COUNT(*) AS total FROM Salida WHERE estado = 'pendiente'"),
-    contar("SELECT COUNT(*) AS total FROM Alerta WHERE estado <> 'resuelta'"),
+    contarConArgs(`SELECT COUNT(*) AS total FROM Alerta a INNER JOIN Estudiante e ON e.id = a.estudianteId
+      WHERE a.estado IN ('new', 'reviewed', 'monitoring') AND (
+        ? IN ('Coordinador', 'Admin')
+        OR EXISTS (SELECT 1 FROM Reporte ar WHERE ar.estudianteId = e.id AND ar.docenteId = ?)
+        OR EXISTS (SELECT 1 FROM GrupoEscolar ag WHERE ag.directorId = ? AND ag.grado = REPLACE(e.grado, '°', '') AND ag.grupo = e.grupo)
+      )`, [usuario.rol, usuario.id, usuario.id]),
     contarConArgs('SELECT COUNT(*) AS total FROM Notificacion WHERE leida = 0 AND datetime(enviadoEn) >= datetime(?) AND datetime(enviadoEn) < datetime(?)', [rangoSemana.inicio, rangoSemana.fin]),
     contarConArgs('SELECT COUNT(*) AS total FROM Notificacion WHERE datetime(enviadoEn) >= datetime(?) AND datetime(enviadoEn) < datetime(?)', [rangoSemana.inicio, rangoSemana.fin]),
     contarConArgs('SELECT COUNT(*) AS total FROM Salida WHERE datetime(creadoEn) >= datetime(?) AND datetime(creadoEn) < datetime(?)', [rangoDia.hoy, rangoDia.manana]),
@@ -239,15 +244,23 @@ export async function obtenerEstadisticasDashboard(usuario: SesionUsuario) {
       ORDER BY datetime(iniciaEn) ASC
       LIMIT 4
     `),
-    consultar(`
-      SELECT a.id, a.cantidadReportes, a.estado, a.notas, a.creadoEn,
+    consultarConArgs(`
+      SELECT a.id, a.cantidadReportes, a.estado, a.notas, a.creadoEn, a.actualizadoEn,
+        a.ruleId, a.tipo, a.titulo, a.resumenCorto, a.nivelAtencion, a.origen,
+        a.periodoInicio, a.periodoFin,
         e.id AS estudianteId, e.nombre AS estudiante, e.grado, e.grupo
       FROM Alerta a
       INNER JOIN Estudiante e ON e.id = a.estudianteId
-      WHERE a.estado <> 'resuelta'
-      ORDER BY a.creadoEn DESC
+      WHERE a.estado IN ('new', 'reviewed', 'monitoring') AND (
+        ? IN ('Coordinador', 'Admin')
+        OR EXISTS (SELECT 1 FROM Reporte ar WHERE ar.estudianteId = e.id AND ar.docenteId = ?)
+        OR EXISTS (SELECT 1 FROM GrupoEscolar ag WHERE ag.directorId = ? AND ag.grado = REPLACE(e.grado, '°', '') AND ag.grupo = e.grupo)
+      )
+      ORDER BY CASE a.estado WHEN 'new' THEN 0 ELSE 1 END,
+        CASE a.nivelAtencion WHEN 'high' THEN 0 WHEN 'medium' THEN 1 WHEN 'low' THEN 2 ELSE 3 END,
+        datetime(a.actualizadoEn) DESC
       LIMIT 5
-    `),
+    `, [usuario.rol, usuario.id, usuario.id]),
   ]);
   const [resumenSemanal, graficasSemanales, tendenciasMensuales] = await Promise.all([
     obtenerResumenSemanal(),
