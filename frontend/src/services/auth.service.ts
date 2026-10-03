@@ -1,10 +1,6 @@
 import { apiRequest } from '@/services/api';
 
 export type SessionUser = {
-  id: number;
-  nombre: string;
-  correo: string;
-  rol: string;
   requiereCambioContrasena: boolean;
 };
 

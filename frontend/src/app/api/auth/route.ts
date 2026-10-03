@@ -17,15 +17,15 @@ const PASSWORD_MAX_LENGTH = 128;
 const SESSION_MAX_AGE_SECONDS = 30 * 60;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function serializarSesion(usuario: SesionUsuario) {
+function crearPayloadSesion(usuario: Pick<SesionUsuario, 'id' | 'versionSesion'>) {
   return {
     id: usuario.id,
-    nombre: usuario.nombre || 'Usuario SIGDE',
-    correo: usuario.correo,
-    rol: usuario.rol,
     versionSesion: usuario.versionSesion,
-    requiereCambioContrasena: usuario.requiereCambioContrasena,
   };
+}
+
+function serializarEstadoSesion(usuario: Pick<SesionUsuario, 'requiereCambioContrasena'>) {
+  return { requiereCambioContrasena: usuario.requiereCambioContrasena };
 }
 
 function obtenerClienteId(req: NextRequest) {
@@ -46,7 +46,7 @@ export async function GET() {
   const token = cookieStore.get('token')?.value;
 
   if (!token) {
-    return NextResponse.json({ autenticado: false }, { status: 401 });
+    return NextResponse.json({ autenticado: false });
   }
 
   try {
@@ -55,11 +55,13 @@ export async function GET() {
     if (esErrorAutorizacion(auth)) return auth.response;
     return NextResponse.json({
       autenticado: true,
-      usuario: serializarSesion(auth.usuario),
+      usuario: serializarEstadoSesion(auth.usuario),
       expiraEn: typeof payload.exp === 'number' ? payload.exp : null,
     });
   } catch {
-    return NextResponse.json({ autenticado: false }, { status: 401 });
+    const response = NextResponse.json({ autenticado: false });
+    response.cookies.delete('token');
+    return response;
   }
 }
 
@@ -99,14 +101,7 @@ export async function POST(req: NextRequest) {
     }
 
     const usuario = r.data;
-    const token = await crearToken({
-      id: usuario.id,
-      nombre: usuario.nombre,
-      correo: usuario.correo,
-      rol: usuario.rol,
-      versionSesion: usuario.versionSesion,
-      requiereCambioContrasena: usuario.requiereCambioContrasena,
-    });
+    const token = await crearToken(crearPayloadSesion(usuario));
 
     const cookieStore = await cookies();
     cookieStore.set('token', token, {
@@ -118,7 +113,10 @@ export async function POST(req: NextRequest) {
       priority: 'high',
     });
 
-    return NextResponse.json({ mensaje: 'Inicio de sesión exitoso', usuario });
+    return NextResponse.json({
+      mensaje: 'Inicio de sesión exitoso',
+      requiereCambioContrasena: usuario.requiereCambioContrasena,
+    });
   }
 
   if (accion === 'renovarSesion') {
@@ -132,7 +130,7 @@ export async function POST(req: NextRequest) {
     try {
       const auth = await autorizarRoles(tokenActual, undefined, true);
       if (esErrorAutorizacion(auth)) return auth.response;
-      const token = await crearToken(serializarSesion(auth.usuario));
+      const token = await crearToken(crearPayloadSesion(auth.usuario));
       const sesion = await verificarToken(token);
 
       cookieStore.set('token', token, {
@@ -146,7 +144,7 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({
         autenticado: true,
-        usuario: serializarSesion(auth.usuario),
+        usuario: serializarEstadoSesion(auth.usuario),
         expiraEn: typeof sesion.exp === 'number' ? sesion.exp : null,
       });
     } catch {
@@ -171,7 +169,7 @@ export async function POST(req: NextRequest) {
     }
     const r = await cambiarContrasenaTemporal(auth.usuario.id, auth.usuario.versionSesion, contrasenaActual, nuevaContrasena);
     if ('error' in r) return NextResponse.json({ error: r.error }, { status: r.status });
-    const token = await crearToken({ ...serializarSesion(auth.usuario), versionSesion: r.data.versionSesion, requiereCambioContrasena: false });
+    const token = await crearToken({ id: auth.usuario.id, versionSesion: r.data.versionSesion });
     cookieStore.set('token', token, {
       httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict',
       maxAge: SESSION_MAX_AGE_SECONDS, path: '/', priority: 'high',

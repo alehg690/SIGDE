@@ -41,14 +41,6 @@ export async function autorizarRoles(
 
   try {
     const payload = await verificarToken(token);
-    const rol = normalizarRol(String(payload.rol || ''));
-
-    if (!rol) {
-      return {
-        response: NextResponse.json({ error: 'Rol no valido' }, { status: 403 }),
-      };
-    }
-
     const id = Number(payload.id);
     if (!Number.isInteger(id) || id <= 0) {
       return {
