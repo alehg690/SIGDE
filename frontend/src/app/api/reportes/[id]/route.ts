@@ -76,3 +76,16 @@ export async function PUT(req: NextRequest, { params }: Params) {
   if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json(result.data);
 }
+
+export async function DELETE(req: NextRequest, { params }: Params) {
+  const auth = await requerirSesion(['Coordinador']);
+  if (esErrorAuth(auth)) return auth.response;
+  const { id } = await params;
+  const reporteId = Number(id);
+  if (!Number.isInteger(reporteId) || reporteId <= 0) return NextResponse.json({ error: 'Reporte no válido' }, { status: 400 });
+  const body = await req.json().catch(() => null);
+  const motivo = typeof body?.motivo === 'string' ? body.motivo : '';
+  const result = await cambiarEstadoReporte(reporteId, 'Anulado', motivo, auth.usuario);
+  if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });
+  return NextResponse.json(result.data);
+}

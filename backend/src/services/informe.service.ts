@@ -101,7 +101,7 @@ async function datosResumen() {
     UNION ALL
     SELECT 'Salidas pendientes', COUNT(*) FROM Salida WHERE estado = 'pendiente'
     UNION ALL
-    SELECT 'Alertas activas', COUNT(*) FROM Alerta WHERE estado <> 'resuelta'
+    SELECT 'Alertas activas', COUNT(*) FROM Alerta WHERE estado IN ('new', 'reviewed', 'monitoring')
   `);
 
   return result.rows as FilaInforme[];

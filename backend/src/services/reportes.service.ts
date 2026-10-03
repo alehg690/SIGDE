@@ -382,8 +382,14 @@ export async function editarReporte(id: number, usuario: SesionUsuario, input: E
     `,
     args: [fechaHecho, lugar, situacion, descripcion, actuacionInicial, confidencial, observador, tipoActualizado, id],
   });
-  await registrarAccion({ usuarioId: usuario.id, accion: 'editar_reporte', entidad: 'Reporte', entidadId: id, detalle: { confidencial: Boolean(confidencial) } })
-    .catch((error) => reportarEfectoFallido('auditoría de edición', error));
+  const estudianteId = Number(result.rows[0].estudianteId);
+  const efectos = await Promise.allSettled([
+    registrarAccion({ usuarioId: usuario.id, accion: 'editar_reporte', entidad: 'Reporte', entidadId: id, detalle: { confidencial: Boolean(confidencial) } }),
+    evaluarAlertaEstudiante(estudianteId, usuario),
+  ]);
+  efectos.forEach((efecto, index) => {
+    if (efecto.status === 'rejected') reportarEfectoFallido(index === 0 ? 'auditoría de edición' : 'evaluación de alertas', efecto.reason);
+  });
   return { data: result.rows[0] };
 }
 
@@ -517,9 +523,10 @@ export async function cambiarEstadoReporte(id: number, estado: string, observaci
   const efectos = await Promise.allSettled([
     registrarAccion({ usuarioId: usuario.id, accion: 'cambiar_estado_reporte', entidad: 'Reporte', entidadId: id, detalle: { estadoAnterior: estadoActual, estado: estadoLimpio, observaciones: observacion || null } }),
     estadoActual === estadoLimpio ? Promise.resolve() : notificarAcudienteCambioReporte(id, estadoLimpio),
+    evaluarAlertaEstudiante(Number(actual.estudianteId), usuario),
   ]);
   efectos.forEach((efecto, index) => {
-    if (efecto.status === 'rejected') reportarEfectoFallido(index === 0 ? 'auditoría' : 'notificación de estado', efecto.reason);
+    if (efecto.status === 'rejected') reportarEfectoFallido(index === 0 ? 'auditoría' : index === 1 ? 'notificación de estado' : 'evaluación de alertas', efecto.reason);
   });
   return { data: reporte };
 }

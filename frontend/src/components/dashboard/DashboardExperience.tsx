@@ -111,6 +111,15 @@ type DashboardStats = {
       estado: string;
       notas: string | null;
       creadoEn: string;
+      actualizadoEn: string;
+      ruleId: string;
+      tipo: string;
+      titulo: string;
+      resumenCorto: string;
+      nivelAtencion: 'informational' | 'low' | 'medium' | 'high';
+      origen: 'rule' | 'rule+ai';
+      periodoInicio: string | null;
+      periodoFin: string | null;
       estudianteId: number;
       estudiante: string;
       grado: string;
@@ -308,6 +317,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
     const params = new URLSearchParams(searchParams.toString());
     params.delete('dashboard');
     params.delete('buscar');
+    params.delete('alerta');
     setGlobalSearch('');
     if (nextSection === 'dashboard') {
       params.delete('seccion');
@@ -316,6 +326,16 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
     }
     const query = params.toString();
     window.history.pushState(null, '', query ? `?${query}` : window.location.pathname);
+  }
+
+  function abrirAlerta(alertaId: number) {
+    setSection('seguimiento');
+    const params = new URLSearchParams(window.location.search);
+    params.delete('dashboard');
+    params.delete('buscar');
+    params.set('seccion', 'seguimiento');
+    params.set('alerta', String(alertaId));
+    window.history.pushState(null, '', `?${params.toString()}`);
   }
 
   function buscarGlobal(event: FormEvent<HTMLFormElement>) {
@@ -332,8 +352,11 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
 
   useEffect(() => {
     if (section !== 'dashboard' && section !== 'estadisticas') return;
-    const timer = window.setTimeout(() => void cargarDashboard(), 0);
-    return () => window.clearTimeout(timer);
+    const refresh = () => { if (document.visibilityState === 'visible') void cargarDashboard(); };
+    const timer = window.setTimeout(refresh, 0);
+    const interval = window.setInterval(refresh, 15_000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { window.clearTimeout(timer); window.clearInterval(interval); document.removeEventListener('visibilitychange', refresh); };
   }, [section, cargarDashboard]);
 
   async function handleLogout() {
@@ -397,7 +420,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
             <DashboardMetricCards stats={dashboardSnapshot} role={role} />
             {role !== 'portero' && <section className="dashboard-recent-grid" aria-label="Actividad y alertas recientes">
               <RecentActivityCard reports={dashboardSnapshot?.tablas.ultimosReportes ?? []} onViewAll={() => seleccionarSeccion('reportes')} />
-              <IntelligentAlertsCard alerts={dashboardSnapshot?.tablas.alertasRecientes ?? []} onViewAll={() => seleccionarSeccion('seguimiento')} />
+              <IntelligentAlertsCard alerts={dashboardSnapshot?.tablas.alertasRecientes ?? []} onViewAll={() => seleccionarSeccion('seguimiento')} onOpenAlert={abrirAlerta} />
             </section>}
             {role !== 'portero' && <DashboardAnalytics stats={dashboardSnapshot} onOpenCalendar={() => seleccionarSeccion('calendario')} />}
             {role === 'portero' && <DashboardPorteria stats={dashboardSnapshot} onOpenSalidas={() => seleccionarSeccion('salidas')} onOpenCalendar={() => seleccionarSeccion('calendario')} />}
@@ -411,6 +434,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
             usuario={usuario}
             role={role}
             initialSearch={searchParams.get('buscar') ?? globalSearch}
+            initialAlertId={Number(searchParams.get('alerta')) || undefined}
             onCurrentUserUpdated={() => router.refresh()}
           />
           <section className="dashboard-empty-canvas" aria-label="Área de trabajo vacía" />
@@ -580,7 +604,7 @@ function RecentActivityCard({ reports, onViewAll }: { reports: Array<Record<stri
   </article>;
 }
 
-function IntelligentAlertsCard({ alerts, onViewAll }: { alerts: DashboardStats['tablas']['alertasRecientes']; onViewAll: () => void }) {
+function IntelligentAlertsCard({ alerts, onViewAll, onOpenAlert }: { alerts: DashboardStats['tablas']['alertasRecientes']; onViewAll: () => void; onOpenAlert: (id: number) => void }) {
   return <article className="dashboard-chart-card intelligent-alerts-card">
     <header className="dashboard-panel-heading intelligent-alerts-heading">
       <div><h2>Alertas por reglas</h2><p>Reincidencias detectadas por umbrales</p></div>
@@ -588,12 +612,11 @@ function IntelligentAlertsCard({ alerts, onViewAll }: { alerts: DashboardStats['
     </header>
     <div className="intelligent-alerts-list">
       {alerts.length ? alerts.map((alert) => {
-        const priority = alert.cantidadReportes >= 5 ? 'high' : alert.estado === 'en_seguimiento' ? 'tracking' : 'active';
-        const title = priority === 'high' ? 'Reincidencia prioritaria' : priority === 'tracking' ? 'Patrón en seguimiento' : 'Reincidencia detectada';
-        return <button type="button" className="intelligent-alert-row" onClick={onViewAll} key={alert.id}>
+        const priority = alert.nivelAtencion === 'high' ? 'high' : alert.estado === 'monitoring' ? 'tracking' : 'active';
+        return <button type="button" className="intelligent-alert-row" onClick={() => onOpenAlert(alert.id)} key={alert.id}>
           <span className={`intelligent-alert-icon intelligent-alert-icon--${priority}`}><SidebarIcon name="sparkles" /></span>
-          <span className="intelligent-alert-copy"><strong>{title}</strong><small>{alert.estudiante} · {alert.cantidadReportes} reportes. {alert.notas || `Grado ${alert.grado}-${alert.grupo}.`}</small></span>
-          <span className="intelligent-alert-meta"><time dateTime={alert.creadoEn}>{formatearActividadReciente(alert.creadoEn)}</time><i /></span>
+          <span className="intelligent-alert-copy"><strong>{alert.titulo}</strong><small>{alert.estudiante} · {alert.resumenCorto}</small><em>{alert.nivelAtencion === 'high' ? 'Revisión humana prioritaria' : alert.nivelAtencion === 'medium' ? 'Seguimiento recomendado' : 'Observación'} · {alert.origen === 'rule+ai' ? 'Regla + IA' : 'Regla'}</em></span>
+          <span className="intelligent-alert-meta"><time dateTime={alert.actualizadoEn}>{formatearActividadReciente(alert.actualizadoEn)}</time>{alert.estado === 'new' && <i title="Nueva o no revisada" />}</span>
         </button>;
       }) : <p className="recent-activity-empty">No hay alertas activas en este momento.</p>}
     </div>
@@ -770,6 +793,7 @@ function DashboardContent({
   onCurrentUserUpdated,
   role,
   initialSearch,
+  initialAlertId,
 }: {
   stats: DashboardStats | null;
   statsError: string;
@@ -779,9 +803,10 @@ function DashboardContent({
   onCurrentUserUpdated: () => void;
   role: DashboardRole;
   initialSearch: string;
+  initialAlertId?: number;
 }) {
   if (section === 'convivencia') return <CoexistenceWorkspace />;
-  if (section === 'seguimiento') return <FollowUpWorkspace canManage={esRolGestor(role)} />;
+  if (section === 'seguimiento') return <FollowUpWorkspace canManage={esRolGestor(role)} initialAlertId={initialAlertId} />;
   if (section === 'calendario') return <CalendarWorkspace canManage={esRolGestor(role)} />;
   if (section === 'estadisticas') return statsError
     ? <p className="feedback error" role="alert">{statsError}</p>

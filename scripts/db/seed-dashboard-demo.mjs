@@ -184,47 +184,6 @@ async function insertarReporte(item, weekOffset, index, context) {
   });
 }
 
-async function sincronizarAlertasDerivadas(estudiantes) {
-  const configuration = await db.execute({
-    sql: 'SELECT clave, valor FROM ConfiguracionSistema WHERE clave IN (?, ?)',
-    args: ['alertas.umbralReportes', 'alertas.periodoDias'],
-  });
-  const values = new Map(configuration.rows.map((row) => [String(row.clave), Number(row.valor)]));
-  const threshold = values.get('alertas.umbralReportes') || 3;
-  const periodDays = values.get('alertas.periodoDias') || 30;
-  let created = 0;
-
-  for (const student of estudiantes) {
-    const countResult = await db.execute({
-      sql: `SELECT COUNT(*) AS total FROM Reporte
-        WHERE estudianteId = ? AND estado <> ? AND datetime(creadoEn) >= datetime('now', ?)`,
-      args: [Number(student.id), 'Anulado', `-${periodDays} days`],
-    });
-    const total = Number(countResult.rows[0]?.total || 0);
-    if (total < threshold) continue;
-
-    const active = await db.execute({
-      sql: 'SELECT id FROM Alerta WHERE estudianteId = ? AND estado <> ? LIMIT 1',
-      args: [Number(student.id), 'resuelta'],
-    });
-    if (active.rows[0]) continue;
-
-    await db.execute({
-      sql: `INSERT INTO Alerta (estudianteId, cantidadReportes, estado, notas)
-        VALUES (?, ?, ?, ?)`,
-      args: [
-        Number(student.id),
-        total,
-        'activa',
-        `${DEMO_MARKER} Umbral de prueba: ${total} reportes en ${periodDays} días.`,
-      ],
-    });
-    created += 1;
-  }
-
-  return created;
-}
-
 async function sembrar() {
   await limpiarDatosDemo();
   const relations = await obtenerRelacionesExistentes();
@@ -241,7 +200,8 @@ async function sembrar() {
     await insertarReporte(reportesSemanaAnterior[index], -1, index + reportesDemo.length, context);
   }
 
-  const alerts = await sincronizarAlertasDerivadas(relations.estudiantes);
+  // Las alertas se crean exclusivamente por el motor de reglas al registrar datos reales.
+  const alerts = 0;
   const types = await db.execute({
     sql: `SELECT tipoFalta, COUNT(*) AS total FROM Reporte
       WHERE situacion = ? GROUP BY tipoFalta ORDER BY tipoFalta`,
