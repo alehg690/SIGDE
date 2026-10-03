@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { parseReportDate } from '@/lib/report-dates';
 
 type RolUsuario = 'Admin' | 'Coordinador' | 'Docente' | 'Porteria';
 type Usuario = { id: number; nombre: string; correo: string; rol: RolUsuario; activo: boolean; creadoEn: string; ultimoAcceso: string | null };
@@ -47,7 +48,7 @@ function generarContrasena() {
 
 function fechaAcceso(value: string | null) {
   if (!value) return 'Nunca';
-  const fecha = new Date(value);
+  const fecha = parseReportDate(value);
   if (Number.isNaN(fecha.getTime())) return 'Sin registro';
   return new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'America/Bogota' }).format(fecha);
 }
