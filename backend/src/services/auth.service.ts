@@ -2,7 +2,9 @@ import { crearCorreoRecuperacion } from '@backend/templates/recovery-email';
 import { randomInt } from 'crypto';
 import bcrypt from 'bcryptjs';
 import { db } from '@backend/config/database';
-import { emailTransporter } from '@backend/config/email';
+import { getEmailTransporter } from '@backend/config/email';
+import { isEmailEnabled } from '@backend/config/env';
+import { logServerError } from '@backend/utils/logger';
 import {
   consultarLimite,
   crearClaveLimite,
@@ -113,7 +115,7 @@ export async function login(correo: string, contrasena: string, clienteId: strin
 }
 
 export async function enviarCodigoRecuperacion(correo: string, clienteId: string) {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+  if (!isEmailEnabled()) {
     return {
       error: 'La recuperación por correo aún no está configurada. Contacta a coordinación para restablecer tu acceso.',
       status: 503,
@@ -148,14 +150,14 @@ export async function enviarCodigoRecuperacion(correo: string, clienteId: string
   });
 
   try {
-    await emailTransporter.sendMail({
+    await getEmailTransporter().sendMail({
       from: `"SIGDE" <${process.env.EMAIL_USER}>`,
       to: correo,
       subject: 'Código de verificación - SIGDE',
       ...crearCorreoRecuperacion(codigo),
     });
   } catch (error) {
-    console.error('No se pudo enviar el código de recuperación.', error);
+    logServerError('password_recovery_email_failed', error);
     return { data: { mensaje: MENSAJE_RECUPERACION } };
   }
 

@@ -5,7 +5,7 @@ const PROTECTED_PATHS = ['/dashboard'];
 
 function getJwtSecret() {
   const secret = process.env.JWT_SECRET;
-  if (!secret || secret.length < 24) return null;
+  if (!secret || secret.length < 32) return null;
   return new TextEncoder().encode(secret);
 }
 

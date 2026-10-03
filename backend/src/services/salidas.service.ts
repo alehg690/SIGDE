@@ -1,6 +1,8 @@
 import { randomUUID } from 'crypto';
 import { db } from '@backend/config/database';
-import { emailTransporter } from '@backend/config/email';
+import { getEmailTransporter } from '@backend/config/email';
+import { isEmailEnabled } from '@backend/config/env';
+import { logServerError } from '@backend/utils/logger';
 import { registrarAccion } from '@backend/services/auditoria.service';
 import type { SesionUsuario } from '@backend/types/roles';
 
@@ -41,11 +43,14 @@ export async function listarSalidas(usuario: SesionUsuario) {
 
 async function enviarAvisoSalida(destinos: string[], estudiante: string, recoge: string) {
   const correos = [...new Set(destinos.filter((correo) => EMAIL_PATTERN.test(correo)))];
-  if (!correos.length || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) return false;
+  if (!correos.length || !isEmailEnabled()) return false;
   try {
-    await emailTransporter.sendMail({ from: `"SIGDE" <${process.env.EMAIL_USER}>`, to: correos.join(', '), subject: `Aviso de salida registrada - ${estudiante}`, text: `Se registró la salida de ${estudiante}. La persona que recoge al estudiante es ${recoge}.` });
+    await getEmailTransporter().sendMail({ from: `"SIGDE" <${process.env.EMAIL_USER}>`, to: correos.join(', '), subject: `Aviso de salida registrada - ${estudiante}`, text: `Se registró la salida de ${estudiante}. La persona que recoge al estudiante es ${recoge}.` });
     return true;
-  } catch { return false; }
+  } catch (error) {
+    logServerError('exit_notification_email_failed', error);
+    return false;
+  }
 }
 
 export async function crearSalida(input: SalidaInput, usuario: SesionUsuario) {

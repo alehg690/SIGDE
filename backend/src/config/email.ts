@@ -1,9 +1,7 @@
 import nodemailer from 'nodemailer';
+import { getEmailConfig } from '@backend/config/env';
 
-export const emailTransporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+export function getEmailTransporter() {
+  const { user, pass } = getEmailConfig();
+  return nodemailer.createTransport({ service: 'gmail', auth: { user, pass } });
+}

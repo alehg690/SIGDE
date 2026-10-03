@@ -1,15 +1,10 @@
 import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
+import { getJwtSecret } from '@backend/config/env';
 
 const SESSION_DURATION = '30m';
 
 function obtenerJwtSecret() {
-  const secret = process.env.JWT_SECRET;
-
-  if (!secret || secret.length < 24) {
-    throw new Error('JWT_SECRET debe existir y tener al menos 24 caracteres');
-  }
-
-  return new TextEncoder().encode(secret);
+  return new TextEncoder().encode(getJwtSecret());
 }
 
 export async function crearToken(payload: Record<string, unknown>) {

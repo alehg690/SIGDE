@@ -1,5 +1,7 @@
 import { db } from '@backend/config/database';
-import { emailTransporter } from '@backend/config/email';
+import { getEmailTransporter } from '@backend/config/email';
+import { isEmailEnabled } from '@backend/config/env';
+import { logServerError } from '@backend/utils/logger';
 import { registrarAccion } from '@backend/services/auditoria.service';
 import type { SesionUsuario } from '@backend/types/roles';
 
@@ -39,16 +41,16 @@ export async function notificarAcudientePorReporte(reporteId: number) {
     args: [Number(row.acudienteId), reporteId, canal, asunto, mensaje],
   });
 
-  if (canal === 'email' && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+  if (canal === 'email' && isEmailEnabled()) {
     try {
-      await emailTransporter.sendMail({
+      await getEmailTransporter().sendMail({
         from: `"SIGDE" <${process.env.EMAIL_USER}>`,
         to: destino,
         subject: asunto,
         text: mensaje,
       });
     } catch (error) {
-      console.error('No se pudo enviar el correo automático del reporte.', error);
+      logServerError('report_notification_email_failed', error);
     }
   }
 
@@ -64,16 +66,16 @@ export async function notificarAcudientePorReporte(reporteId: number) {
       args: [directorId, reporteId, canalDirector, asuntoDirector, mensajeDirector],
     });
 
-    if (canalDirector === 'email' && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    if (canalDirector === 'email' && isEmailEnabled()) {
       try {
-        await emailTransporter.sendMail({
+        await getEmailTransporter().sendMail({
           from: `"SIGDE" <${process.env.EMAIL_USER}>`,
           to: directorCorreo,
           subject: asuntoDirector,
           text: mensajeDirector,
         });
       } catch (error) {
-        console.error('No se pudo enviar el correo al director de grupo.', error);
+        logServerError('group_director_notification_email_failed', error);
       }
     }
   }
@@ -113,16 +115,16 @@ export async function notificarAcudienteCambioReporte(reporteId: number, estado:
     args: [Number(row.acudienteId), reporteId, canal, asunto, mensaje],
   });
 
-  if (canal === 'email' && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+  if (canal === 'email' && isEmailEnabled()) {
     try {
-      await emailTransporter.sendMail({
+      await getEmailTransporter().sendMail({
         from: `"SIGDE" <${process.env.EMAIL_USER}>`,
         to: destino,
         subject: asunto,
         text: mensaje,
       });
     } catch (error) {
-      console.error('No se pudo enviar la actualización del reporte al acudiente.', error);
+      logServerError('report_status_email_failed', error);
     }
   }
 }
@@ -194,9 +196,9 @@ export async function crearNotificacionManual(input: {
   let correoEnviado = false;
   let aviso: string | null = null;
   if (canal === 'email') {
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    if (isEmailEnabled()) {
       try {
-        await emailTransporter.sendMail({
+        await getEmailTransporter().sendMail({
           from: `"SIGDE" <${process.env.EMAIL_USER}>`,
           to: correo,
           subject: asunto,
@@ -204,7 +206,7 @@ export async function crearNotificacionManual(input: {
         });
         correoEnviado = true;
       } catch (error) {
-        console.error('No se pudo enviar el comunicado por correo.', error);
+        logServerError('manual_notification_email_failed', error);
         aviso = 'El comunicado quedó registrado, pero el proveedor de correo no respondió.';
       }
     } else {

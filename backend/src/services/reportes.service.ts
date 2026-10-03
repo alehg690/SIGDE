@@ -6,6 +6,7 @@ import { registrarAccion } from '@backend/services/auditoria.service';
 import { normalizarTipoSituacion, obtenerReglaTipo } from '@backend/services/manual-convivencia.service';
 import { notificarAcudienteCambioReporte, notificarAcudientePorReporte } from '@backend/services/notificaciones.service';
 import { esRolCoordinador, type SesionUsuario } from '@backend/types/roles';
+import { logServerError } from '@backend/utils/logger';
 
 export type ReporteInput = {
   observador?: unknown;
@@ -129,7 +130,7 @@ function edicionVigente(row: Record<string, unknown>) {
 }
 
 function reportarEfectoFallido(nombre: string, reason: unknown) {
-  console.error(`No se pudo completar el efecto secundario del reporte: ${nombre}.`, reason);
+  logServerError(`report_side_effect_failed:${nombre}`, reason);
 }
 
 export async function listarReportes(usuario: SesionUsuario, estudianteId?: number) {
