@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import { db } from '@backend/config/database';
 import { getEmailTransporter } from '@backend/config/email';
 import { isEmailEnabled } from '@backend/config/env';
-import { logServerError } from '@backend/utils/logger';
+import { reportServerError } from '@backend/utils/logger';
 import {
   consultarLimite,
   crearClaveLimite,
@@ -157,7 +157,7 @@ export async function enviarCodigoRecuperacion(correo: string, clienteId: string
       ...crearCorreoRecuperacion(codigo),
     });
   } catch (error) {
-    logServerError('password_recovery_email_failed', error);
+    await reportServerError('password_recovery_email_failed', error);
     return { data: { mensaje: MENSAJE_RECUPERACION } };
   }
 

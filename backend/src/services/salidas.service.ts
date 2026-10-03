@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { db } from '@backend/config/database';
 import { getEmailTransporter } from '@backend/config/email';
 import { isEmailEnabled } from '@backend/config/env';
-import { logServerError } from '@backend/utils/logger';
+import { reportServerError } from '@backend/utils/logger';
 import { registrarAccion } from '@backend/services/auditoria.service';
 import type { SesionUsuario } from '@backend/types/roles';
 
@@ -48,7 +48,7 @@ async function enviarAvisoSalida(destinos: string[], estudiante: string, recoge:
     await getEmailTransporter().sendMail({ from: `"SIGDE" <${process.env.EMAIL_USER}>`, to: correos.join(', '), subject: `Aviso de salida registrada - ${estudiante}`, text: `Se registró la salida de ${estudiante}. La persona que recoge al estudiante es ${recoge}.` });
     return true;
   } catch (error) {
-    logServerError('exit_notification_email_failed', error);
+    await reportServerError('exit_notification_email_failed', error);
     return false;
   }
 }

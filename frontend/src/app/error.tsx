@@ -1,8 +1,28 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
 
-export default function GlobalError({ reset }: { reset: () => void }) {
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    void fetch('/api/monitoring/client-error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: error.message.slice(0, 300),
+        digest: error.digest || null,
+        path: window.location.pathname,
+      }),
+      keepalive: true,
+    }).catch(() => undefined);
+  }, [error]);
+
   return (
     <main className="not-found-page not-found-page--runtime-error">
       <section className="not-found-shell">

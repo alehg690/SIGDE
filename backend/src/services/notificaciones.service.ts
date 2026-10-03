@@ -1,7 +1,7 @@
 import { db } from '@backend/config/database';
 import { getEmailTransporter } from '@backend/config/email';
 import { isEmailEnabled } from '@backend/config/env';
-import { logServerError } from '@backend/utils/logger';
+import { reportServerError } from '@backend/utils/logger';
 import { registrarAccion } from '@backend/services/auditoria.service';
 import type { SesionUsuario } from '@backend/types/roles';
 
@@ -50,7 +50,7 @@ export async function notificarAcudientePorReporte(reporteId: number) {
         text: mensaje,
       });
     } catch (error) {
-      logServerError('report_notification_email_failed', error);
+      await reportServerError('report_notification_email_failed', error);
     }
   }
 
@@ -75,7 +75,7 @@ export async function notificarAcudientePorReporte(reporteId: number) {
           text: mensajeDirector,
         });
       } catch (error) {
-        logServerError('group_director_notification_email_failed', error);
+        await reportServerError('group_director_notification_email_failed', error);
       }
     }
   }
@@ -124,7 +124,7 @@ export async function notificarAcudienteCambioReporte(reporteId: number, estado:
         text: mensaje,
       });
     } catch (error) {
-      logServerError('report_status_email_failed', error);
+      await reportServerError('report_status_email_failed', error);
     }
   }
 }
@@ -206,7 +206,7 @@ export async function crearNotificacionManual(input: {
         });
         correoEnviado = true;
       } catch (error) {
-        logServerError('manual_notification_email_failed', error);
+        await reportServerError('manual_notification_email_failed', error);
         aviso = 'El comunicado quedó registrado, pero el proveedor de correo no respondió.';
       }
     } else {

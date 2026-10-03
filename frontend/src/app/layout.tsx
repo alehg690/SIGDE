@@ -13,6 +13,16 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'SIGDE - Sistema de Gestión Digital Escolar',
   description: 'Sistema de gestión de convivencia escolar',
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
   icons: {
     icon: '/Logo-login.png',
     shortcut: '/Logo-login.png',

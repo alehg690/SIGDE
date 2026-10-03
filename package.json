@@ -31,7 +31,9 @@
     "db:migrate:staging": "node --env-file=.env.staging scripts/db/libsql-migrate.mjs apply",
     "db:migrate:staging:status": "node --env-file=.env.staging scripts/db/libsql-migrate.mjs status",
     "db:migrate:staging:dry-run": "node --env-file=.env.staging scripts/db/libsql-migrate.mjs dry-run",
-    "seed:staging": "node --env-file=.env.staging scripts/db/seed-staging.mjs"
+    "seed:staging": "node --env-file=.env.staging scripts/db/seed-staging.mjs",
+    "db:backup": "node --env-file=.env scripts/db/backup-libsql.mjs",
+    "monitor:production": "node scripts/monitor-production.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",

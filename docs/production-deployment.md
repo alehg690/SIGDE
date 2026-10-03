@@ -17,4 +17,6 @@ El proveedor de hosting debe configurar `APP_ENV`, las credenciales Turso y los 
 3. Desplegar y ejecutar `npm run start`. No ejecutar migraciones, seeds ni imports automáticamente.
 4. Comprobar `GET /api/health`, inicio de sesión, consulta de datos, permisos por rol, correo y logs.
 
+La operación programada, los secretos de GitHub y el procedimiento de restauración están documentados en `docs/operations.md`.
+
 Los scripts `migrate:*`, `auth:unlock`, `seed:dashboard`, `seed:dashboard:clean` e `import:11-2` son operaciones administrativas. `import:11-2` no forma parte de un checkout limpio ni del pipeline de despliegue.
