@@ -29,7 +29,7 @@ const securityHeaders = [
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive, nosnippet' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), browsing-topics=()' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
   { key: 'Content-Security-Policy', value: contentSecurityPolicy },
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
   { key: 'Cross-Origin-Resource-Policy', value: 'same-origin' },
