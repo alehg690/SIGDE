@@ -2,12 +2,14 @@ import { db } from '@backend/config/database';
 import { registrarAccion } from '@backend/services/auditoria.service';
 import { obtenerValorConfiguracion } from '@backend/services/configuracion.service';
 import {
-  ALERT_PROMPT_VERSION,
+  ALERT_ANALYSIS_VERSION,
   ALERT_RULE_ID,
   ALERT_RULES_VERSION,
   calcularNivelAtencion,
   construirResumenCorto,
   crearHuellaAnalisis,
+  generarAnalisisLocal,
+  type LocalAlertEvidence,
   requiereNuevoAnalisis,
 } from '@backend/services/alertas.rules';
 import { esRolCoordinador, type SesionUsuario } from '@backend/types/roles';
@@ -49,7 +51,8 @@ function safeDate(value: string | undefined, endOfDay = false) {
 
 async function obtenerEvidencias(estudianteId: number, periodoInicio: string) {
   const result = await db.execute({
-    sql: `SELECT id, tipoFalta, COALESCE(fechaHecho, fecha, creadoEn) AS fecha, situacion, estado, confidencial
+    sql: `SELECT id, tipoFalta, COALESCE(fechaHecho, fecha, creadoEn) AS fecha, situacion, descripcion,
+      lugar, actuacionInicial, estado, confidencial
       FROM Reporte WHERE estudianteId = ? AND estado <> 'Anulado' AND tipoFalta <> 'ACADEMICA'
       AND datetime(COALESCE(fechaHecho, fecha, creadoEn)) >= datetime(?)
       ORDER BY datetime(COALESCE(fechaHecho, fecha, creadoEn)) ASC, id ASC`,
@@ -61,81 +64,27 @@ async function obtenerEvidencias(estudianteId: number, periodoInicio: string) {
 function snapshotEvidence(rows: EvidenceRow[]) {
   return rows.map((row) => ({
     reportId: Number(row.id), type: String(row.tipoFalta), occurredAt: String(row.fecha),
-    category: row.situacion ? String(row.situacion) : null, confidential: Boolean(row.confidencial),
+    category: row.situacion ? String(row.situacion) : null,
+    description: row.descripcion ? String(row.descripcion) : null,
+    place: row.lugar ? String(row.lugar) : null,
+    initialAction: row.actuacionInicial ? String(row.actuacionInicial) : null,
+    confidential: Boolean(row.confidencial),
   }));
 }
 
-function extractResponseText(body: Record<string, unknown>) {
-  const output = Array.isArray(body.output) ? body.output : [];
-  for (const item of output) {
-    if (!item || typeof item !== 'object') continue;
-    const rawContent = (item as Record<string, unknown>).content;
-    const content = Array.isArray(rawContent) ? rawContent as Array<Record<string, unknown>> : [];
-    const text = content.find((part) => part.type === 'output_text' && typeof part.text === 'string')?.text;
-    if (text) return String(text);
-  }
-  return null;
-}
-
-function validarAnalisis(value: unknown) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-  const item = value as Record<string, unknown>;
-  const stringArray = (key: string) => Array.isArray(item[key]) && (item[key] as unknown[]).every((entry) => typeof entry === 'string');
-  if (typeof item.summary !== 'string' || !stringArray('hypotheses') || !stringArray('suggestedActions')
-    || !stringArray('positiveSignals') || !stringArray('missingInformation') || typeof item.confidence !== 'number') return null;
-  return {
-    summary: item.summary.slice(0, 1200), hypotheses: (item.hypotheses as string[]).slice(0, 5),
-    suggestedActions: (item.suggestedActions as string[]).slice(0, 6), positiveSignals: (item.positiveSignals as string[]).slice(0, 5),
-    missingInformation: (item.missingInformation as string[]).slice(0, 5), confidence: Math.max(0, Math.min(1, item.confidence)),
-  };
-}
-
-async function solicitarAnalisisIa(input: { studentRef: string; total: number; periodoDias: number; evidence: unknown[] }) {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!apiKey) return null;
-  const model = process.env.OPENAI_ALERTS_MODEL?.trim() || 'gpt-6-astra';
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 25_000);
+async function enriquecerAlertaLocal(alertaId: number, total: number, periodoDias: number, evidence: LocalAlertEvidence[], fingerprint: string, auditUserId: number) {
   try {
-    const response = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, signal: controller.signal,
-      body: JSON.stringify({
-        model, store: false,
-        instructions: `Eres un asistente de apoyo escolar. Analiza solo el patrón objetivo. No diagnostiques, no afirmes causas y no identifiques al estudiante. Marca toda explicación como hipótesis prudente. Sugiere solo revisión o acompañamiento humano. Responde en español. Versión: ${ALERT_PROMPT_VERSION}.`,
-        input: JSON.stringify(input),
-        text: { format: { type: 'json_schema', name: 'student_alert_analysis', strict: true, schema: {
-          type: 'object', properties: {
-            summary: { type: 'string' }, hypotheses: { type: 'array', items: { type: 'string' } },
-            suggestedActions: { type: 'array', items: { type: 'string' } }, positiveSignals: { type: 'array', items: { type: 'string' } },
-            missingInformation: { type: 'array', items: { type: 'string' } }, confidence: { type: 'number', minimum: 0, maximum: 1 },
-          }, required: ['summary', 'hypotheses', 'suggestedActions', 'positiveSignals', 'missingInformation', 'confidence'], additionalProperties: false,
-        } } },
-      }),
-    });
-    if (!response.ok) throw new Error(`OpenAI respondió ${response.status}`);
-    const body = await response.json() as Record<string, unknown>;
-    const outputText = extractResponseText(body);
-    if (!outputText) throw new Error('OpenAI no devolvió contenido estructurado');
-    const analysis = validarAnalisis(JSON.parse(outputText));
-    if (!analysis) throw new Error('El análisis de OpenAI no cumple el esquema esperado');
-    return analysis;
-  } finally { clearTimeout(timer); }
-}
-
-async function enriquecerAlerta(alertaId: number, estudianteId: number, total: number, periodoDias: number, evidence: unknown[], fingerprint: string, auditUserId: number) {
-  try {
-    const analysis = await solicitarAnalisisIa({ studentRef: `student:${estudianteId}`, total, periodoDias, evidence });
-    if (!analysis) return;
+    const analysis = generarAnalisisLocal({ total, periodoDias, evidence });
     await db.execute({
       sql: `UPDATE Alerta SET analisisIaJson = ?, confianza = ?, versionPrompt = ?, analisisGeneradoEn = CURRENT_TIMESTAMP,
-        huellaAnalisis = ?, origen = 'rule+ai', actualizadoEn = CURRENT_TIMESTAMP WHERE id = ?`,
-      args: [JSON.stringify(analysis), analysis.confidence, ALERT_PROMPT_VERSION, fingerprint, alertaId],
+        huellaAnalisis = ?, origen = 'rule+local', actualizadoEn = CURRENT_TIMESTAMP WHERE id = ?`,
+      args: [JSON.stringify(analysis), analysis.confidence, ALERT_ANALYSIS_VERSION, fingerprint, alertaId],
     });
-    await registrarAccion({ usuarioId: auditUserId, accion: 'enriquecer_alerta_ia', entidad: 'Alerta', entidadId: alertaId, detalle: { promptVersion: ALERT_PROMPT_VERSION, confidence: analysis.confidence } });
-  } catch (error) { logServerError('student_alert_ai_analysis_failed', error); }
+    await registrarAccion({ usuarioId: auditUserId, accion: 'enriquecer_alerta_local', entidad: 'Alerta', entidadId: alertaId, detalle: { analysisVersion: ALERT_ANALYSIS_VERSION, confidence: analysis.confidence } });
+  } catch (error) { logServerError('student_alert_local_analysis_failed', error); }
 }
 
-export async function evaluarAlertaEstudiante(estudianteId: number, usuario: SesionUsuario) {
+export async function evaluarAlertaEstudiante(estudianteId: number, usuario: SesionUsuario, forzarAnalisis = false) {
   const umbral = Number(await obtenerValorConfiguracion('alertas.umbralReportes', '3'));
   const periodoDias = Number(await obtenerValorConfiguracion('alertas.periodoDias', '30'));
   const inicio = periodStart(periodoDias);
@@ -182,7 +131,7 @@ export async function evaluarAlertaEstudiante(estudianteId: number, usuario: Ses
   } catch (error) { await transaction.rollback(); throw error; }
 
   if (!actual) await registrarAccion({ usuarioId: usuario.id, accion: 'crear_alerta_regla', entidad: 'Alerta', entidadId: alertaId, detalle: { estudianteId, ruleId: ALERT_RULE_ID, total, umbral, periodoDias } });
-  if (requiereNuevoAnalisis(actual?.huellaAnalisis, actual?.analisisIaJson, fingerprint)) await enriquecerAlerta(alertaId, estudianteId, total, periodoDias, evidence, fingerprint, usuario.id);
+  if (forzarAnalisis || requiereNuevoAnalisis(actual?.huellaAnalisis, actual?.analisisIaJson, fingerprint)) await enriquecerAlertaLocal(alertaId, total, periodoDias, evidence, fingerprint, usuario.id);
   return { data: { id: alertaId, cantidadReportes: total, estado: actual?.estado || 'new' } };
 }
 
@@ -237,10 +186,7 @@ export async function actuarSobreAlerta(id: number, action: AlertAction, note: s
   if (!esRolCoordinador(usuario.rol)) return { error: 'Solo coordinación puede modificar alertas', status: 403 } as const;
   if (action === 'regenerate') {
     const alert = alertRecord;
-    const evidence = parseJson(alert.evidenciaJson, []) as unknown[];
-    const periodoDias = Number(await obtenerValorConfiguracion('alertas.periodoDias', '30'));
-    const fingerprint = `${crearHuellaAnalisis({ ruleId: alert.ruleId, evidence, regeneratedAt: Date.now() })}:manual`;
-    await enriquecerAlerta(id, Number(alert.estudianteId), Number(alert.cantidadReportes), periodoDias, evidence, fingerprint, usuario.id);
+    await evaluarAlertaEstudiante(Number(alert.estudianteId), usuario, true);
     await registrarAccion({ usuarioId: usuario.id, accion: 'regenerar_analisis_alerta', entidad: 'Alerta', entidadId: id, detalle: { ruleId: alert.ruleId } });
     return obtenerDetalleAlerta(id, usuario);
   }

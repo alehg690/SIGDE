@@ -15,15 +15,16 @@ async function sourceFiles(directory) {
   return nested.flat().filter((path) => /\.(ts|tsx|js|jsx)$/.test(path));
 }
 
-test('la clave de OpenAI y la llamada al proveedor permanecen fuera del navegador', async () => {
+test('el análisis funciona localmente y no transmite reportes a proveedores externos', async () => {
   const frontendRoot = new URL('../../../frontend/src/', import.meta.url).pathname;
   const files = await sourceFiles(frontendRoot);
   const sources = await Promise.all(files.map((file) => readFile(file, 'utf8')));
   assert.equal(sources.some((source) => source.includes('OPENAI_API_KEY')), false);
   assert.equal(sources.some((source) => source.includes('api.openai.com')), false);
   const service = await read('backend/src/services/alertas.service.ts');
-  assert.match(service, /studentRef: `student:\$\{estudianteId\}`/);
-  assert.doesNotMatch(service, /studentName|estudianteNombre/);
+  assert.doesNotMatch(service, /OPENAI_API_KEY|api\.openai\.com|fetch\('https:\/\//);
+  assert.match(service, /generarAnalisisLocal/);
+  assert.match(service, /origen = 'rule\+local'/);
 });
 
 test('el ciclo de reportes reevalúa solo al estudiante afectado al crear, corregir, cambiar o anular', async () => {
@@ -42,7 +43,7 @@ test('el panel existente conserva En vivo, Ver todo, detalle y acciones humanas'
   assert.match(dashboard, /Ver todo/);
   assert.match(dashboard, /15_000/);
   for (const label of ['Marcar como revisada', 'Confirmar', 'Corregir', 'Descartar', 'Cerrar alerta']) assert.match(followUp, new RegExp(label));
-  assert.match(followUp, /Análisis orientativo generado automáticamente\. Requiere revisión humana\./);
+  assert.match(followUp, /Análisis local, orientativo y sin servicios externos\. Requiere revisión humana\./);
 });
 
 test('la migración elimina solo demos identificados y aplica unicidad activa', async () => {

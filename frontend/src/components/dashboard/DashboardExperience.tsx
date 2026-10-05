@@ -117,7 +117,7 @@ type DashboardStats = {
       titulo: string;
       resumenCorto: string;
       nivelAtencion: 'informational' | 'low' | 'medium' | 'high';
-      origen: 'rule' | 'rule+ai';
+      origen: 'rule' | 'rule+ai' | 'rule+local';
       periodoInicio: string | null;
       periodoFin: string | null;
       estudianteId: number;
@@ -615,7 +615,7 @@ function IntelligentAlertsCard({ alerts, onViewAll, onOpenAlert }: { alerts: Das
         const priority = alert.nivelAtencion === 'high' ? 'high' : alert.estado === 'monitoring' ? 'tracking' : 'active';
         return <button type="button" className="intelligent-alert-row" onClick={() => onOpenAlert(alert.id)} key={alert.id}>
           <span className={`intelligent-alert-icon intelligent-alert-icon--${priority}`}><SidebarIcon name="sparkles" /></span>
-          <span className="intelligent-alert-copy"><strong>{alert.titulo}</strong><small>{alert.estudiante} · {alert.resumenCorto}</small><em>{alert.nivelAtencion === 'high' ? 'Revisión humana prioritaria' : alert.nivelAtencion === 'medium' ? 'Seguimiento recomendado' : 'Observación'} · {alert.origen === 'rule+ai' ? 'Regla + IA' : 'Regla'}</em></span>
+          <span className="intelligent-alert-copy"><strong>{alert.titulo}</strong><small>{alert.estudiante} · {alert.resumenCorto}</small><em>{alert.nivelAtencion === 'high' ? 'Revisión humana prioritaria' : alert.nivelAtencion === 'medium' ? 'Seguimiento recomendado' : 'Observación'} · {alert.origen === 'rule+local' ? 'Análisis local' : alert.origen === 'rule+ai' ? 'IA externa' : 'Regla'}</em></span>
           <span className="intelligent-alert-meta"><time dateTime={alert.actualizadoEn}>{formatearActividadReciente(alert.actualizadoEn)}</time>{alert.estado === 'new' && <i title="Nueva o no revisada" />}</span>
         </button>;
       }) : <p className="recent-activity-empty">No hay alertas activas en este momento.</p>}

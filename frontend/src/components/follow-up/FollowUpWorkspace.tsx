@@ -26,6 +26,12 @@ async function leerError(response: Response, fallback: string) {
 const STATUS_LABELS: Record<AlertStatus, string> = { new: 'Nueva', reviewed: 'Revisada', monitoring: 'En seguimiento', resolved: 'Resuelta', dismissed: 'Descartada' };
 const LEVEL_LABELS: Record<AttentionLevel, string> = { informational: 'Informativa', low: 'Observación', medium: 'Seguimiento recomendado', high: 'Revisión humana prioritaria' };
 
+function origenLabel(origen: string, detail = false) {
+  if (origen === 'rule+local') return detail ? 'Regla + análisis local de SIGDE' : 'Regla + análisis local';
+  if (origen === 'rule+ai') return detail ? 'Regla enriquecida por IA externa' : 'Regla + IA externa';
+  return detail ? 'Generada por regla' : 'Regla';
+}
+
 function fechaLegible(value: string | null) {
   if (!value) return 'Sin fecha';
   const date = new Date(value);
@@ -138,21 +144,21 @@ export default function FollowUpWorkspace({ canManage, initialAlertId }: { canMa
         {!cargando && alertas.length === 0 && <div className="module-empty-state"><strong>Sin alertas</strong><p>No hay resultados para los filtros seleccionados.</p></div>}
         {alertas.map((alerta) => <button type="button" key={alerta.id} className={seleccionadaId === alerta.id ? 'follow-up-row follow-up-row--active' : 'follow-up-row'} onClick={() => setSeleccionadaId(alerta.id)}>
           <span className={`follow-up-priority follow-up-priority--${alerta.nivelAtencion}`}>{alerta.estado === 'new' ? '●' : alerta.cantidadReportes}</span>
-          <span><strong>{alerta.titulo}</strong><small>{alerta.estudiante} · {alerta.resumenCorto}</small><em>{alerta.origen === 'rule+ai' ? 'Regla + IA' : 'Regla'} · {LEVEL_LABELS[alerta.nivelAtencion]}</em></span>
+          <span><strong>{alerta.titulo}</strong><small>{alerta.estudiante} · {alerta.resumenCorto}</small><em>{origenLabel(alerta.origen)} · {LEVEL_LABELS[alerta.nivelAtencion]}</em></span>
           <span className={`module-status module-status--${alerta.estado}`}>{STATUS_LABELS[alerta.estado]}</span><time dateTime={alerta.actualizadoEn}>{fechaLegible(alerta.actualizadoEn)}</time>
         </button>)}
       </div></div>
       <aside className="module-detail-panel alert-detail-panel">{detalle ? <>
-        <div className="module-detail-heading"><div><span>{detalle.ruleId}</span><h3>{detalle.estudiante}</h3><p>Curso {detalle.grado}-{detalle.grupo} · {detalle.origen === 'rule+ai' ? 'Regla enriquecida por IA' : 'Generada por regla'}</p></div><strong>{detalle.cantidadReportes}<small>registros</small></strong></div>
+        <div className="module-detail-heading"><div><span>{detalle.ruleId}</span><h3>{detalle.estudiante}</h3><p>Curso {detalle.grado}-{detalle.grupo} · {origenLabel(detalle.origen, true)}</p></div><strong>{detalle.cantidadReportes}<small>registros</small></strong></div>
         <dl className="module-detail-metadata"><div><dt>Estado</dt><dd>{STATUS_LABELS[detalle.estado]}</dd></div><div><dt>Nivel</dt><dd>{LEVEL_LABELS[detalle.nivelAtencion]}</dd></div><div><dt>Periodo</dt><dd>{fechaLegible(detalle.periodoInicio)} — {fechaLegible(detalle.periodoFin)}</dd></div><div><dt>Confianza</dt><dd>{detalle.confianza == null ? 'No disponible' : `${Math.round(detalle.confianza * 100)}%`}</dd></div></dl>
         <section className="alert-detail-section"><h4>Regla activada</h4><p>{detalle.resumenCorto}</p></section>
         <section className="alert-detail-section"><h4>Evidencias relacionadas</h4>{detalle.evidencia.length ? <ul>{detalle.evidencia.map((item) => <li key={item.id}><strong>Reporte #{item.reporteId}</strong> · {item.tipoFalta || item.tipoEvidencia} · {fechaLegible(item.fecha)}{item.situacion ? ` · ${item.situacion}` : ''}</li>)}</ul> : <p>Sin evidencias disponibles.</p>}</section>
-        <section className="alert-detail-section"><h4>Resumen generado por IA</h4><p>{detalle.analisisIa?.summary || 'La alerta se mantiene basada en reglas. El análisis de IA aún no está disponible.'}</p></section>
+        <section className="alert-detail-section"><h4>Análisis inteligente de SIGDE</h4><p>{detalle.analisisIa?.summary || 'La alerta se mantiene basada en reglas. El análisis local aún no está disponible.'}</p></section>
         <AnalysisList title="Posibles explicaciones (hipótesis)" items={detalle.analisisIa?.hypotheses} />
         <AnalysisList title="Acciones sugeridas" items={detalle.analisisIa?.suggestedActions} />
         <AnalysisList title="Señales positivas" items={detalle.analisisIa?.positiveSignals} />
         <AnalysisList title="Información faltante" items={detalle.analisisIa?.missingInformation} />
-        <p className="alert-ai-notice">Análisis orientativo generado automáticamente. Requiere revisión humana.</p>
+        <p className="alert-ai-notice">Análisis local, orientativo y sin servicios externos. Requiere revisión humana.</p>
         <section className="alert-detail-section"><h4>Historial de cambios</h4>{detalle.historial.length ? <ol className="alert-history">{detalle.historial.map((item) => <li key={item.id}><strong>{item.estadoAnterior ? `${item.estadoAnterior} → ` : ''}{item.estadoNuevo}</strong><span>{item.motivo || 'Sin nota'} · {item.usuario || item.proceso || 'Proceso del sistema'} · {fechaLegible(item.creadoEn)}</span></li>)}</ol> : <p>Sin cambios registrados.</p>}</section>
         {canManage ? <div className="follow-up-editor"><label><span>Motivo o corrección</span><textarea value={nota} maxLength={1500} onChange={(event) => setNota(event.target.value)} placeholder="Obligatorio para corregir, descartar o cerrar." /><small>{nota.length}/1500</small></label><div className="alert-action-grid"><button disabled={guardando} onClick={() => void actuar('review')}>Marcar como revisada</button><button disabled={guardando} onClick={() => void actuar('confirm')}>Confirmar</button><button disabled={guardando} onClick={() => void actuar('correct')}>Corregir</button><button disabled={guardando} onClick={() => void actuar('dismiss')}>Descartar</button><button disabled={guardando} onClick={() => void actuar('close')}>Cerrar alerta</button><button disabled={guardando} onClick={() => void actuar('regenerate')}>Regenerar análisis</button></div></div> : <div className="module-readonly-note"><strong>Consulta docente</strong><p>El análisis y la evidencia son de consulta. Coordinación registra los cambios de estado.</p></div>}
       </> : <div className="module-empty-state"><strong>Selecciona una alerta</strong><p>Aquí podrás consultar evidencia, análisis e historial.</p></div>}</aside>
