@@ -35,6 +35,15 @@ test('el ciclo de reportes reevalúa solo al estudiante afectado al crear, corre
   assert.match(route, /cambiarEstadoReporte\(reporteId, 'Anulado'/);
 });
 
+test('las alertas históricas reciben análisis local al abrir seguimiento', async () => {
+  const service = await read('backend/src/services/alertas.service.ts');
+  assert.match(service, /await sincronizarAnalisisPendientes\(usuario\)/);
+  assert.match(service, /a\.analisisIaJson IS NULL OR a\.versionPrompt IS NULL/);
+  assert.match(service, /obtenerEvidenciasDeAlerta/);
+  assert.match(service, /LIMIT 50/);
+  assert.match(service, /action === 'regenerate'[\s\S]*analizarAlertaExistente/);
+});
+
 test('el panel existente conserva En vivo, Ver todo, detalle y acciones humanas', async () => {
   const dashboard = await read('frontend/src/components/dashboard/DashboardExperience.tsx');
   const followUp = await read('frontend/src/components/follow-up/FollowUpWorkspace.tsx');

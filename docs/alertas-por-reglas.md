@@ -6,6 +6,8 @@ Después de guardar la alerta, SIGDE ejecuta su propio analizador local. No util
 
 El análisis se actualiza automáticamente cada vez que cambia la evidencia del estudiante. Los resultados son orientativos: nunca diagnostican, sancionan ni reemplazan la revisión humana o las rutas establecidas en el Manual de Convivencia.
 
+Al abrir el módulo de Seguimiento, SIGDE también detecta alertas históricas o migradas que todavía no tienen análisis. Las completa en el servidor con los reportes vinculados o, cuando se trata de alertas antiguas sin vínculos de evidencia, con la cantidad correspondiente de reportes históricos más recientes del estudiante. Esta sincronización ocurre una sola vez por alerta y no modifica su estado de revisión.
+
 ## Despliegue
 
 1. Aplique `database/prisma/migrations/20261003000000_alertas_por_reglas/migration.sql`, o `database/libsql-migrations/0002_alertas_por_reglas.sql` en el flujo libSQL.

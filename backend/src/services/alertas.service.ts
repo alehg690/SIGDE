@@ -22,6 +22,8 @@ type AlertStatus = (typeof ALL_STATUSES)[number];
 type AlertAction = 'review' | 'confirm' | 'correct' | 'dismiss' | 'close' | 'regenerate';
 type EvidenceRow = Record<string, unknown>;
 type AlertFilters = { historial?: boolean; busqueda?: string; estado?: string; nivel?: string; regla?: string; curso?: string; desde?: string; hasta?: string };
+const EVIDENCE_COLUMNS = `r.id, r.tipoFalta, COALESCE(r.fechaHecho, r.fecha, r.creadoEn) AS fecha,
+  r.situacion, r.descripcion, r.lugar, r.actuacionInicial, r.estado, r.confidencial`;
 
 function scopeClause(usuario: SesionUsuario, studentAlias = 'e') {
   if (esRolCoordinador(usuario.rol)) return { sql: '1 = 1', args: [] as Array<string | number> };
@@ -51,14 +53,38 @@ function safeDate(value: string | undefined, endOfDay = false) {
 
 async function obtenerEvidencias(estudianteId: number, periodoInicio: string) {
   const result = await db.execute({
-    sql: `SELECT id, tipoFalta, COALESCE(fechaHecho, fecha, creadoEn) AS fecha, situacion, descripcion,
-      lugar, actuacionInicial, estado, confidencial
-      FROM Reporte WHERE estudianteId = ? AND estado <> 'Anulado' AND tipoFalta <> 'ACADEMICA'
-      AND datetime(COALESCE(fechaHecho, fecha, creadoEn)) >= datetime(?)
-      ORDER BY datetime(COALESCE(fechaHecho, fecha, creadoEn)) ASC, id ASC`,
+    sql: `SELECT ${EVIDENCE_COLUMNS} FROM Reporte r
+      WHERE r.estudianteId = ? AND r.estado <> 'Anulado' AND r.tipoFalta <> 'ACADEMICA'
+      AND datetime(COALESCE(r.fechaHecho, r.fecha, r.creadoEn)) >= datetime(?)
+      ORDER BY datetime(COALESCE(r.fechaHecho, r.fecha, r.creadoEn)) ASC, r.id ASC`,
     args: [estudianteId, periodoInicio],
   });
   return result.rows as EvidenceRow[];
+}
+
+async function obtenerEvidenciasDeAlerta(alert: Record<string, unknown>) {
+  const alertId = Number(alert.id);
+  const linked = await db.execute({
+    sql: `SELECT ${EVIDENCE_COLUMNS} FROM AlertaEvidencia ae
+      INNER JOIN Reporte r ON r.id = ae.reporteId
+      WHERE ae.alertaId = ? AND r.estado <> 'Anulado' AND r.tipoFalta <> 'ACADEMICA'
+      ORDER BY datetime(COALESCE(r.fechaHecho, r.fecha, r.creadoEn)) ASC, r.id ASC`,
+    args: [alertId],
+  });
+  if (linked.rows.length) return linked.rows as EvidenceRow[];
+
+  const conditions = [`r.estudianteId = ?`, `r.estado <> 'Anulado'`, `r.tipoFalta <> 'ACADEMICA'`];
+  const args: Array<string | number> = [Number(alert.estudianteId)];
+  if (alert.periodoInicio) { conditions.push('datetime(COALESCE(r.fechaHecho, r.fecha, r.creadoEn)) >= datetime(?)'); args.push(String(alert.periodoInicio)); }
+  if (alert.periodoFin) { conditions.push('datetime(COALESCE(r.fechaHecho, r.fecha, r.creadoEn)) <= datetime(?)'); args.push(String(alert.periodoFin)); }
+  args.push(Math.max(Number(alert.cantidadReportes) || 0, 1));
+  const historical = await db.execute({
+    sql: `SELECT * FROM (SELECT ${EVIDENCE_COLUMNS} FROM Reporte r WHERE ${conditions.join(' AND ')}
+      ORDER BY datetime(COALESCE(r.fechaHecho, r.fecha, r.creadoEn)) DESC, r.id DESC LIMIT ?)
+      ORDER BY datetime(fecha) ASC, id ASC`,
+    args,
+  });
+  return historical.rows as EvidenceRow[];
 }
 
 function snapshotEvidence(rows: EvidenceRow[]) {
@@ -82,6 +108,46 @@ async function enriquecerAlertaLocal(alertaId: number, total: number, periodoDia
     });
     await registrarAccion({ usuarioId: auditUserId, accion: 'enriquecer_alerta_local', entidad: 'Alerta', entidadId: alertaId, detalle: { analysisVersion: ALERT_ANALYSIS_VERSION, confidence: analysis.confidence } });
   } catch (error) { logServerError('student_alert_local_analysis_failed', error); }
+}
+
+async function analizarAlertaExistente(alert: Record<string, unknown>, usuario: SesionUsuario) {
+  const rows = await obtenerEvidenciasDeAlerta(alert);
+  if (!rows.length) return false;
+  const evidence = snapshotEvidence(rows);
+  const total = evidence.length;
+  const periodoDias = Number(await obtenerValorConfiguracion('alertas.periodoDias', '30'));
+  const fingerprint = crearHuellaAnalisis({ ruleId: alert.ruleId, version: ALERT_RULES_VERSION, total, evidence });
+  const alertaId = Number(alert.id);
+  const transaction = await db.transaction('write');
+  try {
+    await transaction.execute({
+      sql: `UPDATE Alerta SET cantidadReportes = ?, evidenciaJson = ?, versionReglas = ? WHERE id = ?`,
+      args: [total, JSON.stringify(evidence), ALERT_RULES_VERSION, alertaId],
+    });
+    await transaction.execute({ sql: 'DELETE FROM AlertaEvidencia WHERE alertaId = ?', args: [alertaId] });
+    for (const row of evidence) await transaction.execute({
+      sql: `INSERT INTO AlertaEvidencia (alertaId, reporteId, tipoEvidencia, instantaneaJson)
+        VALUES (?, ?, 'reporte', ?)`,
+      args: [alertaId, Number(row.reportId), JSON.stringify(row)],
+    });
+    await transaction.commit();
+  } catch (error) { await transaction.rollback(); throw error; }
+  await enriquecerAlertaLocal(alertaId, total, periodoDias, evidence, fingerprint, usuario.id);
+  return true;
+}
+
+async function sincronizarAnalisisPendientes(usuario: SesionUsuario) {
+  const scope = scopeClause(usuario);
+  const pending = await db.execute({
+    sql: `SELECT a.* FROM Alerta a INNER JOIN Estudiante e ON e.id = a.estudianteId
+      WHERE ${scope.sql} AND (a.analisisIaJson IS NULL OR a.versionPrompt IS NULL)
+      ORDER BY datetime(a.actualizadoEn) DESC LIMIT 50`,
+    args: scope.args,
+  });
+  for (const alert of pending.rows) {
+    try { await analizarAlertaExistente(alert as Record<string, unknown>, usuario); }
+    catch (error) { logServerError(`student_alert_pending_analysis_failed:${Number(alert.id)}`, error); }
+  }
 }
 
 export async function evaluarAlertaEstudiante(estudianteId: number, usuario: SesionUsuario, forzarAnalisis = false) {
@@ -136,6 +202,7 @@ export async function evaluarAlertaEstudiante(estudianteId: number, usuario: Ses
 }
 
 export async function listarAlertas(usuario: SesionUsuario, filters: AlertFilters = {}) {
+  await sincronizarAnalisisPendientes(usuario);
   const scope = scopeClause(usuario);
   const conditions = [scope.sql];
   const args: Array<string | number> = [...scope.args];
@@ -186,7 +253,7 @@ export async function actuarSobreAlerta(id: number, action: AlertAction, note: s
   if (!esRolCoordinador(usuario.rol)) return { error: 'Solo coordinación puede modificar alertas', status: 403 } as const;
   if (action === 'regenerate') {
     const alert = alertRecord;
-    await evaluarAlertaEstudiante(Number(alert.estudianteId), usuario, true);
+    await analizarAlertaExistente(alert, usuario);
     await registrarAccion({ usuarioId: usuario.id, accion: 'regenerar_analisis_alerta', entidad: 'Alerta', entidadId: id, detalle: { ruleId: alert.ruleId } });
     return obtenerDetalleAlerta(id, usuario);
   }
