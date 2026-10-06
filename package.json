@@ -24,7 +24,7 @@
     "test": "npm run test:alerts && npm run test:security && npm run test:domain",
     "test:alerts": "node --test --experimental-strip-types backend/src/services/alertas.rules.test.mjs backend/src/services/alertas.contract.test.mjs database/alertas.integration.test.mjs",
     "test:security": "node scripts/test-api-roles.cjs && node scripts/test-initial-password.cjs && node scripts/test-users-password.cjs && node scripts/db/test-user-deletion.mjs",
-    "test:domain": "node scripts/test-avance.cjs && node scripts/test-report-dates.mjs && node scripts/db/test-observador.mjs",
+    "test:domain": "node --test database/libsql-migrations.integration.test.mjs && node scripts/test-avance.cjs && node scripts/test-report-dates.mjs && node scripts/db/test-observador.mjs",
     "seed:dashboard": "node --env-file=.env scripts/db/seed-dashboard-demo.mjs",
     "seed:dashboard:clean": "node --env-file=.env scripts/db/seed-dashboard-demo.mjs --clean",
     "import:11-2": "node --env-file=.env scripts/db/import-11-2.mjs",
