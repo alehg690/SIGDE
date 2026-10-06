@@ -1,5 +1,16 @@
 import Link from 'next/link';
 
+function valorLegal(nombre: string, fallback: string) {
+  const valor = process.env[nombre]?.trim();
+  return valor && valor.length <= 200 ? valor : fallback;
+}
+
+const CORREO_INSTITUCIONAL = valorLegal('LEGAL_CONTACT_EMAIL', 'canal institucional de atención definido por la institución');
+const CORREO_DATOS = valorLegal('LEGAL_DATA_EMAIL', 'canal institucional de protección de datos');
+const CORREO_SEGURIDAD = valorLegal('LEGAL_SECURITY_EMAIL', 'canal institucional de soporte y seguridad');
+const TELEFONO_INSTITUCIONAL = valorLegal('LEGAL_CONTACT_PHONE', 'línea institucional vigente');
+const FECHA_VIGENCIA = valorLegal('LEGAL_EFFECTIVE_DATE', 'la fecha de aprobación institucional registrada en el acta correspondiente');
+
 export function LegalPage({ title, kind }: { title: string; kind: 'terminos' | 'datos' }) {
   return (
     <main className="legal-page">
@@ -20,8 +31,8 @@ function TerminosContent() {
       <p className="legal-lead">Lee este documento antes de usar SIGDE. Regula las condiciones de acceso a la plataforma, los deberes de cada usuario y el alcance de los servicios digitales de gestión de convivencia escolar.</p>
 
       <h2>1. Identificación del responsable</h2>
-      <p>SIGDE (Sistema de Gestión Digital Escolar) es operado por <strong>Institución Educativa Técnica Industrial Rafael Navia Varón</strong>, identificada con NIT <strong>805.027.641-9</strong>, con domicilio en <strong>Calle 11 #45-46, Cali, Colombia</strong>. Para soporte, solicitudes o reclamos: <strong>[CORREO INSTITUCIONAL EN DESARROLLO]</strong> y <strong>[TELÉFONO POR DEFINIR]</strong>.</p>
-      <p>Si SIGDE es usado como producto ofrecido por una empresa distinta de la institución educativa, la institución y la empresa deberán definir por escrito quién actúa como Responsable y quién como Encargado del Tratamiento. La versión publicada no debe conservar estos corchetes.</p>
+      <p>SIGDE (Sistema de Gestión Digital Escolar) es operado por <strong>Institución Educativa Técnica Industrial Rafael Navia Varón</strong>, identificada con NIT <strong>805.027.641-9</strong>, con domicilio en <strong>Calle 11 #45-46, Cali, Colombia</strong>. Para soporte, solicitudes o reclamos: <strong>{CORREO_INSTITUCIONAL}</strong> y <strong>{TELEFONO_INSTITUCIONAL}</strong>.</p>
+      <p>Si SIGDE es usado como producto ofrecido por una empresa distinta de la institución educativa, la institución y la empresa deberán definir por escrito quién actúa como Responsable y quién como Encargado del Tratamiento.</p>
 
       <h2>2. Objeto y alcance</h2>
       <p>SIGDE es una herramienta de apoyo para administrar usuarios, estudiantes, acudientes, reportes de convivencia, alertas configurables, observaciones, evidencias, salidas, notificaciones, auditoría e informes institucionales. No constituye una autoridad disciplinaria independiente, no reemplaza el manual de convivencia, el debido proceso, las decisiones de los órganos escolares ni las obligaciones legales de la institución.</p>
@@ -32,18 +43,18 @@ function TerminosContent() {
       <p>Los usuarios menores de edad no deben crear cuentas por su cuenta si la institución exige cuenta institucional o autorización del representante legal. La institución debe definir el mecanismo verificable de autorización y conservar la evidencia correspondiente.</p>
 
       <h2>4. Roles, permisos y principio de mínimo acceso</h2>
-      <p>SIGDE tiene cuatro roles con acceso al sistema: Admin, Coordinador, Docente y Portería. Admin y Coordinador comparten los mismos permisos. Los permisos dependen del rol asignado por la institución y se aplican con el principio de mínimo acceso: cada persona consulta o modifica solo los datos necesarios para cumplir su función.</p>
+      <p>SIGDE tiene tres roles con acceso al sistema: Coordinador, Docente y Portería. Los permisos dependen del rol asignado por la institución y se aplican con el principio de mínimo acceso: cada persona consulta o modifica solo los datos necesarios para cumplir su función.</p>
       <ul>
-        <li><strong>Admin y Coordinador:</strong> son responsables de la administración institucional de SIGDE. Pueden gestionar usuarios, estudiantes, configuraciones, auditoría y los módulos de convivencia; además revisan reportes, alertas, observaciones, salidas e informes. Este privilegio no autoriza consultas por curiosidad ni cambios sin justificación institucional.</li>
+        <li><strong>Coordinador:</strong> es responsable de la administración institucional de SIGDE. Puede gestionar usuarios, estudiantes, configuraciones, auditoría y los módulos de convivencia; además revisa reportes, alertas, observaciones, salidas e informes. Este privilegio no autoriza consultas por curiosidad ni cambios sin justificación institucional.</li>
         <li><strong>Docente:</strong> puede crear reportes de convivencia, consultar reportes por estudiante, ver alertas y usar los módulos pedagógicos y de convivencia que le correspondan. Solo debe registrar hechos relevantes, verificables y pertinentes. La edición de un reporte corresponde al docente que lo creó, dentro de las reglas del sistema.</li>
         <li><strong>Portería:</strong> tiene acceso exclusivamente al módulo de salidas. Puede consultar las salidas necesarias para el control de su turno y crear nuevos registros de salida, pero no puede eliminar salidas ni acceder a reportes, alertas, estudiantes, usuarios, configuraciones o expedientes disciplinarios.</li>
         <li><strong>Acudiente:</strong> no tiene cuenta ni acceso al sistema. Hace parte de los registros institucionales como representante o contacto autorizado del estudiante y recibe las notificaciones relacionadas con su hijo o acudido por los canales registrados y autorizados.</li>
       </ul>
-      <p>Los nombres de los roles no amplían los permisos definidos aquí. El rol Admin tiene el mismo alcance funcional que Coordinador.</p>
+      <p>Los nombres de los roles no amplían los permisos definidos aquí ni sustituyen la autorización institucional correspondiente.</p>
 
       <h2>5. Cuenta, credenciales y autenticación</h2>
       <p>Las credenciales son personales, confidenciales e intransferibles. Está prohibido compartir contraseñas, usar la cuenta de otra persona, almacenar credenciales en equipos públicos, intentar adivinar contraseñas, automatizar accesos o evadir controles de sesión.</p>
-      <p>El usuario debe informar inmediatamente a <strong>[CORREO DE SEGURIDAD EN DESARROLLO]</strong> cualquier acceso sospechoso, pérdida del dispositivo, correo de recuperación no solicitado, modificación no reconocida o exposición de sus credenciales. La institución podrá bloquear, restablecer o suspender la cuenta para proteger la información.</p>
+      <p>El usuario debe informar inmediatamente al <strong>{CORREO_SEGURIDAD}</strong> cualquier acceso sospechoso, pérdida del dispositivo, correo de recuperación no solicitado, modificación no reconocida o exposición de sus credenciales. La institución podrá bloquear, restablecer o suspender la cuenta para proteger la información.</p>
 
       <h2>6. Uso permitido de los registros</h2>
       <p>Los reportes deben describir hechos relevantes, verificables y pertinentes, con lenguaje respetuoso, sin insultos, diagnósticos médicos no autorizados, opiniones discriminatorias ni acusaciones presentadas como hechos probados. Las evidencias deben ser legales, necesarias y estar relacionadas con el caso.</p>
@@ -71,7 +82,7 @@ function TerminosContent() {
       <p>Estos términos pueden actualizarse por cambios legales, técnicos o institucionales. Se publicará la fecha y versión vigente. Cuando el cambio sea sustancial, la institución deberá informar y, si corresponde, solicitar una nueva aceptación o autorización.</p>
 
       <h2>13. Ley aplicable y contacto</h2>
-      <p>Estos términos se interpretan conforme a la legislación colombiana. Las solicitudes relacionadas con la plataforma pueden dirigirse a <strong>[CORREO INSTITUCIONAL EN DESARROLLO]</strong>; las relacionadas con datos personales, a <strong>[CORREO DE DATOS EN DESARROLLO]</strong>. Las controversias se atenderán primero mediante los canales institucionales y sin perjuicio de los derechos que la ley reconoce ante las autoridades competentes.</p>
+      <p>Estos términos se interpretan conforme a la legislación colombiana. Las solicitudes relacionadas con la plataforma pueden dirigirse al <strong>{CORREO_INSTITUCIONAL}</strong>; las relacionadas con datos personales, al <strong>{CORREO_DATOS}</strong>. Las controversias se atenderán primero mediante los canales institucionales y sin perjuicio de los derechos que la ley reconoce ante las autoridades competentes.</p>
 
       <Link href="/politica-datos">Consultar Política de Tratamiento de Datos →</Link>
     </div>
@@ -84,7 +95,7 @@ function DatosContent() {
       <p>Esta política explica de forma detallada qué datos personales puede tratar SIGDE, para qué los usa, quién puede consultarlos, cuánto tiempo se conservan, qué derechos tienen los titulares y cómo ejercerlos. Se adopta con referencia al artículo 15 de la Constitución Política, la Ley 1581 de 2012, el Decreto 1074 de 2015 y las instrucciones de la Superintendencia de Industria y Comercio (SIC).</p>
 
       <h2>1. Responsable, encargado y datos de contacto</h2>
-      <p><strong>Responsable:</strong> Institución Educativa Técnica Industrial Rafael Navia Varón · <strong>NIT:</strong> 805.027.641-9 · <strong>Domicilio:</strong> Calle 11 #45-46, Cali, Colombia · <strong>Correo:</strong> [CORREO DE DATOS EN DESARROLLO] · <strong>Teléfono:</strong> [TELÉFONO POR DEFINIR].</p>
+      <p><strong>Responsable:</strong> Institución Educativa Técnica Industrial Rafael Navia Varón · <strong>NIT:</strong> 805.027.641-9 · <strong>Domicilio:</strong> Calle 11 #45-46, Cali, Colombia · <strong>Contacto de datos:</strong> {CORREO_DATOS} · <strong>Teléfono:</strong> {TELEFONO_INSTITUCIONAL}.</p>
       <p>La institución decide las finalidades y medios del tratamiento. Los proveedores que alojan, mantienen o transmiten la plataforma actúan como Encargados únicamente bajo instrucciones documentadas, confidencialidad y medidas de seguridad. La institución debe mantener la lista actualizada de esos proveedores.</p>
 
       <h2>2. Definiciones</h2>
@@ -106,7 +117,7 @@ function DatosContent() {
       <p><strong>Estudiantes:</strong> se tratan datos académicos, de identificación, contacto, convivencia y salidas para administrar la relación escolar, proteger su seguridad, hacer seguimiento pedagógico, notificar al acudiente autorizado y cumplir obligaciones institucionales.</p>
       <p><strong>Acudientes:</strong> se tratan identificación, parentesco o calidad de representante, contacto y trazabilidad para verificar autorizaciones, enviar notificaciones y facilitar el seguimiento del estudiante relacionado. No reciben credenciales ni tienen acceso a SIGDE.</p>
       <p><strong>Docentes:</strong> se tratan identificación, correo, rol, permisos y actividad de cuenta para autenticar, permitir la creación de reportes, la consulta de reportes por estudiante y la visualización de alertas, asignar responsabilidades y mantener auditoría.</p>
-      <p><strong>Administradores y coordinadores:</strong> comparten los permisos de mayor responsabilidad en SIGDE. Se tratan los datos necesarios para gestión de usuarios, revisión, configuración, informes, seguridad y auditoría. El privilegio técnico no permite consultar o divulgar información sin finalidad institucional.</p>
+      <p><strong>Coordinación:</strong> concentra los permisos de mayor responsabilidad en SIGDE. Se tratan los datos necesarios para gestión de usuarios, revisión, configuración, informes, seguridad y auditoría. El privilegio técnico no permite consultar o divulgar información sin finalidad institucional.</p>
       <p><strong>Personal de Portería:</strong> se tratan los datos mínimos de identificación, autorizaciones y salida para crear y consultar registros de salida durante su turno. No puede eliminar salidas ni acceder a reportes disciplinarios, alertas, usuarios u otros módulos.</p>
 
       <h2>5. Finalidades específicas</h2>
@@ -146,11 +157,11 @@ function DatosContent() {
       <p>El titular puede conocer, actualizar y rectificar sus datos; solicitar prueba de la autorización; ser informado del uso; presentar quejas ante la SIC; revocar la autorización cuando proceda; y solicitar supresión cuando no exista deber legal o contractual de conservarlos. También puede solicitar información sobre las finalidades, categorías, encargados y canales.</p>
 
       <h2>12. Consultas y reclamos</h2>
-      <p>La solicitud debe dirigirse a <strong>[CORREO DE DATOS EN DESARROLLO]</strong> con nombre, identificación, descripción clara, datos a consultar o corregir y medio de respuesta. La institución verificará identidad, registrará la fecha, responderá dentro de los términos legales y conservará evidencia de la gestión. Si es un reclamo incompleto, solicitará la información faltante; si no puede resolverlo, lo remitirá al competente e informará al solicitante.</p>
+      <p>La solicitud debe dirigirse al <strong>{CORREO_DATOS}</strong> con nombre, identificación, descripción clara, datos a consultar o corregir y medio de respuesta. La institución verificará identidad, registrará la fecha, responderá dentro de los términos legales y conservará evidencia de la gestión. Si es un reclamo incompleto, solicitará la información faltante; si no puede resolverlo, lo remitirá al competente e informará al solicitante.</p>
       <p>El titular puede acudir a la SIC una vez agotado el trámite ante el responsable, sin perjuicio de otros derechos constitucionales o legales.</p>
 
       <h2>13. Cambios y vigencia</h2>
-      <p>La política rige desde <strong>[FECHA DE VIGENCIA]</strong>. Toda modificación debe indicar versión, fecha, cambios relevantes y mecanismo de comunicación. Si cambia una finalidad o se requiere nueva autorización, la institución deberá informarlo y actuar conforme a la ley.</p>
+      <p>La política rige desde <strong>{FECHA_VIGENCIA}</strong>. Toda modificación debe indicar versión, fecha, cambios relevantes y mecanismo de comunicación. Si cambia una finalidad o se requiere nueva autorización, la institución deberá informarlo y actuar conforme a la ley.</p>
 
       <Link href="/terminos">Consultar Términos y Condiciones →</Link>
     </div>

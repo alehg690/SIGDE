@@ -6,6 +6,9 @@ const Module = require('node:module');
 const ts = require('typescript');
 process.env.TURSO_DATABASE_URL = 'file::memory:';
 process.env.JWT_SECRET = 'sigde-password-reset-isolated-test-secret';
+process.env.APP_ENV = 'development';
+process.env.NODE_ENV = 'development';
+process.env.EMAIL_ENABLED = 'false';
 delete process.env.TURSO_AUTH_TOKEN;
 const root = path.resolve(__dirname, '..');
 const resolve = Module._resolveFilename;
@@ -17,7 +20,7 @@ require.extensions['.ts'] = function (module, filename) {
 };
 async function main() {
   const { db } = require('../backend/src/config/database.ts');
-  const { hashPassword, verificarPassword } = require('../backend/src/services/auth.service.ts');
+  const { cambiarContrasena, hashPassword, verificarPassword } = require('../backend/src/services/auth.service.ts');
   const { actualizarUsuario } = require('../backend/src/services/usuarios.service.ts');
   const { crearToken } = require('../backend/src/utils/jwt.ts');
   const { autorizarRoles } = require('../backend/src/middleware/rol.middleware.ts');
@@ -25,6 +28,7 @@ async function main() {
     await db.executeMultiple(`
       CREATE TABLE Usuario (id INTEGER PRIMARY KEY, nombre TEXT, correo TEXT, contrasena TEXT, rol TEXT, activo INTEGER DEFAULT 1, creadoEn TEXT DEFAULT CURRENT_TIMESTAMP, ultimoAcceso TEXT, versionSesion INTEGER DEFAULT 1, requiereCambioContrasena INTEGER DEFAULT 0, tokenRecuperacion TEXT, tokenExpira TEXT, eliminadoEn TEXT);
       CREATE TABLE AuditLog (id INTEGER PRIMARY KEY, usuarioId INTEGER, accion TEXT, entidad TEXT, entidadId TEXT, detalle TEXT);
+      CREATE TABLE AuthRateLimit (clave TEXT PRIMARY KEY, tipo TEXT, intentos INTEGER DEFAULT 0, ventanaInicia TEXT, bloqueadoHasta TEXT, actualizadoEn TEXT);
     `);
     const oldHash = await hashPassword('AnteriorPrueba2026');
     for (const [id, rol] of [[1, 'Coordinador'], [2, 'Docente']]) {
@@ -59,6 +63,13 @@ async function main() {
     assert.equal(JSON.parse(audit).cambioContrasena,true);
     assert.equal(audit.includes('NuevaPrueba2026'),false);
     assert.equal(audit.includes(changed.contrasena),false);
+    const recoveryCode = '654321';
+    await db.execute({
+      sql: 'UPDATE Usuario SET tokenRecuperacion = ?, tokenExpira = ? WHERE id = 2',
+      args: [await hashPassword(recoveryCode), new Date(Date.now() + 60_000).toISOString()],
+    });
+    assert.ok((await cambiarContrasena(docente.correo, recoveryCode, 'RecuperadaPrueba2026', 'cliente-prueba')).data);
+    assert.equal((await cambiarContrasena(docente.correo, recoveryCode, 'OtraPrueba2026', 'cliente-prueba')).status, 400);
     await actualizarUsuario(1,{nombre:actor.nombre,correo:actor.correo,rol:actor.rol,contrasena:'PropiaPrueba2026'},actor);
     assert.equal((await autorizarRoles(actorToken)).response.status,401);
     console.log('OK: contraseña opcional, validación, hash, revocación de sesiones y recuperación, aislamiento del actor y auditoría sin secretos.');

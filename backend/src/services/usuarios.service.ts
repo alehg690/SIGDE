@@ -41,6 +41,8 @@ function validarDatosUsuario(input: UsuarioInput, requiereContrasena: boolean) {
   const rol = normalizarRol(input.rol);
 
   if (!nombre) return { error: 'El nombre es obligatorio', status: 400 };
+  if (nombre.length > 200) return { error: 'El nombre no puede superar 200 caracteres', status: 400 };
+  if (correo.length > 254) return { error: 'El correo es demasiado largo', status: 400 };
   if (!EMAIL_PATTERN.test(correo)) return { error: 'Ingresa un correo válido', status: 400 };
   if (!rol) return { error: 'Rol no válido', status: 400 };
 
@@ -171,18 +173,14 @@ export async function cambiarEstadoUsuario(id: number, activo: boolean, actor: S
   return { data: usuario };
 }
 
-export async function eliminarUsuario(id: number, actor: SesionUsuario, borrarAuditoria = false) {
+export async function eliminarUsuario(id: number, actor: SesionUsuario) {
   if (id === actor.id) return { error: 'No puedes eliminar la cuenta con la que estás trabajando', status: 400 };
   const tx = await db.transaction('write');
   try {
     const result = await tx.execute({ sql: 'SELECT nombre, correo, rol FROM Usuario WHERE id = ? AND eliminadoEn IS NULL', args: [id] });
     const usuario = result.rows[0];
     if (!usuario) return { error: 'Usuario no encontrado', status: 404 };
-    if (borrarAuditoria) {
-      await tx.execute({ sql: 'DELETE FROM AuditLog WHERE usuarioId = ?', args: [id] });
-    } else {
-      await tx.execute({ sql: 'UPDATE AuditLog SET usuarioNombre = ?, usuarioId = NULL WHERE usuarioId = ?', args: [usuario.nombre, id] });
-    }
+    await tx.execute({ sql: 'UPDATE AuditLog SET usuarioNombre = ?, usuarioId = NULL WHERE usuarioId = ?', args: [usuario.nombre, id] });
     await tx.execute({ sql: 'DELETE FROM NotificacionUsuario WHERE usuarioId = ?', args: [id] });
     await tx.execute({ sql: 'UPDATE GrupoEscolar SET directorId = NULL, actualizadoEn = CURRENT_TIMESTAMP WHERE directorId = ?', args: [id] });
     await tx.execute({
@@ -193,7 +191,7 @@ export async function eliminarUsuario(id: number, actor: SesionUsuario, borrarAu
     });
     await tx.execute({
       sql: 'INSERT INTO AuditLog (usuarioId, accion, entidad, entidadId, detalle) VALUES (?, ?, ?, ?, ?)',
-      args: [actor.id, 'eliminar_usuario', 'Usuario', String(id), JSON.stringify({ nombre: usuario.nombre, correo: usuario.correo, rol: usuario.rol, borrarAuditoria })],
+      args: [actor.id, 'eliminar_usuario', 'Usuario', String(id), JSON.stringify({ nombre: usuario.nombre, rol: usuario.rol, auditoriaPreservada: true })],
     });
     await tx.commit();
     return { data: { id } };

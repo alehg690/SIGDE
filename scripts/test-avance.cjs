@@ -5,6 +5,9 @@ const path = require('node:path');
 const Module = require('node:module');
 const ts = require('typescript');
 process.env.TURSO_DATABASE_URL = 'file::memory:';
+process.env.APP_ENV = 'development';
+process.env.NODE_ENV = 'development';
+process.env.EMAIL_ENABLED = 'false';
 delete process.env.TURSO_AUTH_TOKEN;
 const root = path.resolve(__dirname, '..');
 const resolve = Module._resolveFilename;
@@ -38,6 +41,9 @@ async function main() {
       INSERT INTO Alerta VALUES
         (1, 1, 'REPORT_RECURRENCE_30D', 'reincidencia_reportes', 'Reincidencia', '3 reportes', 3, 'new', 'medium', NULL, NULL, NULL, 'rule', '2026-01-01', '2026-01-01', NULL, NULL, '2026-01-01', '2026-01-01'),
         (2, 1, 'REPORT_RECURRENCE_30D', 'reincidencia_reportes', 'Reincidencia', '3 reportes', 3, 'resolved', 'medium', NULL, NULL, NULL, 'rule', '2026-01-02', '2026-01-02', NULL, '2026-01-02', '2026-01-02', '2026-01-02');
+      ALTER TABLE Alerta ADD COLUMN analisisIaJson TEXT;
+      ALTER TABLE Alerta ADD COLUMN versionPrompt TEXT;
+      UPDATE Alerta SET analisisIaJson = '{}', versionPrompt = 'local-v1';
     `);
     const usuario = { id: 1, nombre: 'Docente demo', correo: 'demo@example.test', rol: 'Docente', versionSesion: 1 };
     const { actualizarPerfil } = require('../backend/src/services/perfil.service.ts');

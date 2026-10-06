@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { useDialogFocus } from '@/hooks/useDialogFocus';
 
 type Evento = { id: number; titulo: string; iniciaEn: string; descripcion: string | null; ubicacion: string | null; tipo: string; color: string; todoElDia: number | boolean };
 type Vista = 'mes' | 'semana';
@@ -28,6 +29,7 @@ export default function CalendarWorkspace({ canManage }: { canManage: boolean })
   const [error, setError] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [form, setForm] = useState({ titulo: '', fecha: hoy(), hora: '', tipo: 'Reunión', color: 'azul', descripcion: '' });
+  useDialogFocus<HTMLElement>(modalAbierto, () => setModalAbierto(false), !guardando);
   const dias = useMemo(() => {
     const first = vista === 'semana' ? inicioSemana(ancla) : inicioSemana(`${ancla.slice(0, 7)}-01`);
     let last: string;

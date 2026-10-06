@@ -33,12 +33,25 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
 button {
   -webkit-tap-highlight-color: transparent;
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid #78c7ff !important;
+  outline-offset: 3px !important;
+}
+
+@media (forced-colors: active) {
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline-color: Highlight !important;
+  }
 }
 
 .login-shell {
@@ -5042,7 +5055,7 @@ button {
 .calendar-board, .calendar-side-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: rgba(12, 24, 42, .35); }
 .calendar-period { display: flex; justify-content: space-between; align-items: center; padding: 14px 22px; border-bottom: 1px solid var(--line); }
 .calendar-period h3 { margin: 0; color: var(--text); font-size: 1.08rem; }
-.calendar-period button { border: 0; background: transparent; color: var(--muted); font-size: 1.7rem; line-height: 1; cursor: pointer; }
+.calendar-period button { display: grid; width: 36px; height: 36px; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 1.7rem; line-height: 1; cursor: pointer; }
 .calendar-period button:hover { color: var(--text); }
 .calendar-weekdays, .calendar-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .calendar-weekdays { border-bottom: 1px solid var(--line); }
@@ -5091,7 +5104,7 @@ button {
 .calendar-modal form .calendar-color-choice.calendar-color--azul { color: #6d83ff; }.calendar-modal form .calendar-color-choice.calendar-color--verde { color: #16c69b; }.calendar-modal form .calendar-color-choice.calendar-color--amarillo { color: #efa411; }.calendar-modal form .calendar-color-choice.calendar-color--rojo { color: #fa565c; }.calendar-modal form .calendar-color-choice.calendar-color--morado { color: #9c65f8; }.calendar-modal form .calendar-color-choice.calendar-color--cian { color: #0dbbd5; }
 .calendar-modal footer { display: flex; justify-content: flex-end; gap: 10px; margin: 6px -24px -24px; padding: 15px 24px; border-top: 1px solid rgba(160, 174, 200, .16); }.calendar-modal footer button[type='button'] { border: 1px solid rgba(155, 171, 198, .2); border-radius: 8px; padding: 10px 16px; background: transparent; color: #a2acc0; cursor: pointer; }
 @media (max-width: 1100px) { .calendar-layout { grid-template-columns: minmax(0, 1fr); }.calendar-sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 650px) { .calendar-heading { align-items: stretch; flex-direction: column; }.calendar-heading-actions { justify-content: space-between; }.calendar-board { overflow-x: auto; }.calendar-weekdays, .calendar-days { min-width: 630px; }.calendar-sidebar { grid-template-columns: minmax(0, 1fr); }.calendar-modal-row { grid-template-columns: 1fr; } }
+@media (max-width: 650px) { .calendar-heading { align-items: stretch; flex-direction: column; }.calendar-heading-actions { justify-content: space-between; }.calendar-view-switch { flex: 0 0 auto; }.calendar-view-switch button, .calendar-new-button { white-space: nowrap; }.calendar-new-button { flex: 1 1 auto; }.calendar-board { overflow-x: auto; scrollbar-width: thin; }.calendar-weekdays, .calendar-days { min-width: 630px; }.calendar-sidebar { grid-template-columns: minmax(0, 1fr); }.calendar-modal-row { grid-template-columns: 1fr; } }
 
 /* Comunicaciones institucionales */
 .institutional-comms { color: #e9edf8; }

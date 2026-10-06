@@ -203,7 +203,7 @@ export async function obtenerEstadisticasDashboard(usuario: SesionUsuario) {
     contar("SELECT COUNT(*) AS total FROM Salida WHERE estado = 'pendiente'"),
     contarConArgs(`SELECT COUNT(*) AS total FROM Alerta a INNER JOIN Estudiante e ON e.id = a.estudianteId
       WHERE a.estado IN ('new', 'reviewed', 'monitoring') AND (
-        ? IN ('Coordinador', 'Admin')
+        ? = 'Coordinador'
         OR EXISTS (SELECT 1 FROM Reporte ar WHERE ar.estudianteId = e.id AND ar.docenteId = ?)
         OR EXISTS (SELECT 1 FROM GrupoEscolar ag WHERE ag.directorId = ? AND ag.grado = REPLACE(e.grado, '°', '') AND ag.grupo = e.grupo)
       )`, [usuario.rol, usuario.id, usuario.id]),
@@ -224,7 +224,7 @@ export async function obtenerEstadisticasDashboard(usuario: SesionUsuario) {
       FROM Reporte r
       INNER JOIN Estudiante e ON e.id = r.estudianteId
       INNER JOIN Usuario u ON u.id = r.docenteId
-      WHERE ? IN ('Coordinador', 'Admin') OR r.docenteId = ?
+      WHERE ? = 'Coordinador' OR r.docenteId = ?
       ORDER BY r.fecha DESC
       LIMIT 6
     `, [usuario.rol, usuario.id]),
@@ -252,7 +252,7 @@ export async function obtenerEstadisticasDashboard(usuario: SesionUsuario) {
       FROM Alerta a
       INNER JOIN Estudiante e ON e.id = a.estudianteId
       WHERE a.estado IN ('new', 'reviewed', 'monitoring') AND (
-        ? IN ('Coordinador', 'Admin')
+        ? = 'Coordinador'
         OR EXISTS (SELECT 1 FROM Reporte ar WHERE ar.estudianteId = e.id AND ar.docenteId = ?)
         OR EXISTS (SELECT 1 FROM GrupoEscolar ag WHERE ag.directorId = ? AND ag.grado = REPLACE(e.grado, '°', '') AND ag.grupo = e.grupo)
       )

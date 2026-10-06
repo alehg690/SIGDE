@@ -12,13 +12,27 @@ export type AcudienteInput = {
 function validar(input: AcudienteInput) {
   const nombre = input.nombre.trim();
   if (!nombre) return { error: 'El nombre del acudiente es obligatorio', status: 400 };
+  if (nombre.length > 200) return { error: 'El nombre del acudiente es demasiado largo', status: 400 };
+
+  const correo = input.correo?.trim().toLowerCase() || null;
+  const telefono = input.telefono?.trim() || null;
+  const documento = input.documento?.trim() || null;
+  if (correo && (correo.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo))) {
+    return { error: 'Ingresa un correo válido para el acudiente', status: 400 };
+  }
+  if (telefono && !/^[+0-9() -]{7,25}$/.test(telefono)) {
+    return { error: 'Ingresa un teléfono válido para el acudiente', status: 400 };
+  }
+  if (documento && !/^[A-Za-z0-9.-]{4,30}$/.test(documento)) {
+    return { error: 'El documento del acudiente no tiene un formato válido', status: 400 };
+  }
 
   return {
     data: {
       nombre,
-      correo: input.correo?.trim() || null,
-      telefono: input.telefono?.trim() || null,
-      documento: input.documento?.trim() || null,
+      correo,
+      telefono,
+      documento,
     },
   };
 }
@@ -43,20 +57,40 @@ export async function crearAcudiente(estudianteId: number, input: AcudienteInput
   if ('error' in validacion) return validacion;
 
   const data = validacion.data;
-  const result = await db.execute({
-    sql: `
-      INSERT INTO Acudiente (nombre, contacto, correo, telefono, documento)
-      VALUES (?, ?, ?, ?, ?)
-      RETURNING *
-    `,
-    args: [data.nombre, data.telefono || data.correo || 'Sin contacto', data.correo, data.telefono, data.documento],
-  });
+  if (!Number.isInteger(estudianteId) || estudianteId <= 0) {
+    return { error: 'Estudiante no válido', status: 400 };
+  }
 
-  const acudiente = result.rows[0];
-  await db.execute({
-    sql: 'UPDATE Estudiante SET acudienteId = ?, actualizadoEn = CURRENT_TIMESTAMP WHERE id = ?',
-    args: [Number(acudiente.id), estudianteId],
-  });
+  const transaction = await db.transaction('write');
+  let acudiente: Record<string, unknown>;
+  try {
+    const estudiante = await transaction.execute({
+      sql: 'SELECT id FROM Estudiante WHERE id = ? AND archivado = 0 LIMIT 1',
+      args: [estudianteId],
+    });
+    if (!estudiante.rows[0]) {
+      await transaction.rollback();
+      return { error: 'Estudiante no encontrado', status: 404 };
+    }
+
+    const result = await transaction.execute({
+      sql: `
+        INSERT INTO Acudiente (nombre, contacto, correo, telefono, documento)
+        VALUES (?, ?, ?, ?, ?)
+        RETURNING *
+      `,
+      args: [data.nombre, data.telefono || data.correo || 'Sin contacto', data.correo, data.telefono, data.documento],
+    });
+    acudiente = result.rows[0] as Record<string, unknown>;
+    await transaction.execute({
+      sql: 'UPDATE Estudiante SET acudienteId = ?, actualizadoEn = CURRENT_TIMESTAMP WHERE id = ?',
+      args: [Number(acudiente.id), estudianteId],
+    });
+    await transaction.commit();
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
 
   await registrarAccion({
     usuarioId: usuario.id,

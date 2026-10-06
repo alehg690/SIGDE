@@ -3,7 +3,7 @@ import { crearNotificacionManual, listarNotificaciones } from '@backend/services
 import { esErrorAuth, requerirSesion } from '@/app/api/_utils/session';
 
 export async function GET(req: NextRequest) {
-  const auth = await requerirSesion(['Coordinador', 'Docente']);
+  const auth = await requerirSesion(['Coordinador']);
   if (esErrorAuth(auth)) return auth.response;
 
   const rawAcudienteId = req.nextUrl.searchParams.get('acudienteId');
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requerirSesion(['Coordinador', 'Docente']);
+  const auth = await requerirSesion(['Coordinador']);
   if (esErrorAuth(auth)) return auth.response;
 
   const body = await req.json().catch(() => null);

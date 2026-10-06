@@ -12,6 +12,7 @@ import {
   limpiarLimite,
   registrarIntento,
 } from '@backend/services/auth-rate-limit.service';
+import { normalizarRol } from '@backend/types/roles';
 
 type UsuarioAuthRow = {
   id: number;
@@ -80,8 +81,9 @@ export async function login(correo: string, contrasena: string, clienteId: strin
     contrasena,
     usuario?.contrasena || await HASH_COMPARACION
   );
+  const rol = usuario ? normalizarRol(usuario.rol) : null;
 
-  if (!usuario || !passwordValida) {
+  if (!usuario || !passwordValida || !usuario.activo || !rol) {
     const [falloCuenta, falloCliente] = await Promise.all([
       registrarIntento(claveCuenta, 'login-cuenta', LIMITES_AUTH.loginCuenta),
       registrarIntento(claveCliente, 'login-cliente', LIMITES_AUTH.loginCliente),
@@ -90,10 +92,6 @@ export async function login(correo: string, contrasena: string, clienteId: strin
       return respuestaBloqueo(Math.max(falloCuenta.reintentarEnSegundos, falloCliente.reintentarEnSegundos));
     }
     return { error: 'Correo o contraseña incorrectos', status: 401 };
-  }
-
-  if (!usuario.activo) {
-    return { error: 'Usuario inactivo', status: 403 };
   }
 
   await db.execute({
@@ -107,7 +105,7 @@ export async function login(correo: string, contrasena: string, clienteId: strin
       id: usuario.id,
       nombre: usuario.nombre,
       correo: usuario.correo,
-      rol: usuario.rol,
+      rol,
       versionSesion: Number(usuario.versionSesion || 1),
       requiereCambioContrasena: Boolean(usuario.requiereCambioContrasena),
     },
@@ -158,6 +156,10 @@ export async function enviarCodigoRecuperacion(correo: string, clienteId: string
     });
   } catch (error) {
     await reportServerError('password_recovery_email_failed', error);
+    await db.execute({
+      sql: 'UPDATE Usuario SET tokenRecuperacion = NULL, tokenExpira = NULL WHERE id = ? AND tokenRecuperacion = ?',
+      args: [usuario.id, codigoHash],
+    });
     return { data: { mensaje: MENSAJE_RECUPERACION } };
   }
 
@@ -223,7 +225,7 @@ export async function cambiarContrasena(
 
   const hash = await hashPassword(nuevaContrasena);
 
-  await db.execute({
+  const cambio = await db.execute({
     sql: `
       UPDATE Usuario
       SET contrasena = ?,
@@ -232,9 +234,16 @@ export async function cambiarContrasena(
           requiereCambioContrasena = 0,
           versionSesion = versionSesion + 1
       WHERE id = ?
+        AND tokenRecuperacion = ?
+        AND tokenExpira = ?
+        AND datetime(tokenExpira) >= CURRENT_TIMESTAMP
     `,
-    args: [hash, usuario.id],
+    args: [hash, usuario.id, usuario.tokenRecuperacion, usuario.tokenExpira],
   });
+
+  if (!cambio.rowsAffected) {
+    return { error: 'El código ya fue utilizado o expiró', status: 409 };
+  }
 
   return { data: { mensaje: 'Contraseña actualizada correctamente' } };
 }

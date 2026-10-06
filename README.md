@@ -23,7 +23,7 @@ Los acudientes no reciben cuentas de acceso. El sistema conserva sus datos de co
 
 ## Ejecución local
 
-Requisitos: Node.js 22 y npm. El proyecto fija esta versión en `.nvmrc` y `package.json`.
+Requisitos: Node.js 22 y npm. El proyecto fija esta versión en el campo `engines` de `package.json`.
 
 ```bash
 npm install
@@ -39,7 +39,9 @@ Antes de aplicar las migraciones, crea un archivo `.env` en la raíz del proyect
 DATABASE_URL="file:./database/prisma/dev.db"
 TURSO_DATABASE_URL="file:./database/prisma/dev.db"
 TURSO_AUTH_TOKEN=""
-JWT_SECRET="una-clave-segura-de-al-menos-24-caracteres"
+APP_ENV="development"
+EMAIL_ENABLED="false"
+JWT_SECRET="una-clave-aleatoria-de-al-menos-32-caracteres"
 ```
 
 El envío de correo requiere `EMAIL_USER` y `EMAIL_PASS`. Si no están configurados, SIGDE registra la comunicación o salida sin afirmar que el correo fue entregado y muestra un aviso claro al usuario.
@@ -73,9 +75,9 @@ npm run build
 SIGDE es una aplicación web, no una APK. La entrega desplegada debe realizarse mediante un enlace web, por ejemplo en Vercel.
 
 1. Crea una base de datos Turso y configura `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`.
-2. Define `JWT_SECRET` en las variables de entorno del despliegue.
-3. Configura `EMAIL_USER` y `EMAIL_PASS` únicamente si se habilitará correo.
-4. Aplica las migraciones contra la base de producción. Para el endurecimiento de autenticación ejecuta `npm run migrate:security` con las variables de Turso configuradas.
+2. Define `APP_ENV=production`, `JWT_SECRET` (mínimo 32 caracteres) y `EMAIL_ENABLED` en las variables de entorno del despliegue.
+3. Configura `EMAIL_USER` y `EMAIL_PASS` únicamente si `EMAIL_ENABLED=true`.
+4. Aplica, después de crear un backup, las migraciones de `database/libsql-migrations` que aún no estén registradas en la base de producción. No ejecutes automáticamente migraciones destructivas durante el despliegue.
 5. Importa el repositorio en Vercel y ejecuta la compilación con `npm run build`.
 
 No publiques archivos `.env`, tokens, contraseñas de aplicación ni datos reales de estudiantes en el repositorio.

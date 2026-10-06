@@ -12,6 +12,7 @@ async function load(file,prefix=''){
  return import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
 }
 const helpers=await load('backend/src/services/observador.service.ts');
+const uploads=await load('backend/src/utils/uploads.ts');
 const {validarObservador,datosReporteObservador}=helpers;
 const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
 const acta={fecha:yesterday,horaInicio:'08:00',horaFinal:'09:00',sede:'Sede principal',jornada:'Mañana',grupo:'11-1',acudiente:'Acudiente de prueba',cedulaAcudiente:'12345678',motivo:'Revisión de compromisos',tipoSituacion:'1',situacionAcademica:'',ordenDia:'Escucha de las partes y acuerdos.',desarrollo:'Se escucharon las partes y se acordó realizar seguimiento.',documentoReferencia:'Manual de Convivencia',referenciaNormativa:'Artículo 20, literal a'};
@@ -20,10 +21,11 @@ for(const change of [{documentoReferencia:'Documento inválido'},{fecha:'2026-02
 assert.equal(validarObservador({...acta,documentoReferencia:'',referenciaNormativa:''}).data.referenciaNormativa,'');
 assert.equal(datosReporteObservador(acta).fechaHecho,`${yesterday}T13:00:00.000Z`);
 const db=createClient({url:pathToFileURL(join(mkdtempSync(join(tmpdir(),'sigde-observador-')),'test.db')).href});
-globalThis.observadorTest={db,...helpers};
-const {crearReporte,editarReporte,listarReportes,obtenerReporte,agregarObservacionReporte,agregarEvidenciaReporte,agregarArchivoEvidencia,obtenerArchivoEvidencia}=await load('backend/src/services/reportes.service.ts',`const {db,validarObservador,datosReporteObservador}=globalThis.observadorTest;const registrarAccion=async()=>{};const notificarAcudientePorReporte=async()=>{};const evaluarAlertaEstudiante=async()=>{};\n`);
+globalThis.observadorTest={db,...helpers,...uploads};
+const {crearReporte,editarReporte,listarReportes,obtenerReporte,agregarObservacionReporte,agregarEvidenciaReporte,agregarArchivoEvidencia,obtenerArchivoEvidencia}=await load('backend/src/services/reportes.service.ts',`const {db,validarObservador,datosReporteObservador,contenidoBinario,firmaArchivoValida,nombreArchivoSeguro}=globalThis.observadorTest;const registrarAccion=async()=>{};const notificarAcudientePorReporte=async()=>{};const evaluarAlertaEstudiante=async()=>{};const esRolCoordinador=(rol)=>rol==='Coordinador';\n`);
 await db.batch([
 'CREATE TABLE Usuario(id INTEGER PRIMARY KEY,nombre TEXT,rol TEXT)',
+'CREATE TABLE GrupoEscolar(id INTEGER PRIMARY KEY,grado TEXT,grupo TEXT,directorId INTEGER)',
 'CREATE TABLE Estudiante(id INTEGER PRIMARY KEY,nombre TEXT,grado TEXT,grupo TEXT,activo INTEGER,archivado INTEGER,jornada TEXT,acudienteId INTEGER)',
 `CREATE TABLE Reporte(id INTEGER PRIMARY KEY AUTOINCREMENT,estudianteId INTEGER,docenteId INTEGER,tipoFalta TEXT,fechaHecho TEXT,lugar TEXT,situacion TEXT,descripcion TEXT,actuacionInicial TEXT,confidencial INTEGER,evidenciaUrl TEXT,editableHasta TEXT,observaciones TEXT,fecha TEXT DEFAULT CURRENT_TIMESTAMP,estado TEXT DEFAULT 'Pendiente',creadoEn TEXT DEFAULT CURRENT_TIMESTAMP,actualizadoEn TEXT DEFAULT CURRENT_TIMESTAMP)`,
 'CREATE TABLE EvidenciaReporte(id INTEGER PRIMARY KEY,reporteId INTEGER,nombre TEXT,tipo TEXT,url TEXT,creadoEn TEXT)',
@@ -73,6 +75,7 @@ await db.batch([
 ], 'write');
 const other = { ...actor, id: 2, nombre: 'Otro docente' };
 const coordinator = { ...actor, id: 3, rol: 'Coordinador' };
+await db.execute("INSERT INTO GrupoEscolar VALUES(1,'11','1',1)");
 assert.equal((await obtenerArchivoEvidencia(created.data.id,attached.data.id,other)).status,404);
 assert.deepEqual((await obtenerArchivoEvidencia(created.data.id,attached.data.id,coordinator)).data.contenido,bytes);
 const publicReport = await crearReporte(payload, other);
@@ -81,12 +84,15 @@ const anotherStudent = await crearReporte({ ...payload, estudianteId: 2 }, other
 assert.equal(publicReport.status, 201);
 assert.equal(privateReport.status, 201);
 assert.equal(anotherStudent.status, 201);
-assert.ok((await listarReportes(actor)).data.every(report => report.docenteId === actor.id));
+const visiblesDirector = (await listarReportes(actor)).data;
+assert.ok(visiblesDirector.some(report => report.id === publicReport.data.id));
+assert.ok(!visiblesDirector.some(report => report.id === privateReport.data.id));
+assert.ok(!visiblesDirector.some(report => report.id === anotherStudent.data.id));
 const history = (await listarReportes(actor, 1)).data;
 assert.ok(history.some(report => report.id === publicReport.data.id && report.docente === 'Otro docente'));
 assert.ok(!history.some(report => report.id === privateReport.data.id));
 assert.ok(!history.some(report => report.id === anotherStudent.data.id));
-assert.equal((await obtenerReporte(publicReport.data.id, actor)).status, 404);
+assert.ok((await obtenerReporte(publicReport.data.id, actor)).data);
 assert.equal((await obtenerReporte(publicReport.data.id, actor, 2)).status, 404);
 assert.equal((await obtenerReporte(privateReport.data.id, actor, 1)).status, 404);
 await db.execute({ sql: "INSERT INTO ObservacionReporte(reporteId,usuarioId,texto) VALUES(?,2,'Seguimiento de prueba')", args: [publicReport.data.id] });

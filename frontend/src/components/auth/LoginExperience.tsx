@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, MouseEvent, TouchEvent, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import LoginPanel from '@/components/auth/LoginPanel';
-import { TAB_SESSION_KEY } from '@/context/AuthContext';
 import { ApiError } from '@/services/api';
 import { getSession } from '@/services/auth.service';
 import type { Vista } from '@/types/auth';
@@ -113,7 +112,7 @@ export default function LoginExperience() {
     async function redirigirSiHaySesion() {
       try {
         const session = await getSession();
-        if (activo && session.autenticado && sessionStorage.getItem(TAB_SESSION_KEY)) {
+        if (activo && session.autenticado) {
           setSesionIniciada(true);
           router.replace('/dashboard');
         }
@@ -214,7 +213,6 @@ export default function LoginExperience() {
       }
 
       setContrasena('');
-      sessionStorage.setItem(TAB_SESSION_KEY, 'activa');
       setSesionIniciada(true);
       router.push('/dashboard');
     } catch {

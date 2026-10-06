@@ -7,6 +7,7 @@ import {
   GRUPOS_ACADEMICOS,
 } from "@/lib/academic-groups";
 import type { Estudiante, EstudianteFormData } from "@/types/students";
+import { useDialogFocus } from "@/hooks/useDialogFocus";
 
 type Feedback = { tipo: "success" | "error"; texto: string };
 const TIPOS_DOCUMENTO = [
@@ -152,6 +153,10 @@ export default function StudentsWorkspace({
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<Feedback | null>(null);
+  useDialogFocus<HTMLElement>(Boolean(modal || archivar), () => {
+    if (modal) cerrarModal();
+    else setArchivar(null);
+  }, !guardando);
 
   async function cargar() {
     const response = await fetch("/api/estudiantes", { cache: "no-store" });
@@ -338,7 +343,7 @@ export default function StudentsWorkspace({
             type="search"
             value={busqueda}
             onChange={(event) => setBusqueda(event.target.value)}
-            placeholder="Buscar por nombre o documento..."
+            placeholder={canManage ? "Buscar por nombre o documento..." : "Buscar por nombre o grupo..."}
           />
         </label>
         <label>
@@ -378,13 +383,12 @@ export default function StudentsWorkspace({
                       <span>{iniciales(estudiante.nombre)}</span>
                       <div>
                         <strong>{estudiante.nombre}</strong>
-                        <small>{estudiante.correo || "Correo pendiente"}</small>
+                        <small>{canManage ? estudiante.correo || "Correo pendiente" : "Información personal restringida"}</small>
                       </div>
                     </div>
                   </td>
                   <td>
-                    <small>{estudiante.tipoDocumento || "—"}</small>{" "}
-                    {estudiante.documento || "Sin registrar"}
+                    {canManage ? <><small>{estudiante.tipoDocumento || "—"}</small>{" "}{estudiante.documento || "Sin registrar"}</> : "Restringido"}
                   </td>
                   <td>
                     <span className="students-group-badge">

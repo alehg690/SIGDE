@@ -4,12 +4,12 @@ Versión: `[COMPLETAR]` · Aprobó: `[COMPLETAR]` · Fecha: `[COMPLETAR]`
 
 | Grupo / datos | Fuente | Finalidad | Acceso mínimo | Riesgo | Control requerido |
 |---|---|---|---|---|---|
-| Estudiante: identificación, curso y estado | Institución / acudiente autorizado | Identificación, gestión académica y convivencia | Docente asignado, Coordinación, Administrador | Divulgación o perfilamiento | RBAC, trazabilidad y minimización |
-| Estudiante: reportes, observaciones y alertas | Docente / Coordinación | Seguimiento pedagógico y debido proceso | Docente autorizado, Coordinación, Administrador | Estigmatización o decisión automatizada | Revisión humana, confidencialidad y corrección |
+| Estudiante: identificación, curso y estado | Institución / acudiente autorizado | Identificación, gestión académica y convivencia | Docente autorizado, Coordinación | Divulgación o perfilamiento | RBAC, trazabilidad y minimización |
+| Estudiante: reportes, observaciones y alertas | Docente / Coordinación | Seguimiento pedagógico y debido proceso | Docente autorizado, Coordinación | Estigmatización o decisión automatizada | Revisión humana, confidencialidad y corrección |
 | Estudiante: salidas y autorizaciones | Acudiente / institución / Portería | Seguridad y control de retiro | Portería y Coordinación | Retiro no autorizado | Acceso por turno, registro y verificación |
-| Acudiente: identidad, parentesco y contacto | Acudiente / institución | Verificar representación y notificar | Coordinación, Administrador, módulo autorizado | Contacto con persona incorrecta | Verificación documental y control de cambios |
-| Usuario: correo, rol y credenciales | Administrador / usuario | Autenticación y permisos | Sistema, Administrador autorizado | Toma de cuenta | Hash de contraseñas, cookies seguras y recuperación limitada |
-| Auditoría: usuario, acción, entidad y fecha | Sistema | Seguridad, trazabilidad y defensa de derechos | Administrador autorizado / auditor | Manipulación o exposición | Integridad, acceso restringido y retención definida |
+| Acudiente: identidad, parentesco y contacto | Acudiente / institución | Verificar representación y notificar | Coordinación, módulo autorizado | Contacto con persona incorrecta | Verificación documental y control de cambios |
+| Usuario: correo, rol y credenciales | Coordinación / usuario | Autenticación y permisos | Sistema, Coordinación autorizada | Toma de cuenta | Hash de contraseñas, cookies seguras y recuperación limitada |
+| Auditoría: usuario, acción, entidad y fecha | Sistema | Seguridad, trazabilidad y defensa de derechos | Coordinación autorizada / auditor | Manipulación o exposición | Integridad, acceso restringido y retención definida |
 | Evidencias y archivos | Usuario autorizado | Sustentar un reporte | Participantes autorizados del caso | Datos sensibles o malware | Validación de tipo, tamaño, acceso privado y antivirus |
 | Notificaciones | Sistema | Informar al destinatario autorizado | Destinatario y personal necesario | Divulgación por correo | Minimización del mensaje y dirección verificada |
 | IP, navegador y eventos técnicos | Sistema / proveedor | Seguridad, diagnóstico y prevención de fraude | Equipo técnico autorizado | Seguimiento excesivo | Plazo limitado, aviso y acceso restringido |

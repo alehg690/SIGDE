@@ -6,7 +6,7 @@ export async function GET() {
   const auth = await requerirSesion(['Coordinador', 'Docente', 'Porteria']);
   if (esErrorAuth(auth)) return auth.response;
 
-  const result = await listarEstudiantes();
+  const result = await listarEstudiantes(auth.usuario);
   return NextResponse.json(result.data);
 }
 

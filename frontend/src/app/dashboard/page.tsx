@@ -3,10 +3,11 @@ import { redirect } from 'next/navigation';
 import DashboardExperience, { type DashboardUser } from '@/components/dashboard/DashboardExperience';
 import FirstPasswordChange from '@/components/auth/FirstPasswordChange';
 import { autorizarRoles, esErrorAutorizacion } from '@backend/middleware/rol.middleware';
+import { getSessionCookieName } from '@backend/utils/session-cookie';
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value;
+  const token = cookieStore.get(getSessionCookieName())?.value;
 
   if (!token) {
     redirect('/');

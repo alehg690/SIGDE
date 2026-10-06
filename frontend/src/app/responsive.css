@@ -16,7 +16,7 @@
   overflow-wrap: anywhere;
 }
 
-.topbar-global-search input { flex: 1; min-width: 0; }
+.topbar-global-search input { flex: 1; min-width: 0; min-height: 24px; }
 .topbar-global-search > button { flex: 0 0 auto; }
 .profile-menu { max-width: min(320px, calc(100vw - 32px)); }
 .profile-menu-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }

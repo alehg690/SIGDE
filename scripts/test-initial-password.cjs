@@ -4,8 +4,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const Module = require('node:module');
 const ts = require('typescript');
+const { decodeJwt } = require('jose');
 process.env.TURSO_DATABASE_URL = 'file::memory:';
 process.env.JWT_SECRET = 'sigde-initial-password-isolated-test-secret';
+process.env.APP_ENV = 'development';
+process.env.NODE_ENV = 'development';
+process.env.EMAIL_ENABLED = 'false';
 delete process.env.TURSO_AUTH_TOKEN;
 const root = path.resolve(__dirname, '..');
 const resolve = Module._resolveFilename;
@@ -34,6 +38,12 @@ async function main() {
     const sesion = await login('docente@example.test', 'TemporalSegura12345', 'test');
     assert.equal(sesion.data.requiereCambioContrasena, true);
     const token = await crearToken(sesion.data);
+    const payload = decodeJwt(token);
+    assert.deepEqual(
+      Object.keys(payload).sort(),
+      ['aud', 'exp', 'iat', 'id', 'iss', 'versionSesion'].sort(),
+      'El JWT de sesión no debe contener nombre, correo, rol ni otros datos personales',
+    );
     assert.equal((await autorizarRoles(token)).response.status, 403);
     assert.equal((await autorizarRoles(token, undefined, true)).usuario.requiereCambioContrasena, true);
     assert.equal((await cambiarContrasenaTemporal(creado.data.id, 1, 'incorrecta', 'NuevaSegura123456')).status, 400);

@@ -9,7 +9,6 @@ const INACTIVITY_LIMIT_MS = 30 * 60 * 1000;
 const ACTIVITY_REFRESH_INTERVAL_MS = 60 * 1000;
 const EXPIRATION_WARNING_MS = 5 * 60 * 1000;
 const SESSION_MESSAGE_KEY = 'sigde_logout_message';
-export const TAB_SESSION_KEY = 'sigde_tab_session';
 
 type AuthContextValue = {
   usuario: SessionUser | null;
@@ -33,18 +32,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refrescarSesion = useCallback(async () => {
     setCargando(true);
     try {
-      if (!sessionStorage.getItem(TAB_SESSION_KEY)) {
-        setUsuario(null);
-        setExpiraEn(null);
-        return;
-      }
-
       const session = await getSession();
       setUsuario(session.autenticado ? session.usuario ?? null : null);
       setExpiraEn(session.autenticado ? session.expiraEn ?? null : null);
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
-        sessionStorage.removeItem(TAB_SESSION_KEY);
         sessionStorage.setItem(SESSION_MESSAGE_KEY, 'Tu sesión expiró. Inicia sesión nuevamente.');
         router.replace('/');
       } else {
@@ -58,8 +50,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   const cerrarSesion = useCallback(async (message = 'Sesion cerrada correctamente.') => {
-    sessionStorage.removeItem(TAB_SESSION_KEY);
-    await logout();
+    try {
+      await logout();
+    } catch (error) {
+      console.error(error);
+      setAvisoSesion('No fue posible cerrar la sesión. Revisa tu conexión e inténtalo de nuevo.');
+      return;
+    }
     setUsuario(null);
     setExpiraEn(null);
     sessionStorage.setItem(SESSION_MESSAGE_KEY, message);

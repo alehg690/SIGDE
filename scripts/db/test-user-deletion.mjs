@@ -35,14 +35,14 @@ await db.batch([
   'ALTER TABLE Usuario ADD COLUMN tokenExpira TEXT'
 ], 'write');
 const actor={id:1,rol:'Coordinador'};
-assert.ok((await eliminarUsuario(2,actor,false)).data);
+assert.ok((await eliminarUsuario(2,actor)).data);
 assert.equal((await db.execute('SELECT usuarioId FROM AuditLog WHERE id=1')).rows[0].usuarioId,null);
 assert.equal((await db.execute('SELECT usuarioNombre FROM AuditLog WHERE id=1')).rows[0].usuarioNombre,'Conservar');
 assert.equal((await db.execute('SELECT directorId FROM GrupoEscolar WHERE id=1')).rows[0].directorId,null);
 assert.equal((await db.execute('SELECT COUNT(*) n FROM NotificacionUsuario')).rows[0].n,0);
-assert.ok((await eliminarUsuario(3,actor,true)).data);
-assert.equal((await db.execute('SELECT COUNT(*) n FROM AuditLog WHERE id=2')).rows[0].n,0);
-assert.ok((await eliminarUsuario(4,actor,true)).data);
+assert.ok((await eliminarUsuario(3,actor)).data);
+assert.equal((await db.execute('SELECT usuarioId FROM AuditLog WHERE id=2')).rows[0].usuarioId,null);
+assert.ok((await eliminarUsuario(4,actor)).data);
 assert.equal((await db.execute('SELECT COUNT(*) n FROM Reporte WHERE docenteId=4')).rows[0].n,1);
 const deleted=(await db.execute('SELECT * FROM Usuario WHERE id=4')).rows[0];
 assert.ok(deleted.eliminadoEn);
@@ -50,14 +50,14 @@ assert.equal(deleted.activo,0);
 assert.equal(deleted.versionSesion,2);
 assert.equal(deleted.contrasena,'');
 assert.notEqual(deleted.correo,'d@test.co');
-assert.equal((await eliminarUsuario(4,actor,true)).status,404);
+assert.equal((await eliminarUsuario(4,actor)).status,404);
 assert.equal((await db.execute('SELECT COUNT(*) n FROM AuditLog WHERE usuarioId=4')).rows[0].n,0);
-assert.equal((await eliminarUsuario(1,actor,true)).status,400);
-assert.equal((await eliminarUsuario(999,actor,false)).status,404);
-await assert.rejects(eliminarUsuario(5,{id:999,rol:'Coordinador'},true));
+assert.equal((await eliminarUsuario(1,actor)).status,400);
+assert.equal((await eliminarUsuario(999,actor)).status,404);
+await assert.rejects(eliminarUsuario(5,{id:999,rol:'Coordinador'}));
 assert.equal((await db.execute('SELECT COUNT(*) n FROM Usuario WHERE id=5')).rows[0].n,1);
 assert.equal((await db.execute('SELECT COUNT(*) n FROM AuditLog WHERE usuarioId=5')).rows[0].n,1);
 assert.equal((await db.execute('PRAGMA foreign_key_check')).rows.length,0);
-console.log('OK: migración, conservar, borrar, grupos, notificaciones, eliminación con reportes conservados, cuenta propia, inexistente y rollback.');
+console.log('OK: migración, auditoría preservada, grupos, notificaciones, eliminación con reportes conservados, cuenta propia, inexistente y rollback.');
 db.close();
 // Windows puede mantener abierto el archivo SQLite hasta que finalice Node.

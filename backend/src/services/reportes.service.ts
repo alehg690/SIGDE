@@ -7,6 +7,7 @@ import { normalizarTipoSituacion, obtenerReglaTipo } from '@backend/services/man
 import { notificarAcudienteCambioReporte, notificarAcudientePorReporte } from '@backend/services/notificaciones.service';
 import { esRolCoordinador, type SesionUsuario } from '@backend/types/roles';
 import { logServerError } from '@backend/utils/logger';
+import { contenidoBinario, firmaArchivoValida, nombreArchivoSeguro } from '@backend/utils/uploads';
 
 export type ReporteInput = {
   observador?: unknown;
@@ -150,11 +151,23 @@ export async function listarReportes(usuario: SesionUsuario, estudianteId?: numb
       INNER JOIN Estudiante e ON e.id = r.estudianteId
       INNER JOIN Usuario u ON u.id = r.docenteId
       WHERE (? IS NULL OR r.estudianteId = ?)
-        AND (? IN ('Coordinador', 'Admin') OR r.docenteId = ? OR (? IS NOT NULL AND r.confidencial = 0))
+        AND (
+          ? = 'Coordinador'
+          OR r.docenteId = ?
+          OR (
+            r.confidencial = 0
+            AND EXISTS (
+              SELECT 1 FROM GrupoEscolar g
+              WHERE g.directorId = ?
+                AND g.grado = REPLACE(e.grado, '°', '')
+                AND g.grupo = e.grupo
+            )
+          )
+        )
       ORDER BY datetime(r.fecha) DESC
       LIMIT CASE WHEN ? IS NULL THEN 500 ELSE -1 END
     `,
-    args: [estudianteId ?? null, estudianteId ?? null, usuario.rol, usuario.id, estudianteId ?? null, estudianteId ?? null],
+    args: [estudianteId ?? null, estudianteId ?? null, usuario.rol, usuario.id, usuario.id, estudianteId ?? null],
   });
   return { data: result.rows.map(row => ({ ...row, observador: row.observador ? JSON.parse(String(row.observador)) : null })) };
 }
@@ -176,10 +189,22 @@ export async function obtenerReporte(id: number, usuario: SesionUsuario, estudia
       INNER JOIN Estudiante e ON e.id = r.estudianteId
       INNER JOIN Usuario u ON u.id = r.docenteId
       WHERE r.id = ? AND (? IS NULL OR r.estudianteId = ?)
-        AND (? IN ('Coordinador', 'Admin') OR r.docenteId = ? OR (? IS NOT NULL AND r.confidencial = 0))
+        AND (
+          ? = 'Coordinador'
+          OR r.docenteId = ?
+          OR (
+            r.confidencial = 0
+            AND EXISTS (
+              SELECT 1 FROM GrupoEscolar g
+              WHERE g.directorId = ?
+                AND g.grado = REPLACE(e.grado, '°', '')
+                AND g.grupo = e.grupo
+            )
+          )
+        )
       LIMIT 1
     `,
-    args: [id, estudianteId ?? null, estudianteId ?? null, usuario.rol, usuario.id, estudianteId ?? null],
+    args: [id, estudianteId ?? null, estudianteId ?? null, usuario.rol, usuario.id, usuario.id],
   });
   const reporte = result.rows[0];
   if (!reporte) return { error: 'Reporte no encontrado', status: 404 } as const;
@@ -430,12 +455,13 @@ export async function agregarArchivoEvidencia(id: number, input: ArchivoEvidenci
   if (!esRolCoordinador(usuario.rol) && (Number(reporte.docenteId) !== usuario.id || !edicionVigente(reporte))) {
     return { error: 'No tienes permiso para agregar evidencias a este reporte', status: 403 } as const;
   }
-  const nombre = input.nombre.trim();
-  if (!nombre || nombre.length > 120) return { error: 'El nombre del archivo debe tener entre 1 y 120 caracteres', status: 400 } as const;
+  const nombre = nombreArchivoSeguro(input.nombre, 120);
+  if (!nombre) return { error: 'El nombre del archivo debe tener entre 1 y 120 caracteres', status: 400 } as const;
   if (!['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(input.mimeType)) {
     return { error: 'Adjunta un archivo PDF, imagen JPG, PNG o WebP, o documento DOCX', status: 400 } as const;
   }
   if (!input.contenido.length || input.contenido.length > 4 * 1024 * 1024) return { error: 'El archivo debe ocupar entre 1 byte y 4 MB', status: 400 } as const;
+  if (!firmaArchivoValida(input.contenido, input.mimeType)) return { error: 'El contenido del archivo no coincide con su tipo', status: 400 } as const;
 
   const transaction = await db.transaction('write');
   let evidenciaId: number;
@@ -468,9 +494,9 @@ export async function obtenerArchivoEvidencia(reporteId: number, evidenciaId: nu
   });
   const archivo = result.rows[0];
   if (!archivo?.contenido || !archivo.mimeType) return { error: 'Archivo no encontrado', status: 404 } as const;
-  const contenido = archivo.contenido;
-  if (!(contenido instanceof ArrayBuffer)) return { error: 'Archivo no disponible', status: 500 } as const;
-  return { data: { nombre: String(archivo.nombre), mimeType: String(archivo.mimeType), contenido: new Uint8Array(contenido) }, status: 200 } as const;
+  const contenido = contenidoBinario(archivo.contenido);
+  if (!contenido) return { error: 'Archivo no disponible', status: 500 } as const;
+  return { data: { nombre: String(archivo.nombre), mimeType: String(archivo.mimeType), contenido }, status: 200 } as const;
 }
 
 export async function agregarObservacionReporte(id: number, texto: string, usuario: SesionUsuario) {

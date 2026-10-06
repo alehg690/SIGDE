@@ -37,9 +37,13 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  agentRules: false,
   ...(process.env.NODE_ENV === 'development' ? { allowedDevOrigins: ['127.0.0.1', '192.168.1.17'] } : {}),
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }];
+    return [
+      { source: '/api/:path*', headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0' }] },
+      { source: '/:path*', headers: securityHeaders },
+    ];
   },
 };
 

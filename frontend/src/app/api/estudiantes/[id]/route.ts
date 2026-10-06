@@ -19,7 +19,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const estudianteId = parseId(id);
   if (!estudianteId) return NextResponse.json({ error: 'Estudiante no válido' }, { status: 400 });
 
-  const result = await obtenerEstudiante(estudianteId);
+  const result = await obtenerEstudiante(estudianteId, auth.usuario);
   if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json(result.data);
 }

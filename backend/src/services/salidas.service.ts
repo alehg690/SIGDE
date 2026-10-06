@@ -26,6 +26,9 @@ function validarInput(input: SalidaInput) {
   };
   if (!Number.isInteger(data.estudianteId) || data.estudianteId <= 0) return { error: 'Selecciona un estudiante válido', status: 400 };
   if (!data.recogeNombre || !data.recogeApellido || !data.recogeCedula || !data.recogeParentesco) return { error: 'Completa los datos de la persona que recoge al estudiante', status: 400 };
+  if ([data.recogeNombre, data.recogeApellido, data.recogeParentesco].some((valor) => valor.length > 100)) return { error: 'Los datos de la persona que recoge son demasiado largos', status: 400 };
+  if (!/^[A-Za-z0-9.-]{4,30}$/.test(data.recogeCedula)) return { error: 'El documento de la persona que recoge no tiene un formato válido', status: 400 };
+  if (data.recogeCorreo.length > 254) return { error: 'El correo de la persona que recoge es demasiado largo', status: 400 };
   if (!EMAIL_PATTERN.test(data.recogeCorreo)) return { error: 'Ingresa un correo válido para la persona que recoge', status: 400 };
   return { data };
 }
@@ -37,7 +40,7 @@ async function obtenerEstudianteConAcudiente(estudianteId: number) {
 
 export async function listarSalidas(usuario: SesionUsuario) {
   const soloHoy = usuario.rol === 'Porteria';
-  const result = await db.execute({ sql: `SELECT s.id, s.estudianteId, e.nombre AS estudiante, e.grado, e.grupo, e.jornada, a.nombre AS acudiente, s.recogeNombre, s.recogeApellido, s.recogeCedula, s.recogeParentesco, s.recogeCorreo, s.estado, s.creadoEn, u.nombre AS registradoPorNombre FROM Salida s INNER JOIN Estudiante e ON e.id = s.estudianteId INNER JOIN Acudiente a ON a.id = s.acudienteId INNER JOIN Usuario u ON u.id = s.registradoPorId ${soloHoy ? "WHERE date(s.creadoEn, '-5 hours') = date('now', '-5 hours')" : ''} ORDER BY s.creadoEn DESC`, args: [] });
+  const result = await db.execute({ sql: `SELECT s.id, s.estudianteId, e.nombre AS estudiante, e.grado, e.grupo, e.jornada, a.nombre AS acudiente, s.recogeNombre, s.recogeApellido, s.recogeCedula, s.recogeParentesco, s.estado, s.creadoEn, u.nombre AS registradoPorNombre FROM Salida s INNER JOIN Estudiante e ON e.id = s.estudianteId INNER JOIN Acudiente a ON a.id = s.acudienteId INNER JOIN Usuario u ON u.id = s.registradoPorId ${soloHoy ? "WHERE date(s.creadoEn, '-5 hours') = date('now', '-5 hours')" : ''} ORDER BY s.creadoEn DESC`, args: [] });
   return { data: result.rows };
 }
 
@@ -62,12 +65,13 @@ export async function crearSalida(input: SalidaInput, usuario: SesionUsuario) {
 
   const id = randomUUID();
   const result = await db.execute({ sql: `INSERT INTO Salida (id, estudianteId, acudienteId, motivo, tipo, urgencia, estado, registradoPorId, recogeNombre, recogeApellido, recogeCedula, recogeParentesco, recogeCorreo) VALUES (?, ?, ?, ?, 'ordinaria', 0, 'completada', ?, ?, ?, ?, ?, ?) RETURNING id, creadoEn`, args: [id, data.estudianteId, Number(estudiante.acudienteId), 'Salida registrada en portería', usuario.id, data.recogeNombre, data.recogeApellido, data.recogeCedula, data.recogeParentesco, data.recogeCorreo] });
-  await registrarAccion({ usuarioId: usuario.id, accion: 'registrar_salida', entidad: 'Salida', entidadId: id, detalle: { estudianteId: data.estudianteId, recogeCedula: data.recogeCedula } });
+  await registrarAccion({ usuarioId: usuario.id, accion: 'registrar_salida', entidad: 'Salida', entidadId: id, detalle: { estudianteId: data.estudianteId } });
   const correoEnviado = await enviarAvisoSalida([...(String(estudiante.acudientesCorreo || '').split('|')), data.recogeCorreo], String(estudiante.nombre), `${data.recogeNombre} ${data.recogeApellido}`);
   return { data: { ...result.rows[0], estudiante: estudiante.nombre, grado: estudiante.grado, grupo: estudiante.grupo, jornada: estudiante.jornada, acudiente: estudiante.acudiente, correoEnviado }, status: 201 };
 }
 
 export async function firmarSalida(id: string, firma: string, usuario: SesionUsuario) {
+  if (usuario.rol !== 'Coordinador') return { error: 'No tienes permisos para firmar salidas', status: 403 };
   const columnasPermitidas = new Set(['firmaDirector', 'firmaDocente', 'firmaCoordinacion', 'firmaAcudiente']);
   if (!columnasPermitidas.has(firma)) return { error: 'Firma no válida', status: 400 };
   const result = await db.execute({ sql: `UPDATE Salida SET ${firma} = 1, actualizadoEn = CURRENT_TIMESTAMP WHERE id = ? RETURNING *`, args: [id] });

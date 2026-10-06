@@ -16,6 +16,7 @@ import ProfileWorkspace from '@/components/profile/ProfileWorkspace';
 import MobileNavigation from '@/components/dashboard/MobileNavigation';
 import type { Estudiante } from '@/types/students';
 import { parseReportDate } from '@/lib/report-dates';
+import { useDialogFocus } from '@/hooks/useDialogFocus';
 
 export type DashboardUser = {
   id: number;
@@ -24,7 +25,7 @@ export type DashboardUser = {
   rol: string;
 };
 
-type DashboardRole = 'admin' | 'coordinador' | 'docente' | 'portero';
+type DashboardRole = 'coordinador' | 'docente' | 'portero';
 type DashboardSection = 'dashboard' | 'usuarios' | 'personas' | 'seguimiento' | 'estadisticas' | 'salidas' | 'comunicaciones' | 'calendario' | 'reportes' | 'convivencia' | 'configuracion' | 'perfil' | 'auditoria';
 
 const DASHBOARD_SECTIONS: DashboardSection[] = ['dashboard', 'usuarios', 'personas', 'seguimiento', 'estadisticas', 'salidas', 'comunicaciones', 'calendario', 'reportes', 'convivencia', 'configuracion', 'perfil', 'auditoria'];
@@ -172,7 +173,6 @@ const EMPTY_STATS: DashboardStats = {
 };
 
 const ROLE_LABELS: Record<DashboardRole, string> = {
-  admin: 'Admin',
   coordinador: 'Coordinador',
   docente: 'Docente',
   portero: 'Portero',
@@ -191,11 +191,11 @@ const NAV_GROUPS: Array<{
 ];
 
 function esRolGestor(role: DashboardRole) {
-  return role === 'admin' || role === 'coordinador';
+  return role === 'coordinador';
 }
 
 function tieneAccesoSeccion(roles: DashboardRole[], role: DashboardRole) {
-  return roles.includes(role) || (role === 'admin' && roles.includes('coordinador'));
+  return roles.includes(role);
 }
 
 function puedeAbrirSeccion(section: DashboardSection, role: DashboardRole) {
@@ -232,7 +232,6 @@ function SidebarIcon({ name }: { name: SidebarIconName }) {
 
 function normalizeRole(rol: string): DashboardRole {
   const value = rol.trim().toLowerCase();
-  if (value === 'admin' || value === 'administrador') return 'admin';
   if (value.includes('coord')) return 'coordinador';
   if (value.includes('doc')) return 'docente';
   if (value.includes('port')) return 'portero';
@@ -258,6 +257,26 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
   const [dashboardError, setDashboardError] = useState('');
   const [globalSearch, setGlobalSearch] = useState(() => searchParams.get('buscar') || '');
   const role = useMemo(() => normalizeRole(usuario.rol), [usuario.rol]);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+    function cerrarMenu(event: Event) {
+      if (event instanceof KeyboardEvent && event.key === 'Escape') {
+        setProfileOpen(false);
+        document.querySelector<HTMLElement>('.profile-menu-trigger')?.focus();
+        return;
+      }
+      if (event instanceof PointerEvent && event.target instanceof Element && !event.target.closest('.profile-menu-wrap')) {
+        setProfileOpen(false);
+      }
+    }
+    document.addEventListener('keydown', cerrarMenu);
+    document.addEventListener('pointerdown', cerrarMenu);
+    return () => {
+      document.removeEventListener('keydown', cerrarMenu);
+      document.removeEventListener('pointerdown', cerrarMenu);
+    };
+  }, [profileOpen]);
 
   useEffect(() => {
     if (puedeAbrirSeccion(section, role)) return;
@@ -361,13 +380,20 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
 
   async function handleLogout() {
     setClosing(true);
-    await fetch('/api/auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accion: 'logout' }),
-    });
-    sessionStorage.setItem('sigde_logout_message', 'Sesión cerrada correctamente.');
-    router.push('/');
+    setDashboardError('');
+    try {
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'logout' }),
+      });
+      if (!response.ok) throw new Error('No fue posible cerrar la sesión.');
+      sessionStorage.setItem('sigde_logout_message', 'Sesión cerrada correctamente.');
+      router.push('/');
+    } catch {
+      setDashboardError('No fue posible cerrar la sesión. Revisa tu conexión e inténtalo de nuevo.');
+      setClosing(false);
+    }
   }
 
   return (
@@ -864,6 +890,7 @@ function ControlSalidasWorkspace({ role }: { role: DashboardRole }) {
   const [busqueda, setBusqueda] = useState('');
   const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
   const [recoge, setRecoge] = useState({ nombre: '', apellido: '', cedula: '', parentesco: '', correo: '' });
+  useDialogFocus<HTMLElement>(mostrarFormulario, () => setMostrarFormulario(false), !guardando);
   const seleccionado = estudiantes.find((item) => item.id === Number(estudianteId));
   const salidasVisibles = salidas.filter((salida) => [salida.estudiante, salida.grado, salida.grupo, salida.acudiente, salida.recogeNombre, salida.recogeApellido, salida.recogeCedula].join(' ').toLocaleLowerCase('es').includes(busqueda.trim().toLocaleLowerCase('es')));
 

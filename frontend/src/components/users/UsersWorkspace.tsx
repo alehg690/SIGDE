@@ -3,13 +3,14 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { parseReportDate } from '@/lib/report-dates';
+import { useDialogFocus } from '@/hooks/useDialogFocus';
 
-type RolUsuario = 'Admin' | 'Coordinador' | 'Docente' | 'Porteria';
+type RolUsuario = 'Coordinador' | 'Docente' | 'Porteria';
 type Usuario = { id: number; nombre: string; correo: string; rol: RolUsuario; activo: boolean; creadoEn: string; ultimoAcceso: string | null };
 type UsuarioForm = { nombre: string; correo: string; rol: RolUsuario; contrasena: string; activo: boolean };
 type Feedback = { tipo: 'success' | 'error'; texto: string };
 
-const ROLES: RolUsuario[] = ['Admin', 'Coordinador', 'Docente', 'Porteria'];
+const ROLES: RolUsuario[] = ['Coordinador', 'Docente', 'Porteria'];
 const EMPTY_FORM: UsuarioForm = { nombre: '', correo: '', rol: 'Docente', contrasena: '', activo: true };
 
 async function leerError(response: Response, fallback: string) {
@@ -27,7 +28,7 @@ function iniciales(nombre: string) {
 }
 
 function colorRol(rol: RolUsuario) {
-  if (rol === 'Coordinador' || rol === 'Admin') return 'coordinator';
+  if (rol === 'Coordinador') return 'coordinator';
   if (rol === 'Porteria') return 'gatekeeper';
   return 'teacher';
 }
@@ -65,7 +66,6 @@ export default function UsersWorkspace({ currentUserId }: { currentUserId: numbe
   const [menuAbiertoId, setMenuAbiertoId] = useState<number | null>(null);
   const [modal, setModal] = useState<'crear' | 'editar' | null>(null);
   const [usuarioEditar, setUsuarioEditar] = useState<Usuario | null>(null);
-  const [borrarAuditoria, setBorrarAuditoria] = useState(false);
   const [usuarioEliminar, setUsuarioEliminar] = useState<Usuario | null>(null);
   const [formCrear, setFormCrear] = useState<UsuarioForm>(EMPTY_FORM);
   const [formEditar, setFormEditar] = useState<UsuarioForm>(EMPTY_FORM);
@@ -76,6 +76,10 @@ export default function UsersWorkspace({ currentUserId }: { currentUserId: numbe
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  useDialogFocus<HTMLElement>(Boolean(modal || usuarioEliminar), () => {
+    if (modal) cerrarModal();
+    else setUsuarioEliminar(null);
+  }, !guardando);
 
   const cargarUsuarios = useCallback(async () => {
     const response = await fetch('/api/usuarios', { cache: 'no-store' });
@@ -209,7 +213,7 @@ export default function UsersWorkspace({ currentUserId }: { currentUserId: numbe
     if (!usuarioEliminar) return;
     setGuardando(true); setFeedback(null);
     try {
-      const response = await fetch(`/api/usuarios/${usuarioEliminar.id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ borrarAuditoria }) });
+      const response = await fetch(`/api/usuarios/${usuarioEliminar.id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error(await leerError(response, 'No se pudo eliminar el usuario.'));
       await cargarUsuarios();
       setUsuarioEliminar(null);
@@ -237,7 +241,7 @@ export default function UsersWorkspace({ currentUserId }: { currentUserId: numbe
             <td><span className={`users-role-badge users-role-badge--${colorRol(usuario.rol)}`}>{etiquetaRol(usuario.rol)}</span></td>
             <td><button type="button" className={usuario.activo ? 'users-status-toggle users-status-toggle--active' : 'users-status-toggle users-status-toggle--inactive'} disabled={usuario.id === currentUserId || guardando} onClick={() => void cambiarEstado(usuario)} title={usuario.id === currentUserId ? 'No puedes desactivar la cuenta en uso' : usuario.activo ? 'Desactivar usuario' : 'Activar usuario'}><span><i />{usuario.activo ? 'Activo' : 'Inactivo'}</span><small>{usuario.id === currentUserId ? 'Cuenta en uso' : usuario.activo ? 'Desactivar' : 'Activar'}</small></button></td>
             <td><time dateTime={usuario.ultimoAcceso || undefined}>{fechaAcceso(usuario.ultimoAcceso)}</time></td>
-            <td className="users-actions-cell"><button type="button" aria-label={`Acciones de ${usuario.nombre}`} aria-expanded={menuAbiertoId === usuario.id} onClick={(event) => { event.stopPropagation(); setMenuAbiertoId((actual) => actual === usuario.id ? null : usuario.id); }}>•••</button>{menuAbiertoId === usuario.id && <div className="users-row-menu" role="menu" onClick={(event) => event.stopPropagation()}><button type="button" role="menuitem" onClick={() => abrirEditar(usuario)}><span aria-hidden="true">✎</span> Editar</button><button type="button" role="menuitem" disabled={usuario.id === currentUserId || guardando} onClick={() => void cambiarEstado(usuario)}><span aria-hidden="true">♢</span> {usuario.activo ? 'Desactivar' : 'Activar'}</button><button type="button" role="menuitem" className="danger" disabled={usuario.id === currentUserId || guardando} onClick={() => { setBorrarAuditoria(false); setUsuarioEliminar(usuario); setMenuAbiertoId(null); }}><span aria-hidden="true">♲</span> Eliminar</button></div>}</td>
+            <td className="users-actions-cell"><button type="button" aria-label={`Acciones de ${usuario.nombre}`} aria-expanded={menuAbiertoId === usuario.id} onClick={(event) => { event.stopPropagation(); setMenuAbiertoId((actual) => actual === usuario.id ? null : usuario.id); }}>•••</button>{menuAbiertoId === usuario.id && <div className="users-row-menu" role="menu" onClick={(event) => event.stopPropagation()}><button type="button" role="menuitem" onClick={() => abrirEditar(usuario)}><span aria-hidden="true">✎</span> Editar</button><button type="button" role="menuitem" disabled={usuario.id === currentUserId || guardando} onClick={() => void cambiarEstado(usuario)}><span aria-hidden="true">♢</span> {usuario.activo ? 'Desactivar' : 'Activar'}</button><button type="button" role="menuitem" className="danger" disabled={usuario.id === currentUserId || guardando} onClick={() => { setUsuarioEliminar(usuario); setMenuAbiertoId(null); }}><span aria-hidden="true">♲</span> Eliminar</button></div>}</td>
           </tr>)}</tbody>
         </table>
         {!cargando && usuariosFiltrados.length === 0 && <div className="users-directory-empty"><strong>No hay usuarios para mostrar</strong><p>Prueba otra búsqueda o selecciona un rol diferente.</p></div>}
@@ -271,7 +275,7 @@ export default function UsersWorkspace({ currentUserId }: { currentUserId: numbe
       </form>
     </div>}
 
-    {usuarioEliminar && <div className="users-modal-backdrop" role="presentation" onMouseDown={() => !guardando && setUsuarioEliminar(null)}><div className="users-delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-user-title" onMouseDown={(event) => event.stopPropagation()}><span className="users-delete-icon" aria-hidden="true">!</span><h3 id="delete-user-title">¿Eliminar usuario?</h3><p>Se eliminará la cuenta de <strong>{usuarioEliminar.nombre}</strong>. La cuenta desaparecerá del directorio y perderá el acceso. Sus reportes, salidas y demás historial conservarán el nombre del autor. Sus grupos quedarán sin director y sus notificaciones se borrarán.</p><label style={{ display: 'block', margin: '16px 0' }}><input type="checkbox" checked={borrarAuditoria} disabled={guardando} onChange={(event) => setBorrarAuditoria(event.target.checked)} /> Borrar también sus registros de auditoría (irreversible)</label><p>{borrarAuditoria ? 'Se borrará su auditoría anterior. La eliminación quedará registrada a tu nombre.' : 'Se conservará la auditoría con el nombre del usuario eliminado.'}</p><div><button type="button" disabled={guardando} onClick={() => setUsuarioEliminar(null)}>Cancelar</button><button type="button" className="danger" disabled={guardando} onClick={() => void eliminarUsuario()}>{guardando ? 'Eliminando...' : 'Eliminar usuario'}</button></div></div></div>}
+    {usuarioEliminar && <div className="users-modal-backdrop" role="presentation" onMouseDown={() => !guardando && setUsuarioEliminar(null)}><div className="users-delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-user-title" onMouseDown={(event) => event.stopPropagation()}><span className="users-delete-icon" aria-hidden="true">!</span><h3 id="delete-user-title">¿Eliminar usuario?</h3><p>Se eliminará la cuenta de <strong>{usuarioEliminar.nombre}</strong>. La cuenta desaparecerá del directorio y perderá el acceso. Sus reportes, salidas y registros de auditoría conservarán el nombre del autor; sus grupos quedarán sin director y sus notificaciones se borrarán.</p><div><button type="button" disabled={guardando} onClick={() => setUsuarioEliminar(null)}>Cancelar</button><button type="button" className="danger" disabled={guardando} onClick={() => void eliminarUsuario()}>{guardando ? 'Eliminando...' : 'Eliminar usuario'}</button></div></div></div>}
   </section>;
 }
 

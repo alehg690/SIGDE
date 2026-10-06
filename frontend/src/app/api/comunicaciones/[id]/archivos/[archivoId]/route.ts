@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { db } from '@backend/config/database';
 import { esErrorAuth, requerirSesion } from '@/app/api/_utils/session';
+import { obtenerArchivoComunicacion } from '@backend/services/comunicaciones.service';
 
 type Params = { params: Promise<{ id: string; archivoId: string }> };
 
@@ -11,17 +11,12 @@ export async function GET(_request: Request, { params }: Params) {
   const id = Number(rawId);
   const archivoId = Number(rawArchivoId);
   if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(archivoId) || archivoId <= 0) return NextResponse.json({ error: 'Archivo inválido.' }, { status: 400 });
-  const result = await db.execute({
-    sql: `SELECT a.nombre, a.mimeType, a.contenido FROM ComunicacionArchivo a JOIN Comunicacion c ON c.id = a.comunicacionId
-      WHERE a.id = ? AND c.id = ? AND (c.estado = 'Publicado' OR c.autorId = ? OR ? IN ('Coordinador', 'Admin')) LIMIT 1`,
-    args: [archivoId, id, auth.usuario.id, auth.usuario.rol],
-  });
-  const file = result.rows[0];
-  if (!file || !(file.contenido instanceof Uint8Array)) return NextResponse.json({ error: 'Archivo no encontrado.' }, { status: 404 });
-  return new NextResponse(new Uint8Array(file.contenido), {
+  const result = await obtenerArchivoComunicacion(id, archivoId, auth.usuario);
+  if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });
+  return new NextResponse(result.data.contenido, {
     headers: {
-      'Content-Type': String(file.mimeType),
-      'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(String(file.nombre))}`,
+      'Content-Type': result.data.mimeType,
+      'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(result.data.nombre)}`,
       'Cache-Control': 'private, no-store',
       'X-Content-Type-Options': 'nosniff',
     },

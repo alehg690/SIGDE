@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GRUPOS_ACADEMICOS } from '@/lib/academic-groups';
+import { useDialogFocus } from '@/hooks/useDialogFocus';
 
 type Tipo = 'Circular' | 'Comunicado' | 'Aviso' | 'Citación';
 type Comunicacion = {
@@ -32,6 +33,7 @@ export default function CommunicationsWorkspace({ canManage }: { canManage: bool
   const [contenido, setContenido] = useState('');
   const [archivos, setArchivos] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
+  useDialogFocus<HTMLElement>(modal, () => setModal(false), !saving);
 
   const load = useCallback(async () => {
     setLoading(true);

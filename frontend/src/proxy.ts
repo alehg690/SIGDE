@@ -1,22 +1,15 @@
-import { jwtVerify } from 'jose';
 import { NextRequest, NextResponse } from 'next/server';
+import { verificarToken } from '@backend/utils/jwt';
+import { getSessionCookieName, LEGACY_SESSION_COOKIE_NAME } from '@backend/utils/session-cookie';
 
 const PROTECTED_PATHS = ['/dashboard'];
 
-function getJwtSecret() {
-  const secret = process.env.JWT_SECRET;
-  if (!secret || secret.length < 32) return null;
-  return new TextEncoder().encode(secret);
-}
-
 async function hasValidSession(request: NextRequest) {
-  const token = request.cookies.get('token')?.value;
-  const secret = getJwtSecret();
-
-  if (!token || !secret) return false;
+  const token = request.cookies.get(getSessionCookieName())?.value;
+  if (!token) return false;
 
   try {
-    await jwtVerify(token, secret);
+    await verificarToken(token);
     return true;
   } catch {
     return false;
@@ -30,7 +23,8 @@ export async function proxy(request: NextRequest) {
 
   if (isProtectedPath && !isAuthenticated) {
     const response = NextResponse.redirect(new URL('/', request.url));
-    response.cookies.delete('token');
+    response.cookies.delete(getSessionCookieName());
+    response.cookies.delete(LEGACY_SESSION_COOKIE_NAME);
     return response;
   }
 

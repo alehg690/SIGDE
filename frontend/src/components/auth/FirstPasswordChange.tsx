@@ -71,13 +71,13 @@ export default function FirstPasswordChange({ nombre }: { nombre: string }) {
     }
   }
 
-  // La página del servidor puede llegar a una pestaña sin sesión propia. No mostramos el formulario hasta verificarla.
+  // Evita mostrar el formulario hasta verificar la sesión y el cambio obligatorio en el servidor.
   if (cargando || !usuario || !usuario.requiereCambioContrasena) {
     return <main className="first-password-screen"><p className="first-password-loading" role="status">{cargando ? 'Verificando tu sesión...' : !usuario ? 'Volviendo al inicio...' : 'Abriendo tu panel...'}</p></main>;
   }
 
   return <main className="first-password-screen">
-      <section className="first-password-dialog" role="dialog" aria-modal="true" aria-labelledby="first-password-title">
+      <section className="first-password-dialog" aria-labelledby="first-password-title">
         <div className="first-password-badge">Primer ingreso</div>
         <header className="form-header">
           <h1 id="first-password-title">Protege tu cuenta, {nombre.split(' ')[0]}</h1>

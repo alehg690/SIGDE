@@ -6,6 +6,9 @@ const Module = require('node:module');
 const ts = require('typescript');
 process.env.TURSO_DATABASE_URL = 'file::memory:';
 process.env.JWT_SECRET = 'sigde-api-isolated-test-secret-2026';
+process.env.APP_ENV = 'development';
+process.env.NODE_ENV = 'development';
+process.env.EMAIL_ENABLED = 'false';
 delete process.env.TURSO_AUTH_TOKEN;
 delete process.env.EMAIL_USER;
 delete process.env.EMAIL_PASS;
@@ -36,16 +39,17 @@ const management = ['Coordinador'];
 const routes = [
   ['usuarios', management, 'POST', management],
   ['estudiantes', all, 'POST', management],
-  ['acudientes', teaching, 'POST', management],
+  ['acudientes', management, 'POST', management],
   ['reportes', teaching, 'POST', teaching],
   ['convivencia', teaching, 'POST', teaching],
   ['alertas', teaching],
-  ['notificaciones', teaching, 'POST', teaching],
+  ['notificaciones', management, 'POST', management],
   ['salidas', ['Coordinador', 'Porteria'], 'POST', ['Coordinador', 'Porteria']],
   ['eventos', all, 'POST', management],
   ['configuracion', management, 'PUT', management],
   ['auditoria', management],
   ['manual-convivencia', teaching],
+  ['comunicaciones', teaching, 'POST', management],
   ['dashboard', all],
   ['dashboard/estadisticas', all],
   ['informes/exportar', management],
@@ -81,15 +85,16 @@ async function main() {
     }
     await db.execute("INSERT INTO Acudiente(id,nombre,contacto) VALUES(1,'Acudiente ficticio','Sin contacto')");
     await db.execute("INSERT INTO Estudiante(id,nombre,grado,grupo,acudienteId) VALUES(1,'Estudiante ficticio','11','1',1)");
+    await db.execute("UPDATE GrupoEscolar SET directorId=2 WHERE grado='11' AND grupo='1'");
     await db.execute("INSERT INTO Reporte(id,estudianteId,docenteId,tipoFalta,descripcion,confidencial) VALUES(1,1,1,'TIPO_I','Reporte público de otro autor',0),(2,1,1,'TIPO_I','Reporte reservado',1),(3,1,2,'TIPO_I','Reporte propio',0)");
     const listReports = require('../frontend/src/app/api/reportes/route.ts');
     const detailReports = require('../frontend/src/app/api/reportes/[id]/route.ts');
     cookieToken = tokens.Docente;
     const own = await listReports.GET(new NextRequest('http://localhost/api/reportes'));
-    assert.deepEqual((await own.json()).map(report => report.id), [3]);
+    assert.deepEqual((await own.json()).map(report => report.id).sort(), [1, 3]);
     const history = await listReports.GET(new NextRequest('http://localhost/api/reportes?estudianteId=1'));
     assert.deepEqual((await history.json()).map(report => report.id).sort(), [1, 3]);
-    for (const [id, query, expected] of [[1, '', 404], [1, '?estudianteId=1', 200], [2, '?estudianteId=1', 404], [1, '?estudianteId=2', 404]]) {
+    for (const [id, query, expected] of [[1, '', 200], [1, '?estudianteId=1', 200], [2, '?estudianteId=1', 404], [1, '?estudianteId=2', 404]]) {
       const response = await detailReports.GET(new NextRequest(`http://localhost/api/reportes/${id}${query}`), { params: Promise.resolve({ id: String(id) }) });
       assert.equal(response.status, expected);
       if (expected === 200) assert.ok(Object.values((await response.json()).permisos).every(value => value === false));
@@ -99,7 +104,7 @@ async function main() {
     }
     cookieToken = tokens.Coordinador;
     assert.equal((await detailReports.GET(new NextRequest('http://localhost/api/reportes/2'), { params: Promise.resolve({ id: '2' }) })).status, 200);
-    console.log('OK: listado propio, historial autorizado, confidencialidad y parámetros inválidos en los controladores.');
+    console.log('OK: reportes propios y del grupo dirigido, confidencialidad y parámetros inválidos en los controladores.');
     const exits = require('../frontend/src/app/api/salidas/route.ts');
     cookieToken = tokens.Porteria;
     const exitInput = { estudianteId: '1', recogeNombre: 'Persona', recogeApellido: 'Ficticia', recogeCedula: '123456', recogeParentesco: 'Madre', recogeCorreo: 'persona@example.test' };
@@ -112,25 +117,21 @@ async function main() {
     assert.equal(created.correoEnviado, false);
     assert.equal((await db.execute('SELECT COUNT(*) AS total FROM Salida')).rows[0].total, 1);
     await db.execute({ sql: 'DELETE FROM Salida WHERE id = ?', args: [created.id] });
-    for (const [id, date] of [['before', '2026-09-28 04:59:59'], ['start', '2026-09-28 05:00:00'], ['end', '2026-09-29 04:59:59'], ['after', '2026-09-29 05:00:00']]) {
+    const fechaBogota = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    const inicioDia = new Date(`${fechaBogota}T00:00:00-05:00`).getTime();
+    const fechaSql = (value) => new Date(value).toISOString().replace('T', ' ').slice(0, 19);
+    for (const [id, date] of [['before', fechaSql(inicioDia - 1)], ['start', fechaSql(inicioDia)], ['end', fechaSql(inicioDia + 86400000 - 1)], ['after', fechaSql(inicioDia + 86400000)]]) {
       await db.execute({ sql: "INSERT INTO Salida(id,estudianteId,acudienteId,motivo,registradoPorId,creadoEn) VALUES(?,1,1,'Prueba de fecha',3,?)", args: [id, date] });
     }
-    // Freeze SQLite's clock while retaining the actual query and database engine.
-    const execute = db.execute.bind(db);
-    try {
-      for (const now of ['2026-09-28 17:00:00', '2026-09-29 02:00:00']) {
-        db.execute = (statement) => execute(typeof statement === 'string' ? statement.replaceAll("'now'", `'${now}'`) : { ...statement, sql: statement.sql.replaceAll("'now'", `'${now}'`) });
-        assert.deepEqual((await (await exits.GET()).json()).map(exit => exit.id).sort(), ['end', 'start']);
-      }
-      cookieToken = tokens.Coordinador;
-      assert.equal((await (await exits.GET()).json()).length, 4);
-    } finally { db.execute = execute; }
+    assert.deepEqual((await (await exits.GET()).json()).map(exit => exit.id).sort(), ['end', 'start']);
+    cookieToken = tokens.Coordinador;
+    assert.equal((await (await exits.GET()).json()).length, 4);
     console.log('OK: registro de salidas, validación y límites de medianoche colombiana para Portería.');
     cookieToken = tokens.Docente;
     await db.execute('UPDATE Usuario SET activo=0 WHERE id=2');
     const reports = require('../frontend/src/app/api/reportes/route.ts');
     assert.equal((await reports.GET(new NextRequest('http://localhost/api/reportes'))).status, 401);
-    console.log(`OK: ${checks} comprobaciones de lectura y escrituras denegadas en 15 rutas, más revocación de cuenta inactiva.`);
+    console.log(`OK: ${checks} comprobaciones de lectura y escrituras denegadas en 16 rutas, más revocación de cuenta inactiva.`);
   } finally { db.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

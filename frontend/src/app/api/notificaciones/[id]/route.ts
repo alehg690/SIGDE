@@ -7,7 +7,7 @@ type Params = {
 };
 
 export async function PATCH(_req: Request, { params }: Params) {
-  const auth = await requerirSesion(['Coordinador', 'Docente']);
+  const auth = await requerirSesion(['Coordinador']);
   if (esErrorAuth(auth)) return auth.response;
 
   const { id } = await params;

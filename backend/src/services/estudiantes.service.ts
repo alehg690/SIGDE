@@ -30,7 +30,45 @@ const PARENTESCOS = new Set(['Madre', 'Padre', 'Abuela', 'Abuelo', 'Hermana', 'H
 function limpiar(value?: string) { return value?.trim().replace(/\s+/g, ' ') || ''; }
 function nombreCompleto(...partes: string[]) { return partes.filter(Boolean).join(' '); }
 
-function mapEstudiante(row: EstudianteRow) {
+function mapEstudiante(row: EstudianteRow, puedeVerDatosSensibles = true) {
+  if (!puedeVerDatosSensibles) {
+    return {
+      id: row.id,
+      nombre: row.nombre,
+      primerNombre: null,
+      segundoNombre: null,
+      primerApellido: null,
+      segundoApellido: null,
+      tipoDocumento: null,
+      documento: null,
+      correo: null,
+      grado: row.grado,
+      grupo: row.grupo,
+      jornada: row.jornada,
+      estado: row.estado,
+      activo: Boolean(row.activo),
+      archivado: Boolean(row.archivado),
+      creadoEn: row.creadoEn,
+      actualizadoEn: row.actualizadoEn,
+      novedades: Number(row.novedades || 0),
+      salidas: Number(row.salidas || 0),
+      acudiente: {
+        id: row.acudienteId,
+        nombre: row.acudienteNombre,
+        primerNombre: null,
+        segundoNombre: null,
+        primerApellido: null,
+        segundoApellido: null,
+        tipoDocumento: null,
+        contacto: '',
+        correo: null,
+        telefono: null,
+        documento: null,
+        parentesco: null,
+      },
+    };
+  }
+
   return {
     id: row.id, nombre: row.nombre, primerNombre: row.primerNombre, segundoNombre: row.segundoNombre,
     primerApellido: row.primerApellido, segundoApellido: row.segundoApellido, tipoDocumento: row.tipoDocumento,
@@ -71,14 +109,20 @@ function validarInput(input: EstudianteInput) {
   const acudienteTelefono = limpiar(input.acudienteTelefono);
 
   if (!primerNombre || !primerApellido || !segundoApellido) return { error: 'Completa los nombres y apellidos obligatorios del estudiante', status: 400 };
+  if ([primerNombre, segundoNombre, primerApellido, segundoApellido].some((valor) => valor && valor.length > 80)) return { error: 'Cada nombre o apellido puede tener máximo 80 caracteres', status: 400 };
   if (!TIPOS_DOCUMENTO.has(tipoDocumento) || !documento) return { error: 'Selecciona el tipo y registra el documento del estudiante', status: 400 };
+  if (!/^[A-Za-z0-9.-]{4,30}$/.test(documento)) return { error: 'El documento del estudiante no tiene un formato válido', status: 400 };
+  if (correo.length > 254) return { error: 'El correo del estudiante es demasiado largo', status: 400 };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return { error: 'Ingresa un correo institucional válido para el estudiante', status: 400 };
   if (!grupoAcademico) return { error: 'Selecciona un grupo válido', status: 400 };
   if (!ESTADOS.has(estado)) return { error: 'Selecciona un estado válido', status: 400 };
   if (!acudientePrimerNombre || !acudientePrimerApellido || !acudienteSegundoApellido) return { error: 'Completa los nombres y apellidos obligatorios del acudiente', status: 400 };
+  if ([acudientePrimerNombre, acudienteSegundoNombre, acudientePrimerApellido, acudienteSegundoApellido].some((valor) => valor && valor.length > 80)) return { error: 'Cada nombre o apellido del acudiente puede tener máximo 80 caracteres', status: 400 };
   if (!TIPOS_DOCUMENTO.has(acudienteTipoDocumento) || !acudienteDocumento) return { error: 'Selecciona el tipo y registra el documento del acudiente', status: 400 };
+  if (!/^[A-Za-z0-9.-]{4,30}$/.test(acudienteDocumento)) return { error: 'El documento del acudiente no tiene un formato válido', status: 400 };
   if (!PARENTESCOS.has(acudienteParentesco)) return { error: 'Selecciona el parentesco del acudiente', status: 400 };
-  if (!acudienteTelefono) return { error: 'El número de teléfono del acudiente es obligatorio', status: 400 };
+  if (!/^[+0-9() -]{7,25}$/.test(acudienteTelefono)) return { error: 'Ingresa un teléfono válido para el acudiente', status: 400 };
+  if (acudienteCorreo.length > 254) return { error: 'El correo del acudiente es demasiado largo', status: 400 };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(acudienteCorreo)) return { error: 'Ingresa un correo válido para el acudiente', status: 400 };
 
   return { data: {
@@ -106,9 +150,10 @@ const SELECT_ESTUDIANTE = `
     a.documento AS acudienteDocumento, a.parentesco AS acudienteParentesco
   FROM Estudiante e INNER JOIN Acudiente a ON a.id = e.acudienteId`;
 
-export async function listarEstudiantes() {
+export async function listarEstudiantes(usuario: SesionUsuario) {
   const result = await db.execute(`${SELECT_ESTUDIANTE} WHERE e.archivado = 0 ORDER BY e.nombre ASC`);
-  return { data: result.rows.map((row) => mapEstudiante(row as unknown as EstudianteRow)) };
+  const puedeVerDatosSensibles = usuario.rol === 'Coordinador';
+  return { data: result.rows.map((row) => mapEstudiante(row as unknown as EstudianteRow, puedeVerDatosSensibles)) };
 }
 
 export async function crearEstudiante(input: EstudianteInput, usuario?: SesionUsuario) {
@@ -127,13 +172,16 @@ export async function crearEstudiante(input: EstudianteInput, usuario?: SesionUs
 
   const estudianteId = Number(result[1].rows[0]?.id);
   if (usuario) await registrarAccion({ usuarioId: usuario.id, accion: 'crear_estudiante', entidad: 'Estudiante', entidadId: estudianteId });
-  return obtenerEstudiante(estudianteId, 201);
+  return obtenerEstudiante(estudianteId, usuario, 201);
 }
 
-export async function obtenerEstudiante(id: number, status = 200) {
+export async function obtenerEstudiante(id: number, usuario?: SesionUsuario, status = 200) {
   const result = await db.execute({ sql: `${SELECT_ESTUDIANTE} WHERE e.id = ? LIMIT 1`, args: [id] });
   if (!result.rows[0]) return { error: 'Estudiante no encontrado', status: 404 };
-  return { data: mapEstudiante(result.rows[0] as unknown as EstudianteRow), status };
+  return {
+    data: mapEstudiante(result.rows[0] as unknown as EstudianteRow, !usuario || usuario.rol === 'Coordinador'),
+    status,
+  };
 }
 
 export async function actualizarEstudiante(id: number, input: EstudianteInput, usuario?: SesionUsuario) {
@@ -153,7 +201,7 @@ export async function actualizarEstudiante(id: number, input: EstudianteInput, u
   ], 'write');
 
   if (usuario) await registrarAccion({ usuarioId: usuario.id, accion: 'actualizar_estudiante', entidad: 'Estudiante', entidadId: id });
-  return obtenerEstudiante(id);
+  return obtenerEstudiante(id, usuario);
 }
 
 export async function archivarEstudiante(id: number, usuario?: SesionUsuario) {
