@@ -29,10 +29,6 @@
     "migrate:security": "node --env-file=.env scripts/db/apply-auth-security-migration.mjs",
     "migrate:initial-password": "node --env-file=.env scripts/db/apply-initial-password-migration.mjs",
     "auth:unlock": "node --env-file=.env scripts/db/unlock-auth-account.mjs",
-    "db:migrate:staging": "node --env-file=.env.staging scripts/db/libsql-migrate.mjs apply",
-    "db:migrate:staging:status": "node --env-file=.env.staging scripts/db/libsql-migrate.mjs status",
-    "db:migrate:staging:dry-run": "node --env-file=.env.staging scripts/db/libsql-migrate.mjs dry-run",
-    "seed:staging": "node --env-file=.env.staging scripts/db/seed-staging.mjs",
     "db:backup": "node --env-file=.env scripts/db/backup-libsql.mjs",
     "monitor:production": "node scripts/monitor-production.mjs"
   },

@@ -1,5 +1,5 @@
 const MINIMUM_JWT_SECRET_LENGTH = 32;
-const APP_ENVIRONMENTS = ['development', 'staging', 'production'] as const;
+const APP_ENVIRONMENTS = ['development', 'production'] as const;
 
 export type AppEnvironment = (typeof APP_ENVIRONMENTS)[number];
 
@@ -18,7 +18,7 @@ export function getAppEnvironment(): AppEnvironment {
     throw new Error('Falta la variable de entorno obligatoria: APP_ENV');
   }
   if (!APP_ENVIRONMENTS.includes(value as AppEnvironment)) {
-    throw new Error('APP_ENV debe ser development, staging o production');
+    throw new Error('APP_ENV debe ser development o production');
   }
 
   const environment = value as AppEnvironment;
