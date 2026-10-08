@@ -12,6 +12,7 @@ import { crearToken, verificarToken } from '@backend/utils/jwt';
 import { autorizarRoles, esErrorAutorizacion } from '@backend/middleware/rol.middleware';
 import type { SesionUsuario } from '@backend/types/roles';
 import {
+  getSessionCookieDeletionOptions,
   getSessionCookieName,
   getSessionCookieOptions,
   LEGACY_SESSION_COOKIE_NAME,
@@ -44,7 +45,9 @@ function obtenerClienteId(req: NextRequest) {
 }
 
 function limpiarCookiesSesion(cookieStore: Awaited<ReturnType<typeof cookies>>) {
-  cookieStore.delete(getSessionCookieName());
+  // Las cookies con prefijo __Host- solo aceptan cambios (incluido su borrado)
+  // cuando la respuesta conserva Secure y Path=/.
+  cookieStore.set(getSessionCookieName(), '', getSessionCookieDeletionOptions());
   cookieStore.delete(LEGACY_SESSION_COOKIE_NAME);
 }
 

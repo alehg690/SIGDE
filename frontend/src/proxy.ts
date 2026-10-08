@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verificarToken } from '@backend/utils/jwt';
-import { getSessionCookieName, LEGACY_SESSION_COOKIE_NAME } from '@backend/utils/session-cookie';
+import {
+  getSessionCookieDeletionOptions,
+  getSessionCookieName,
+  LEGACY_SESSION_COOKIE_NAME,
+} from '@backend/utils/session-cookie';
 
 const PROTECTED_PATHS = ['/dashboard'];
 
@@ -23,7 +27,7 @@ export async function proxy(request: NextRequest) {
 
   if (isProtectedPath && !isAuthenticated) {
     const response = NextResponse.redirect(new URL('/', request.url));
-    response.cookies.delete(getSessionCookieName());
+    response.cookies.set(getSessionCookieName(), '', getSessionCookieDeletionOptions());
     response.cookies.delete(LEGACY_SESSION_COOKIE_NAME);
     return response;
   }

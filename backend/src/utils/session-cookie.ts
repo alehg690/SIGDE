@@ -17,3 +17,11 @@ export function getSessionCookieOptions() {
     priority: 'high' as const,
   };
 }
+
+export function getSessionCookieDeletionOptions() {
+  return {
+    ...getSessionCookieOptions(),
+    maxAge: 0,
+    expires: new Date(0),
+  };
+}
