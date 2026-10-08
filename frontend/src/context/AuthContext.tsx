@@ -28,6 +28,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [cargando, setCargando] = useState(true);
   const [avisoSesion, setAvisoSesion] = useState('');
   const ultimaRenovacionRef = useRef(0);
+  const cerrandoSesionRef = useRef(false);
+  const renovacionEnCursoRef = useRef<ReturnType<typeof renovarSesion> | null>(null);
 
   const refrescarSesion = useCallback(async () => {
     setCargando(true);
@@ -50,17 +52,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   const cerrarSesion = useCallback(async (message = 'Sesion cerrada correctamente.') => {
+    if (cerrandoSesionRef.current) return;
+    cerrandoSesionRef.current = true;
+
     try {
+      // Una renovación iniciada justo antes del logout puede volver a escribir la
+      // cookie de sesión. Esperamos a que termine y eliminamos la cookie después.
+      await renovacionEnCursoRef.current?.catch(() => undefined);
       await logout();
     } catch (error) {
       console.error(error);
       setAvisoSesion('No fue posible cerrar la sesión. Revisa tu conexión e inténtalo de nuevo.');
+      cerrandoSesionRef.current = false;
       return;
     }
     setUsuario(null);
     setExpiraEn(null);
     sessionStorage.setItem(SESSION_MESSAGE_KEY, message);
-    router.push('/');
+    router.replace('/');
+
+    // Para permitir un inicio y cierre posteriores sin desmontar el layout raíz.
+    window.setTimeout(() => {
+      cerrandoSesionRef.current = false;
+    }, 0);
   }, [router]);
 
   useEffect(() => {
@@ -79,6 +93,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const activityEvents = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'];
 
     const registrarActividad = () => {
+      if (cerrandoSesionRef.current) return;
+
       if (inactivityTimer) window.clearTimeout(inactivityTimer);
       inactivityTimer = window.setTimeout(() => {
         void cerrarSesion('Sesion cerrada por inactividad.');
@@ -87,9 +103,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (Date.now() - ultimaRenovacionRef.current < ACTIVITY_REFRESH_INTERVAL_MS) return;
 
       ultimaRenovacionRef.current = Date.now();
-      void renovarSesion()
-        .then((session) => setExpiraEn(session.expiraEn ?? null))
-        .catch(() => void cerrarSesion('Sesion cerrada por inactividad.'));
+      const renovacion = renovarSesion();
+      renovacionEnCursoRef.current = renovacion;
+      void renovacion
+        .then((session) => {
+          if (!cerrandoSesionRef.current) setExpiraEn(session.expiraEn ?? null);
+        })
+        .catch(() => {
+          if (!cerrandoSesionRef.current) void cerrarSesion('Sesion cerrada por inactividad.');
+        })
+        .finally(() => {
+          if (renovacionEnCursoRef.current === renovacion) {
+            renovacionEnCursoRef.current = null;
+          }
+        });
     };
 
     activityEvents.forEach((eventName) => {
