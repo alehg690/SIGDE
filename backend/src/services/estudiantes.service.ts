@@ -24,7 +24,7 @@ export type EstudianteInput = {
 };
 
 const TIPOS_DOCUMENTO = new Set(['RC', 'TI', 'CC', 'CE', 'PPT', 'PEP', 'NUIP']);
-const ESTADOS = new Set(['Activo', 'Desescolarizado', 'Egresado']);
+const ESTADOS = new Set(['Activo', 'Desescolarizado', 'Egresado', 'Retirado/a']);
 const PARENTESCOS = new Set(['Madre', 'Padre', 'Abuela', 'Abuelo', 'Hermana', 'Hermano', 'Tía', 'Tío', 'Tutor legal', 'Otro']);
 
 function limpiar(value?: string) { return value?.trim().replace(/\s+/g, ' ') || ''; }
