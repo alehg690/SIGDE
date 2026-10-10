@@ -4716,15 +4716,6 @@ button {
 .profile-workspace .profile-list dd { margin-top: 4px; color: #d8e6f1; font-size: .76rem; }
 .profile-help { margin: 0; color: #788fa3; font-size: .72rem; line-height: 1.5; }
 .profile-inline-actions { display: flex; justify-content: flex-end; gap: 10px; }
-.profile-password-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
-.profile-password-field { display: grid; gap: 6px; color: #afc1d2; font-size: .76rem; font-weight: 700; }
-.profile-password-field:first-child, .profile-password-field:last-child { grid-column: 1 / -1; }
-.profile-password-input { display: flex; min-width: 0; border: 1px solid var(--module-border); border-radius: 9px; background: var(--module-surface-soft); overflow: hidden; }
-.profile-password-input:focus-within { border-color: #3c91d3; box-shadow: 0 0 0 3px rgba(49, 130, 206, .14); }
-.profile-password-input input { min-width: 0; min-height: 40px; flex: 1; border: 0; outline: 0; background: transparent; color: var(--module-text); font: inherit; padding: 9px 11px; }
-.profile-password-input button { border: 0; border-left: 1px solid var(--module-border); background: rgba(35, 91, 136, .16); color: #8fc7ee; cursor: pointer; font-size: .68rem; font-weight: 800; padding: 0 11px; }
-.profile-password-strength { grid-column: 1 / -1; margin: -3px 0 0; }
-.profile-password-strength .strength-bars span { background: rgba(126, 154, 181, .18); }
 .profile-preference-grid { display: grid; gap: 13px; }
 .profile-preference-grid > label:not(.profile-check-option) { display: grid; gap: 6px; color: #afc1d2; font-size: .76rem; font-weight: 700; }
 .profile-preference-grid select { width: 100%; min-height: 40px; border: 1px solid var(--module-border); border-radius: 9px; outline: 0; background: var(--module-surface-soft); color: var(--module-text); padding: 8px 11px; }
@@ -5167,7 +5158,7 @@ button {
   .settings-fields { grid-template-columns: 1fr; }
   .settings-action-buttons, .profile-inline-actions { width: 100%; }
   .settings-action-buttons button, .profile-inline-actions button { flex: 1; }
-  .profile-workspace .profile-list, .profile-password-grid { grid-template-columns: 1fr; }
+  .profile-workspace .profile-list { grid-template-columns: 1fr; }
   .profile-session-row { align-items: stretch; flex-direction: column; }
   .profile-session-button { width: 100%; }
   .coexistence-form-grid { grid-template-columns: 1fr; }

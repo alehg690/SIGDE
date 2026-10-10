@@ -1,7 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { calcularFortaleza } from '@/lib/password-strength';
+import { FormEvent, useEffect, useState } from 'react';
 
 type ProfileUser = { nombre: string; correo: string; rol: string };
 type Feedback = { tipo: 'success' | 'error'; texto: string };
@@ -12,40 +11,16 @@ async function leerRespuesta(response: Response, fallback: string) {
   return data;
 }
 
-function PasswordInput({ id, label, value, onChange, disabled, autoComplete }: {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  disabled: boolean;
-  autoComplete: 'current-password' | 'new-password';
-}) {
-  const [visible, setVisible] = useState(false);
-  return <label className="profile-password-field" htmlFor={id}>
-    <span>{label}</span>
-    <span className="profile-password-input">
-      <input id={id} type={visible ? 'text' : 'password'} value={value} disabled={disabled} autoComplete={autoComplete} minLength={autoComplete === 'new-password' ? 8 : undefined} maxLength={128} onChange={(event) => onChange(event.target.value)} required />
-      <button type="button" disabled={disabled} aria-controls={id} aria-pressed={visible} onClick={() => setVisible((actual) => !actual)}>{visible ? 'Ocultar' : 'Mostrar'}</button>
-    </span>
-  </label>;
-}
-
 export default function ProfileWorkspace({ usuario, onUpdated }: { usuario: ProfileUser; onUpdated: () => void }) {
   const [nombre, setNombre] = useState(usuario.nombre);
   const [guardandoNombre, setGuardandoNombre] = useState(false);
   const [feedbackNombre, setFeedbackNombre] = useState<Feedback | null>(null);
-  const [actual, setActual] = useState('');
-  const [nueva, setNueva] = useState('');
-  const [confirmacion, setConfirmacion] = useState('');
-  const [guardandoContrasena, setGuardandoContrasena] = useState(false);
-  const [feedbackContrasena, setFeedbackContrasena] = useState<Feedback | null>(null);
   const [densidad, setDensidad] = useState<'comoda' | 'compacta'>('comoda');
   const [reducirMovimiento, setReducirMovimiento] = useState(false);
   const [preferenciasGuardadas, setPreferenciasGuardadas] = useState({ densidad: 'comoda' as 'comoda' | 'compacta', reducirMovimiento: false });
   const [feedbackPreferencias, setFeedbackPreferencias] = useState<Feedback | null>(null);
   const [cerrandoSesiones, setCerrandoSesiones] = useState(false);
   const [feedbackSesiones, setFeedbackSesiones] = useState<Feedback | null>(null);
-  const fortaleza = useMemo(() => nueva ? calcularFortaleza(nueva) : null, [nueva]);
   const nombreLimpio = nombre.trim();
   const nombreCambio = nombreLimpio !== usuario.nombre;
   const preferenciasCambio = densidad !== preferenciasGuardadas.densidad || reducirMovimiento !== preferenciasGuardadas.reducirMovimiento;
@@ -82,36 +57,6 @@ export default function ProfileWorkspace({ usuario, onUpdated }: { usuario: Prof
     }
   }
 
-  async function guardarContrasena(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setFeedbackContrasena(null);
-    if (nueva !== confirmacion) {
-      setFeedbackContrasena({ tipo: 'error', texto: 'Las contraseñas nuevas no coinciden.' });
-      return;
-    }
-    if (nueva.length < 8 || !/[A-Za-zÁÉÍÓÚÑáéíóúñ]/.test(nueva) || !/[0-9]/.test(nueva)) {
-      setFeedbackContrasena({ tipo: 'error', texto: 'La nueva contraseña debe tener al menos 8 caracteres y combinar letras y números.' });
-      return;
-    }
-    setGuardandoContrasena(true);
-    try {
-      const response = await fetch('/api/perfil', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contrasenaActual: actual, nuevaContrasena: nueva }),
-      });
-      const data = await leerRespuesta(response, 'No se pudo cambiar la contraseña.');
-      setActual('');
-      setNueva('');
-      setConfirmacion('');
-      setFeedbackContrasena({ tipo: 'success', texto: data.mensaje || 'Contraseña actualizada correctamente.' });
-    } catch (error) {
-      setFeedbackContrasena({ tipo: 'error', texto: error instanceof Error ? error.message : 'No hay conexión con el servidor.' });
-    } finally {
-      setGuardandoContrasena(false);
-    }
-  }
-
   function guardarPreferencias(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     localStorage.setItem('sigde_ui_density', densidad);
@@ -137,7 +82,7 @@ export default function ProfileWorkspace({ usuario, onUpdated }: { usuario: Prof
 
   const rol = usuario.rol === 'Porteria' ? 'Portería' : usuario.rol;
   return <section className="workspace-panel settings-workspace profile-workspace">
-    <header className="module-page-heading"><div className="module-title"><h2>Mi perfil</h2><p>Administra tus datos personales y la seguridad de tu cuenta.</p></div><span className="profile-status"><i aria-hidden="true" /> Cuenta activa</span></header>
+    <header className="module-page-heading"><div className="module-title"><h2>Mi perfil</h2><p>Administra tus datos personales y preferencias de interfaz.</p></div><span className="profile-status"><i aria-hidden="true" /> Cuenta activa</span></header>
     <div className="profile-summary" aria-label="Resumen de la cuenta"><span className="profile-summary-avatar" aria-hidden="true">{usuario.nombre.slice(0, 1).toUpperCase()}</span><div><strong>{usuario.nombre}</strong><span>{usuario.correo}</span></div><span className="profile-role-badge">{rol}</span></div>
 
     <form className="settings-form profile-section-form" onSubmit={guardarNombre}>
@@ -150,22 +95,8 @@ export default function ProfileWorkspace({ usuario, onUpdated }: { usuario: Prof
       </div></section>
     </form>
 
-    <form className="settings-form profile-section-form" onSubmit={guardarContrasena}>
-      <section className="settings-card"><div className="settings-card-heading"><span>02</span><div><h3>Seguridad de la cuenta</h3><p>Cambia tu contraseña. Las demás sesiones abiertas se cerrarán automáticamente.</p></div></div><div className="profile-card-content">
-        {feedbackContrasena && <p className={`feedback ${feedbackContrasena.tipo}`} role={feedbackContrasena.tipo === 'error' ? 'alert' : 'status'}>{feedbackContrasena.texto}</p>}
-        <div className="profile-password-grid">
-          <PasswordInput id="profile-current-password" label="Contraseña actual" value={actual} onChange={setActual} disabled={guardandoContrasena} autoComplete="current-password" />
-          <PasswordInput id="profile-new-password" label="Nueva contraseña" value={nueva} onChange={setNueva} disabled={guardandoContrasena} autoComplete="new-password" />
-          {fortaleza && <div className="password-strength profile-password-strength" aria-label={`Fortaleza de contraseña: ${fortaleza.texto}`}><div className="strength-bars" aria-hidden="true">{[1, 2, 3, 4, 5].map((nivel) => <span key={nivel} style={{ backgroundColor: nivel <= fortaleza.nivel ? fortaleza.color : undefined }} />)}</div><p style={{ color: fortaleza.color }}>{fortaleza.texto}</p></div>}
-          <PasswordInput id="profile-confirm-password" label="Confirmar contraseña nueva" value={confirmacion} onChange={setConfirmacion} disabled={guardandoContrasena} autoComplete="new-password" />
-        </div>
-        <p className="profile-help">Usa al menos 8 caracteres y combina letras y números. Una frase larga es más segura.</p>
-        <div className="profile-inline-actions"><button type="submit" className="module-primary-action" disabled={guardandoContrasena || !actual || !nueva || !confirmacion}>{guardandoContrasena ? 'Actualizando...' : 'Cambiar contraseña'}</button></div>
-      </div></section>
-    </form>
-
     <form className="settings-form profile-section-form" onSubmit={guardarPreferencias}>
-      <section className="settings-card"><div className="settings-card-heading"><span>03</span><div><h3>Preferencias de interfaz</h3><p>Personaliza la cantidad de información visible y las animaciones en este dispositivo.</p></div></div><div className="profile-card-content">
+      <section className="settings-card"><div className="settings-card-heading"><span>02</span><div><h3>Preferencias de interfaz</h3><p>Personaliza la cantidad de información visible y las animaciones en este dispositivo.</p></div></div><div className="profile-card-content">
         {feedbackPreferencias && <p className={`feedback ${feedbackPreferencias.tipo}`} role="status">{feedbackPreferencias.texto}</p>}
         <div className="profile-preference-grid">
           <label><span>Densidad de contenido</span><select value={densidad} onChange={(event) => { setDensidad(event.target.value as 'comoda' | 'compacta'); setFeedbackPreferencias(null); }}><option value="comoda">Cómoda</option><option value="compacta">Compacta</option></select><small>La vista compacta reduce espacios para mostrar más información.</small></label>
@@ -176,7 +107,7 @@ export default function ProfileWorkspace({ usuario, onUpdated }: { usuario: Prof
     </form>
 
     <section className="settings-form profile-section-form" aria-labelledby="profile-sessions-title">
-      <div className="settings-card"><div className="settings-card-heading"><span>04</span><div><h3 id="profile-sessions-title">Sesiones de la cuenta</h3><p>Protege tu cuenta si iniciaste sesión en un equipo que ya no utilizas.</p></div></div><div className="profile-card-content">
+      <div className="settings-card"><div className="settings-card-heading"><span>03</span><div><h3 id="profile-sessions-title">Sesiones de la cuenta</h3><p>Protege tu cuenta si iniciaste sesión en un equipo que ya no utilizas.</p></div></div><div className="profile-card-content">
         {feedbackSesiones && <p className={`feedback ${feedbackSesiones.tipo}`} role={feedbackSesiones.tipo === 'error' ? 'alert' : 'status'}>{feedbackSesiones.texto}</p>}
         <div className="profile-session-row"><div><strong>Sesión actual protegida</strong><span>Las demás sesiones perderán acceso y deberán autenticarse otra vez.</span></div><button type="button" className="module-secondary-action profile-session-button" disabled={cerrandoSesiones} onClick={() => void cerrarSesiones()}>{cerrandoSesiones ? 'Cerrando...' : 'Cerrar las demás sesiones'}</button></div>
       </div></div>
