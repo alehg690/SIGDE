@@ -33,9 +33,9 @@ require.extensions['.ts'] = function (module, filename) {
 const { NextRequest } = require('next/server');
 const { db } = require('../backend/src/config/database.ts');
 const { crearToken } = require('../backend/src/utils/jwt.ts');
-const all = ['Coordinador', 'Docente', 'Porteria'];
-const teaching = ['Coordinador', 'Docente'];
-const management = ['Coordinador'];
+const all = ['Admin', 'Coordinador', 'Docente', 'Porteria'];
+const teaching = ['Admin', 'Coordinador', 'Docente'];
+const management = ['Admin', 'Coordinador'];
 const routes = [
   ['usuarios', management, 'POST', management],
   ['estudiantes', all, 'POST', management],
@@ -44,7 +44,7 @@ const routes = [
   ['convivencia', teaching, 'POST', teaching],
   ['alertas', teaching],
   ['notificaciones', management, 'POST', management],
-  ['salidas', ['Coordinador', 'Porteria'], 'POST', ['Coordinador', 'Porteria']],
+  ['salidas', ['Admin', 'Coordinador', 'Porteria'], 'POST', ['Admin', 'Coordinador', 'Porteria']],
   ['eventos', all, 'POST', management],
   ['configuracion', management, 'PUT', management],
   ['auditoria', management],
@@ -63,8 +63,9 @@ async function main() {
       if (fs.existsSync(migration)) await db.executeMultiple(fs.readFileSync(migration, 'utf8'));
     }
     const tokens = {};
-    for (const [index, rol] of all.entries()) {
-      const id = index + 1;
+    const roleIds = { Coordinador: 1, Docente: 2, Porteria: 3, Admin: 4 };
+    for (const rol of all) {
+      const id = roleIds[rol];
       await db.execute({ sql: 'INSERT INTO Usuario(id,nombre,correo,contrasena,rol) VALUES(?,?,?,?,?)', args: [id, rol, `${id}@example.test`, 'unused', rol] });
       tokens[rol] = await crearToken({ id, rol, versionSesion: 1 });
     }

@@ -63,6 +63,17 @@ async function main() {
     assert.equal(JSON.parse(audit).cambioContrasena,true);
     assert.equal(audit.includes('NuevaPrueba2026'),false);
     assert.equal(audit.includes(changed.contrasena),false);
+    const { cambiarContrasenaPerfil, cerrarOtrasSesiones } = require('../backend/src/services/perfil.service.ts');
+    const perfilDocente = { ...docente, versionSesion:Number(changed.versionSesion) };
+    assert.equal((await cambiarContrasenaPerfil('incorrecta','PerfilPrueba2026',perfilDocente)).status,400);
+    const cambioPerfil = await cambiarContrasenaPerfil('NuevaPrueba2026','PerfilPrueba2026',perfilDocente);
+    assert.equal(cambioPerfil.status,200);
+    const trasPerfil = (await db.execute('SELECT * FROM Usuario WHERE id=2')).rows[0];
+    assert.equal(await verificarPassword('PerfilPrueba2026',trasPerfil.contrasena),true);
+    assert.equal(Number(trasPerfil.versionSesion),Number(changed.versionSesion)+1);
+    const cierre = await cerrarOtrasSesiones({...perfilDocente,versionSesion:Number(trasPerfil.versionSesion)});
+    assert.equal(cierre.status,200);
+    assert.equal(Number((await db.execute('SELECT versionSesion FROM Usuario WHERE id=2')).rows[0].versionSesion),Number(trasPerfil.versionSesion)+1);
     const recoveryCode = '654321';
     await db.execute({
       sql: 'UPDATE Usuario SET tokenRecuperacion = ?, tokenExpira = ? WHERE id = 2',

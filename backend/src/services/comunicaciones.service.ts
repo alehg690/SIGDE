@@ -67,7 +67,7 @@ export async function listarComunicaciones(usuario: SesionUsuario) {
     sql: `SELECT c.id, c.titulo, c.tipo, c.destinatarios, c.contenido, c.estado, c.autorId, c.creadoEn, c.publicadoEn, c.visualizaciones, u.nombre AS autor,
       (SELECT COUNT(*) FROM ComunicacionArchivo a WHERE a.comunicacionId = c.id) AS archivosCantidad
       FROM Comunicacion c JOIN Usuario u ON u.id = c.autorId
-      WHERE c.estado = 'Publicado' OR (c.estado = 'Borrador' AND (c.autorId = ? OR ? = 'Coordinador'))
+      WHERE c.estado = 'Publicado' OR (c.estado = 'Borrador' AND (c.autorId = ? OR ? IN ('Coordinador', 'Admin')))
       ORDER BY CASE WHEN c.estado = 'Publicado' THEN c.publicadoEn ELSE c.creadoEn END DESC, c.id DESC LIMIT 300`,
     args: [usuario.id, usuario.rol],
   });
@@ -112,7 +112,7 @@ export async function obtenerComunicacion(id: number, usuario: SesionUsuario) {
   const result = await db.execute({
     sql: `SELECT c.id, c.titulo, c.tipo, c.destinatarios, c.contenido, c.estado, c.autorId, c.creadoEn, c.publicadoEn, c.visualizaciones, u.nombre AS autor
       FROM Comunicacion c JOIN Usuario u ON u.id = c.autorId
-      WHERE c.id = ? AND (c.estado = 'Publicado' OR c.autorId = ? OR ? = 'Coordinador') LIMIT 1`,
+      WHERE c.id = ? AND (c.estado = 'Publicado' OR c.autorId = ? OR ? IN ('Coordinador', 'Admin')) LIMIT 1`,
     args: [id, usuario.id, usuario.rol],
   });
   const comunicacion = result.rows[0];
@@ -153,7 +153,7 @@ export async function obtenerArchivoComunicacion(
   const result = await db.execute({
     sql: `SELECT a.nombre, a.mimeType, a.contenido FROM ComunicacionArchivo a
       JOIN Comunicacion c ON c.id = a.comunicacionId
-      WHERE a.id = ? AND c.id = ? AND (c.estado = 'Publicado' OR c.autorId = ? OR ? = 'Coordinador') LIMIT 1`,
+      WHERE a.id = ? AND c.id = ? AND (c.estado = 'Publicado' OR c.autorId = ? OR ? IN ('Coordinador', 'Admin')) LIMIT 1`,
     args: [archivoId, comunicacionId, usuario.id, usuario.rol],
   });
   const archivo = result.rows[0];

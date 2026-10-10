@@ -15,7 +15,7 @@ async function sourceFiles(directory) {
   return nested.flat().filter((path) => /\.(ts|tsx|js|jsx)$/.test(path));
 }
 
-test('el análisis funciona localmente y no transmite reportes a proveedores externos', async () => {
+test('el agente analiza localmente y no transmite reportes a proveedores externos', async () => {
   const frontendRoot = new URL('../../../frontend/src/', import.meta.url).pathname;
   const files = await sourceFiles(frontendRoot);
   const sources = await Promise.all(files.map((file) => readFile(file, 'utf8')));
@@ -52,7 +52,7 @@ test('el panel existente conserva En vivo, Ver todo, detalle y acciones humanas'
   assert.match(dashboard, /Ver todo/);
   assert.match(dashboard, /15_000/);
   for (const label of ['Marcar como revisada', 'Confirmar', 'Corregir', 'Descartar', 'Cerrar alerta']) assert.match(followUp, new RegExp(label));
-  assert.match(followUp, /Análisis local, orientativo y sin servicios externos\. Requiere revisión humana\./);
+  assert.match(followUp, /agente local de SIGDE, sin servicios externos ni costos por uso/);
 });
 
 test('la migración elimina solo demos identificados y aplica unicidad activa', async () => {

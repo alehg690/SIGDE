@@ -28,7 +28,7 @@ const LEVEL_LABELS: Record<AttentionLevel, string> = { informational: 'Informati
 
 function origenLabel(origen: string, detail = false) {
   if (origen === 'rule+local') return detail ? 'Regla + análisis local de SIGDE' : 'Regla + análisis local';
-  if (origen === 'rule+ai') return detail ? 'Regla enriquecida por IA externa' : 'Regla + IA externa';
+  if (origen === 'rule+ai') return detail ? 'Regla + análisis heredado' : 'Análisis heredado';
   return detail ? 'Generada por regla' : 'Regla';
 }
 
@@ -153,12 +153,12 @@ export default function FollowUpWorkspace({ canManage, initialAlertId }: { canMa
         <dl className="module-detail-metadata"><div><dt>Estado</dt><dd>{STATUS_LABELS[detalle.estado]}</dd></div><div><dt>Nivel</dt><dd>{LEVEL_LABELS[detalle.nivelAtencion]}</dd></div><div><dt>Periodo</dt><dd>{fechaLegible(detalle.periodoInicio)} — {fechaLegible(detalle.periodoFin)}</dd></div><div><dt>Confianza</dt><dd>{detalle.confianza == null ? 'No disponible' : `${Math.round(detalle.confianza * 100)}%`}</dd></div></dl>
         <section className="alert-detail-section"><h4>Regla activada</h4><p>{detalle.resumenCorto}</p></section>
         <section className="alert-detail-section"><h4>Evidencias relacionadas</h4>{detalle.evidencia.length ? <ul>{detalle.evidencia.map((item) => <li key={item.id}><strong>Reporte #{item.reporteId}</strong> · {item.tipoFalta || item.tipoEvidencia} · {fechaLegible(item.fecha)}{item.situacion ? ` · ${item.situacion}` : ''}</li>)}</ul> : <p>Sin evidencias disponibles.</p>}</section>
-        <section className="alert-detail-section"><h4>Análisis inteligente de SIGDE</h4><p>{detalle.analisisIa?.summary || 'La alerta se mantiene basada en reglas. El análisis local aún no está disponible.'}</p></section>
+        <section className="alert-detail-section"><h4>Análisis inteligente de SIGDE</h4><p>{detalle.analisisIa?.summary || 'La alerta se mantiene basada en reglas mientras se genera el análisis.'}</p></section>
         <AnalysisList title="Posibles explicaciones (hipótesis)" items={detalle.analisisIa?.hypotheses} />
         <AnalysisList title="Acciones sugeridas" items={detalle.analisisIa?.suggestedActions} />
         <AnalysisList title="Señales positivas" items={detalle.analisisIa?.positiveSignals} />
         <AnalysisList title="Información faltante" items={detalle.analisisIa?.missingInformation} />
-        <p className="alert-ai-notice">Análisis local, orientativo y sin servicios externos. Requiere revisión humana.</p>
+        <p className="alert-ai-notice">Análisis orientativo generado por el agente local de SIGDE, sin servicios externos ni costos por uso. Requiere revisión humana.</p>
         <section className="alert-detail-section"><h4>Historial de cambios</h4>{detalle.historial.length ? <ol className="alert-history">{detalle.historial.map((item) => <li key={item.id}><strong>{item.estadoAnterior ? `${item.estadoAnterior} → ` : ''}{item.estadoNuevo}</strong><span>{item.motivo || 'Sin nota'} · {item.usuario || item.proceso || 'Proceso del sistema'} · {fechaLegible(item.creadoEn)}</span></li>)}</ol> : <p>Sin cambios registrados.</p>}</section>
         {canManage ? <div className="follow-up-editor"><label><span>Motivo o corrección</span><textarea value={nota} maxLength={1500} onChange={(event) => setNota(event.target.value)} placeholder="Obligatorio para corregir, descartar o cerrar." /><small>{nota.length}/1500</small></label><div className="alert-action-grid"><button disabled={guardando} onClick={() => void actuar('review')}>Marcar como revisada</button><button disabled={guardando} onClick={() => void actuar('confirm')}>Confirmar</button><button disabled={guardando} onClick={() => void actuar('correct')}>Corregir</button><button disabled={guardando} onClick={() => void actuar('dismiss')}>Descartar</button><button disabled={guardando} onClick={() => void actuar('close')}>Cerrar alerta</button><button disabled={guardando} onClick={() => void actuar('regenerate')}>Regenerar análisis</button></div></div> : <div className="module-readonly-note"><strong>Consulta docente</strong><p>El análisis y la evidencia son de consulta. Coordinación registra los cambios de estado.</p></div>}
       </> : <div className="module-empty-state"><strong>Selecciona una alerta</strong><p>Aquí podrás consultar evidencia, análisis e historial.</p></div>}</aside>

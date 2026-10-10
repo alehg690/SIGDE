@@ -1,4 +1,4 @@
-export type RolUsuario = 'Coordinador' | 'Docente' | 'Porteria';
+export type RolUsuario = 'Admin' | 'Coordinador' | 'Docente' | 'Porteria';
 
 export type SesionUsuario = {
   id: number;
@@ -9,11 +9,12 @@ export type SesionUsuario = {
   requiereCambioContrasena: boolean;
 };
 
-const ROLES_VALIDOS: RolUsuario[] = ['Coordinador', 'Docente', 'Porteria'];
+const ROLES_VALIDOS: RolUsuario[] = ['Admin', 'Coordinador', 'Docente', 'Porteria'];
 
 export function normalizarRol(rol: string): RolUsuario | null {
   const valor = rol.trim().toLowerCase();
 
+  if (valor === 'admin' || valor === 'administrador' || valor === 'administradora') return 'Admin';
   if (valor === 'coordinador' || valor === 'coordinadora') return 'Coordinador';
   if (valor === 'docente' || valor === 'profesor' || valor === 'maestro') return 'Docente';
   if (valor === 'porteria' || valor === 'portería' || valor === 'portero') return 'Porteria';
@@ -26,9 +27,13 @@ export function esRolValido(rol: string): rol is RolUsuario {
 }
 
 export function esRolCoordinador(rol: RolUsuario) {
-  return rol === 'Coordinador';
+  return rol === 'Admin' || rol === 'Coordinador';
+}
+
+export function esRolAdministrador(rol: RolUsuario) {
+  return rol === 'Admin';
 }
 
 export function tieneRol(usuario: SesionUsuario, roles: RolUsuario[]) {
-  return roles.includes(usuario.rol);
+  return roles.includes(usuario.rol) || (usuario.rol === 'Admin' && roles.includes('Coordinador'));
 }

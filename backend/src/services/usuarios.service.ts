@@ -1,7 +1,7 @@
 import { db } from '@backend/config/database';
 import { hashPassword, validarContrasenaSegura } from '@backend/services/auth.service';
 import { registrarAccion } from '@backend/services/auditoria.service';
-import { normalizarRol, type RolUsuario, type SesionUsuario } from '@backend/types/roles';
+import { esRolAdministrador, normalizarRol, type RolUsuario, type SesionUsuario } from '@backend/types/roles';
 
 type UsuarioRow = {
   id: number;
@@ -76,11 +76,20 @@ export async function obtenerUsuarioPorId(id: number) {
   return usuario ? mapUsuario(usuario) : null;
 }
 
+async function obtenerRolUsuarioPorId(id: number) {
+  const result = await db.execute({
+    sql: 'SELECT rol FROM Usuario WHERE id = ? AND eliminadoEn IS NULL LIMIT 1',
+    args: [id],
+  });
+  return result.rows[0]?.rol ? String(result.rows[0].rol) : null;
+}
+
 export async function crearUsuario(input: UsuarioInput, actor: SesionUsuario) {
   const validacion = validarDatosUsuario(input, true);
   if ('error' in validacion) return validacion;
 
   const { nombre, correo, rol } = validacion.data;
+  if (rol === 'Admin' && !esRolAdministrador(actor.rol)) return { error: 'Solo un administrador puede crear otra cuenta administradora', status: 403 };
   const existente = await db.execute({
     sql: 'SELECT id FROM Usuario WHERE LOWER(correo) = LOWER(?) LIMIT 1',
     args: [correo],
@@ -112,6 +121,8 @@ export async function actualizarUsuario(id: number, input: UsuarioInput, actor: 
   if ('error' in validacion) return validacion;
 
   const { nombre, correo, rol } = validacion.data;
+  const rolObjetivoActual = await obtenerRolUsuarioPorId(id);
+  if ((rol === 'Admin' || rolObjetivoActual === 'Admin') && !esRolAdministrador(actor.rol)) return { error: 'Solo un administrador puede gestionar cuentas administradoras', status: 403 };
   if (id === actor.id && rol !== actor.rol) {
     return { error: 'No puedes cambiar el rol de la cuenta con la que estás trabajando', status: 400 };
   }
@@ -157,6 +168,8 @@ export async function actualizarUsuario(id: number, input: UsuarioInput, actor: 
 
 export async function cambiarEstadoUsuario(id: number, activo: boolean, actor: SesionUsuario) {
   if (id === actor.id && !activo) return { error: 'No puedes desactivar la cuenta con la que estás trabajando', status: 400 };
+  const rolObjetivo = await obtenerRolUsuarioPorId(id);
+  if (rolObjetivo === 'Admin' && !esRolAdministrador(actor.rol)) return { error: 'Solo un administrador puede gestionar cuentas administradoras', status: 403 };
   const result = await db.execute({
     sql: `
       UPDATE Usuario
@@ -175,6 +188,8 @@ export async function cambiarEstadoUsuario(id: number, activo: boolean, actor: S
 
 export async function eliminarUsuario(id: number, actor: SesionUsuario) {
   if (id === actor.id) return { error: 'No puedes eliminar la cuenta con la que estás trabajando', status: 400 };
+  const rolObjetivo = await obtenerRolUsuarioPorId(id);
+  if (rolObjetivo === 'Admin' && !esRolAdministrador(actor.rol)) return { error: 'Solo un administrador puede gestionar cuentas administradoras', status: 403 };
   const tx = await db.transaction('write');
   try {
     const result = await tx.execute({ sql: 'SELECT nombre, correo, rol FROM Usuario WHERE id = ? AND eliminadoEn IS NULL', args: [id] });

@@ -43,9 +43,10 @@ function TerminosContent() {
       <p>Los usuarios menores de edad no deben crear cuentas por su cuenta si la institución exige cuenta institucional o autorización del representante legal. La institución debe definir el mecanismo verificable de autorización y conservar la evidencia correspondiente.</p>
 
       <h2>4. Roles, permisos y principio de mínimo acceso</h2>
-      <p>SIGDE tiene tres roles con acceso al sistema: Coordinador, Docente y Portería. Los permisos dependen del rol asignado por la institución y se aplican con el principio de mínimo acceso: cada persona consulta o modifica solo los datos necesarios para cumplir su función.</p>
+      <p>SIGDE tiene cuatro roles con acceso al sistema: Administrador, Coordinador, Docente y Portería. Los permisos dependen del rol asignado por la institución y se aplican con el principio de mínimo acceso.</p>
       <ul>
-        <li><strong>Coordinador:</strong> es responsable de la administración institucional de SIGDE. Puede gestionar usuarios, estudiantes, configuraciones, auditoría y los módulos de convivencia; además revisa reportes, alertas, observaciones, salidas e informes. Este privilegio no autoriza consultas por curiosidad ni cambios sin justificación institucional.</li>
+        <li><strong>Administrador:</strong> conserva el control de la identidad institucional y hereda los permisos operativos de coordinación.</li>
+        <li><strong>Coordinador:</strong> gestiona el calendario académico, usuarios, estudiantes, alertas y los módulos operativos, sin poder alterar la identidad institucional.</li>
         <li><strong>Docente:</strong> puede crear reportes de convivencia, consultar reportes por estudiante, ver alertas y usar los módulos pedagógicos y de convivencia que le correspondan. Solo debe registrar hechos relevantes, verificables y pertinentes. La edición de un reporte corresponde al docente que lo creó, dentro de las reglas del sistema.</li>
         <li><strong>Portería:</strong> tiene acceso exclusivamente al módulo de salidas. Puede consultar las salidas necesarias para el control de su turno y crear nuevos registros de salida, pero no puede eliminar salidas ni acceder a reportes, alertas, estudiantes, usuarios, configuraciones o expedientes disciplinarios.</li>
         <li><strong>Acudiente:</strong> no tiene cuenta ni acceso al sistema. Hace parte de los registros institucionales como representante o contacto autorizado del estudiante y recibe las notificaciones relacionadas con su hijo o acudido por los canales registrados y autorizados.</li>
@@ -58,7 +59,7 @@ function TerminosContent() {
 
       <h2>6. Uso permitido de los registros</h2>
       <p>Los reportes deben describir hechos relevantes, verificables y pertinentes, con lenguaje respetuoso, sin insultos, diagnósticos médicos no autorizados, opiniones discriminatorias ni acusaciones presentadas como hechos probados. Las evidencias deben ser legales, necesarias y estar relacionadas con el caso.</p>
-      <p>Las alertas automáticas son reglas de apoyo basadas en umbrales configurables. No son inteligencia artificial ni determinan por sí mismas responsabilidad, sanción, culpabilidad o riesgo. Toda decisión debe contar con revisión humana, contexto, posibilidad de aclaración y aplicación del manual de convivencia.</p>
+      <p>Las alertas combinan reglas objetivas con un análisis automatizado orientativo. No determinan por sí mismas responsabilidad, sanción, culpabilidad, diagnóstico o riesgo. Toda decisión debe contar con revisión humana, contexto y aplicación del manual de convivencia.</p>
 
       <h2>7. Salidas y notificaciones</h2>
       <p>El módulo de salidas permite registrar la identidad del estudiante, fecha, hora, motivo, persona autorizada, estado y observaciones necesarias para el control institucional. El personal de Portería puede crear y consultar las salidas de su periodo y turno autorizado, pero no eliminarlas ni usar otros módulos del sistema.</p>

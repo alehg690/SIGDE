@@ -23,7 +23,7 @@ async function main() {
   try {
     await db.executeMultiple(`
       CREATE TABLE Usuario (id INTEGER PRIMARY KEY, nombre TEXT, correo TEXT, rol TEXT, activo INTEGER);
-      INSERT INTO Usuario VALUES (1, 'Docente demo', 'demo@example.test', 'Docente', 1), (2, 'Otra persona', 'otra@example.test', 'Coordinador', 1);
+      INSERT INTO Usuario VALUES (1, 'Docente demo', 'demo@example.test', 'Docente', 1), (2, 'Otra persona', 'otra@example.test', 'Coordinador', 1), (3, 'Admin demo', 'admin@example.test', 'Admin', 1);
       CREATE TABLE ConfiguracionSistema (clave TEXT PRIMARY KEY, valor TEXT, actualizadoEn TEXT);
       CREATE TABLE AuditLog (id INTEGER PRIMARY KEY, usuarioId INTEGER, accion TEXT, entidad TEXT, entidadId TEXT, detalle TEXT);
       CREATE TABLE Evento (id INTEGER PRIMARY KEY, titulo TEXT, descripcion TEXT, ubicacion TEXT, iniciaEn TEXT,
@@ -46,6 +46,8 @@ async function main() {
       UPDATE Alerta SET analisisIaJson = '{}', versionPrompt = 'local-v1';
     `);
     const usuario = { id: 1, nombre: 'Docente demo', correo: 'demo@example.test', rol: 'Docente', versionSesion: 1 };
+    const coordinador = { id: 2, nombre: 'Otra persona', correo: 'otra@example.test', rol: 'Coordinador', versionSesion: 1 };
+    const administrador = { id: 3, nombre: 'Admin demo', correo: 'admin@example.test', rol: 'Admin', versionSesion: 1 };
     const { actualizarPerfil } = require('../backend/src/services/perfil.service.ts');
     assert.equal((await actualizarPerfil('  ', usuario)).status, 400);
     assert.equal((await actualizarPerfil('Nombre actualizado', usuario)).status, 200);
@@ -55,13 +57,26 @@ async function main() {
     assert.equal(cuentas[1].nombre, 'Otra persona');
 
     const { actualizarConfiguraciones } = require('../backend/src/services/configuracion.service.ts');
-    const entradas = [{ clave: 'institucion.nombre', valor: 'Colegio demo' }, { clave: 'institucion.anoLectivo', valor: '2026' }, { clave: 'alertas.umbralReportes', valor: '3' }, { clave: 'alertas.periodoDias', valor: '30' }];
-    assert.equal((await actualizarConfiguraciones(entradas, usuario)).status, 200);
-    assert.equal((await actualizarConfiguraciones([{ clave: 'alertas.umbralReportes', valor: '0' }], usuario)).status, 400);
-    assert.equal((await actualizarConfiguraciones([{ clave: 'clave.desconocida', valor: '1' }], usuario)).status, 400);
-    assert.equal((await actualizarConfiguraciones([entradas[0], entradas[0]], usuario)).status, 400);
+    const entradas = [
+      { clave: 'institucion.nombre', valor: 'Colegio demo' }, { clave: 'institucion.sede', valor: 'Principal' },
+      { clave: 'institucion.codigoDane', valor: '123456789012' }, { clave: 'institucion.ciudad', valor: 'Cali' },
+      { clave: 'institucion.anoLectivo', valor: '2026' }, { clave: 'calendario.fechaInicio', valor: '2026-01-12' },
+      { clave: 'calendario.fechaFin', valor: '2026-12-04' }, { clave: 'calendario.numeroPeriodos', valor: '3' }, { clave: 'calendario.periodoActual', valor: '3' },
+      { clave: 'alertas.habilitadas', valor: 'true' }, { clave: 'alertas.umbralReportes', valor: '3' },
+      { clave: 'alertas.periodoDias', valor: '30' },
+    ];
+    assert.equal((await actualizarConfiguraciones(entradas, usuario)).status, 403);
+    assert.equal((await actualizarConfiguraciones(entradas, administrador)).status, 200);
+    assert.equal((await actualizarConfiguraciones([{ clave: 'institucion.nombre', valor: 'No autorizado' }], coordinador)).status, 403);
+    assert.equal((await actualizarConfiguraciones([{ clave: 'calendario.numeroPeriodos', valor: '4' }, { clave: 'calendario.periodoActual', valor: '4' }], coordinador)).status, 200);
+    assert.equal((await db.execute("SELECT valor FROM ConfiguracionSistema WHERE clave = 'institucion.sede'")).rows[0].valor, 'Principal');
+    assert.equal((await actualizarConfiguraciones([{ clave: 'institucion.codigoDane', valor: '123' }], administrador)).status, 400);
+    assert.equal((await actualizarConfiguraciones([{ clave: 'calendario.fechaInicio', valor: '2026-12-01' }, { clave: 'calendario.fechaFin', valor: '2026-01-01' }], coordinador)).status, 400);
+    assert.equal((await actualizarConfiguraciones([{ clave: 'alertas.umbralReportes', valor: '0' }], coordinador)).status, 400);
+    assert.equal((await actualizarConfiguraciones([{ clave: 'clave.desconocida', valor: '1' }], administrador)).status, 400);
+    assert.equal((await actualizarConfiguraciones([entradas[0], entradas[0]], administrador)).status, 400);
     await db.execute("CREATE TRIGGER fail_config BEFORE UPDATE ON ConfiguracionSistema WHEN NEW.clave = 'alertas.periodoDias' BEGIN SELECT RAISE(ABORT, 'fallo simulado'); END");
-    await assert.rejects(() => actualizarConfiguraciones([{ clave: 'institucion.nombre', valor: 'No debe guardarse' }, { clave: 'alertas.periodoDias', valor: '60' }], usuario));
+    await assert.rejects(() => actualizarConfiguraciones([{ clave: 'institucion.nombre', valor: 'No debe guardarse' }, { clave: 'alertas.periodoDias', valor: '60' }], administrador));
     assert.equal((await db.execute("SELECT valor FROM ConfiguracionSistema WHERE clave = 'institucion.nombre'")).rows[0].valor, 'Colegio demo');
 
     const { crearEvento, listarEventosProximos } = require('../backend/src/services/eventos.service.ts');

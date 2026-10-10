@@ -23,8 +23,8 @@ test('las migraciones libSQL normalizan roles heredados y conservan la integrida
       sql: 'SELECT rol, versionSesion FROM Usuario WHERE correo = ?',
       args: ['legacy-role@example.test'],
     });
-    assert.equal(result.rows[0]?.rol, 'Coordinador');
-    assert.equal(Number(result.rows[0]?.versionSesion), 5);
+    assert.equal(result.rows[0]?.rol, 'Admin');
+    assert.equal(Number(result.rows[0]?.versionSesion), 6);
 
     const integrity = await db.execute('PRAGMA integrity_check');
     assert.equal(integrity.rows[0]?.integrity_check, 'ok');

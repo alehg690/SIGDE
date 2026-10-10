@@ -152,7 +152,7 @@ export async function listarReportes(usuario: SesionUsuario, estudianteId?: numb
       INNER JOIN Usuario u ON u.id = r.docenteId
       WHERE (? IS NULL OR r.estudianteId = ?)
         AND (
-          ? = 'Coordinador'
+          ? IN ('Coordinador', 'Admin')
           OR r.docenteId = ?
           OR (
             r.confidencial = 0
@@ -190,7 +190,7 @@ export async function obtenerReporte(id: number, usuario: SesionUsuario, estudia
       INNER JOIN Usuario u ON u.id = r.docenteId
       WHERE r.id = ? AND (? IS NULL OR r.estudianteId = ?)
         AND (
-          ? = 'Coordinador'
+          ? IN ('Coordinador', 'Admin')
           OR r.docenteId = ?
           OR (
             r.confidencial = 0

@@ -1,6 +1,6 @@
 import { db } from '@backend/config/database';
 import { registrarAccion } from '@backend/services/auditoria.service';
-import type { SesionUsuario } from '@backend/types/roles';
+import { esRolCoordinador, type SesionUsuario } from '@backend/types/roles';
 import { obtenerGrupoAcademico } from '@/lib/academic-groups';
 
 type EstudianteRow = {
@@ -152,7 +152,7 @@ const SELECT_ESTUDIANTE = `
 
 export async function listarEstudiantes(usuario: SesionUsuario) {
   const result = await db.execute(`${SELECT_ESTUDIANTE} WHERE e.archivado = 0 ORDER BY e.nombre ASC`);
-  const puedeVerDatosSensibles = usuario.rol === 'Coordinador';
+  const puedeVerDatosSensibles = esRolCoordinador(usuario.rol);
   return { data: result.rows.map((row) => mapEstudiante(row as unknown as EstudianteRow, puedeVerDatosSensibles)) };
 }
 
@@ -179,7 +179,7 @@ export async function obtenerEstudiante(id: number, usuario?: SesionUsuario, sta
   const result = await db.execute({ sql: `${SELECT_ESTUDIANTE} WHERE e.id = ? LIMIT 1`, args: [id] });
   if (!result.rows[0]) return { error: 'Estudiante no encontrado', status: 404 };
   return {
-    data: mapEstudiante(result.rows[0] as unknown as EstudianteRow, !usuario || usuario.rol === 'Coordinador'),
+    data: mapEstudiante(result.rows[0] as unknown as EstudianteRow, !usuario || esRolCoordinador(usuario.rol)),
     status,
   };
 }

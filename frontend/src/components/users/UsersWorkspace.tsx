@@ -5,12 +5,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { parseReportDate } from '@/lib/report-dates';
 import { useDialogFocus } from '@/hooks/useDialogFocus';
 
-type RolUsuario = 'Coordinador' | 'Docente' | 'Porteria';
+type RolUsuario = 'Admin' | 'Coordinador' | 'Docente' | 'Porteria';
 type Usuario = { id: number; nombre: string; correo: string; rol: RolUsuario; activo: boolean; creadoEn: string; ultimoAcceso: string | null };
 type UsuarioForm = { nombre: string; correo: string; rol: RolUsuario; contrasena: string; activo: boolean };
 type Feedback = { tipo: 'success' | 'error'; texto: string };
 
-const ROLES: RolUsuario[] = ['Coordinador', 'Docente', 'Porteria'];
+const ROLES: RolUsuario[] = ['Admin', 'Coordinador', 'Docente', 'Porteria'];
 const EMPTY_FORM: UsuarioForm = { nombre: '', correo: '', rol: 'Docente', contrasena: '', activo: true };
 
 async function leerError(response: Response, fallback: string) {
@@ -19,6 +19,7 @@ async function leerError(response: Response, fallback: string) {
 }
 
 function etiquetaRol(rol: RolUsuario) {
+  if (rol === 'Admin') return 'Administrador';
   return rol === 'Porteria' ? 'Portería' : rol;
 }
 
@@ -28,7 +29,7 @@ function iniciales(nombre: string) {
 }
 
 function colorRol(rol: RolUsuario) {
-  if (rol === 'Coordinador') return 'coordinator';
+  if (rol === 'Admin' || rol === 'Coordinador') return 'coordinator';
   if (rol === 'Porteria') return 'gatekeeper';
   return 'teacher';
 }
@@ -58,7 +59,7 @@ function usuarioToForm(usuario: Usuario): UsuarioForm {
   return { nombre: usuario.nombre, correo: usuario.correo, rol: usuario.rol, contrasena: '', activo: usuario.activo };
 }
 
-export default function UsersWorkspace({ currentUserId }: { currentUserId: number }) {
+export default function UsersWorkspace({ currentUserId, currentRole }: { currentUserId: number; currentRole: 'admin' | 'coordinador' | 'docente' | 'portero' }) {
   const { cerrarSesion } = useAuth();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [busqueda, setBusqueda] = useState('');
@@ -67,6 +68,7 @@ export default function UsersWorkspace({ currentUserId }: { currentUserId: numbe
   const [modal, setModal] = useState<'crear' | 'editar' | null>(null);
   const [usuarioEditar, setUsuarioEditar] = useState<Usuario | null>(null);
   const [usuarioEliminar, setUsuarioEliminar] = useState<Usuario | null>(null);
+  const rolesDisponibles = currentRole === 'admin' ? ROLES : ROLES.filter((rol) => rol !== 'Admin');
   const [formCrear, setFormCrear] = useState<UsuarioForm>(EMPTY_FORM);
   const [formEditar, setFormEditar] = useState<UsuarioForm>(EMPTY_FORM);
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
@@ -248,7 +250,7 @@ export default function UsersWorkspace({ currentUserId }: { currentUserId: numbe
       </div>
     </div>
 
-    {modal === 'crear' && <div className="users-modal-backdrop" role="presentation" onMouseDown={cerrarModal}><form className="users-modal" role="dialog" aria-modal="true" aria-labelledby="create-user-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={crearUsuario}><header><h3 id="create-user-title">Crear usuario</h3><button type="button" aria-label="Cerrar" onClick={cerrarModal}>×</button></header><div className="users-modal-body">{feedback && <p className={`feedback ${feedback.tipo}`} role="alert">{feedback.texto}</p>}<UserField label="Nombre completo" value={formCrear.nombre} placeholder="Nombre y apellido" onChange={(nombre) => { setFormCrear({ ...formCrear, nombre }); setContrasenaCopiada(false); }} required /><UserField label="Correo electrónico" type="email" value={formCrear.correo} placeholder="correo@institucion.edu.co" onChange={(correo) => setFormCrear({ ...formCrear, correo })} required /><RoleField value={formCrear.rol} onChange={(rol) => setFormCrear({ ...formCrear, rol })} /><label className="users-modal-field"><span>Contraseña temporal</span><div className="users-password-field"><input type={mostrarContrasena ? 'text' : 'password'} value={formCrear.contrasena} minLength={8} maxLength={128} onChange={(event) => { setFormCrear({ ...formCrear, contrasena: event.target.value }); setContrasenaCopiada(false); }} placeholder="Genera o escribe una contraseña" required /><button type="button" onClick={() => setMostrarContrasena((actual) => !actual)}>{mostrarContrasena ? 'Ocultar' : 'Ver'}</button></div><div className="users-password-actions"><button type="button" onClick={generarTemporal}>Generar contraseña segura</button><button type="button" disabled={!formCrear.contrasena} onClick={() => void copiarContrasena()}>{contrasenaCopiada ? 'Copiada' : 'Copiar'}</button></div><small>Clave aleatoria de 18 caracteres. Compártela de forma privada; se cambiará en el primer ingreso.</small></label></div><footer><button type="button" onClick={cerrarModal}>Cancelar</button><button type="submit" className="primary" disabled={guardando || !formCrear.contrasena}>{guardando ? 'Creando...' : '✓  Crear usuario'}</button></footer></form></div>}
+    {modal === 'crear' && <div className="users-modal-backdrop" role="presentation" onMouseDown={cerrarModal}><form className="users-modal" role="dialog" aria-modal="true" aria-labelledby="create-user-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={crearUsuario}><header><h3 id="create-user-title">Crear usuario</h3><button type="button" aria-label="Cerrar" onClick={cerrarModal}>×</button></header><div className="users-modal-body">{feedback && <p className={`feedback ${feedback.tipo}`} role="alert">{feedback.texto}</p>}<UserField label="Nombre completo" value={formCrear.nombre} placeholder="Nombre y apellido" onChange={(nombre) => { setFormCrear({ ...formCrear, nombre }); setContrasenaCopiada(false); }} required /><UserField label="Correo electrónico" type="email" value={formCrear.correo} placeholder="correo@institucion.edu.co" onChange={(correo) => setFormCrear({ ...formCrear, correo })} required /><RoleField roles={rolesDisponibles} value={formCrear.rol} onChange={(rol) => setFormCrear({ ...formCrear, rol })} /><label className="users-modal-field"><span>Contraseña temporal</span><div className="users-password-field"><input type={mostrarContrasena ? 'text' : 'password'} value={formCrear.contrasena} minLength={8} maxLength={128} onChange={(event) => { setFormCrear({ ...formCrear, contrasena: event.target.value }); setContrasenaCopiada(false); }} placeholder="Genera o escribe una contraseña" required /><button type="button" onClick={() => setMostrarContrasena((actual) => !actual)}>{mostrarContrasena ? 'Ocultar' : 'Ver'}</button></div><div className="users-password-actions"><button type="button" onClick={generarTemporal}>Generar contraseña segura</button><button type="button" disabled={!formCrear.contrasena} onClick={() => void copiarContrasena()}>{contrasenaCopiada ? 'Copiada' : 'Copiar'}</button></div><small>Clave aleatoria de 18 caracteres. Compártela de forma privada; se cambiará en el primer ingreso.</small></label></div><footer><button type="button" onClick={cerrarModal}>Cancelar</button><button type="submit" className="primary" disabled={guardando || !formCrear.contrasena}>{guardando ? 'Creando...' : '✓  Crear usuario'}</button></footer></form></div>}
 
     {modal === 'editar' && usuarioEditar && <div className="users-modal-backdrop" role="presentation" onMouseDown={cerrarModal}>
       <form className="users-modal" role="dialog" aria-modal="true" aria-labelledby="edit-user-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={actualizarUsuario}>
@@ -257,7 +259,7 @@ export default function UsersWorkspace({ currentUserId }: { currentUserId: numbe
           {feedback && <p className={`feedback ${feedback.tipo}`} role="alert">{feedback.texto}</p>}
           <UserField label="Nombre completo" value={formEditar.nombre} onChange={(nombre) => setFormEditar({ ...formEditar, nombre })} required />
           <UserField label="Correo electrónico" type="email" value={formEditar.correo} onChange={(correo) => setFormEditar({ ...formEditar, correo })} required />
-          <RoleField value={formEditar.rol} disabled={usuarioEditar.id === currentUserId} onChange={(rol) => setFormEditar({ ...formEditar, rol })} />
+          <RoleField roles={rolesDisponibles.includes(formEditar.rol) ? rolesDisponibles : [formEditar.rol, ...rolesDisponibles]} value={formEditar.rol} disabled={usuarioEditar.id === currentUserId || (usuarioEditar.rol === 'Admin' && currentRole !== 'admin')} onChange={(rol) => setFormEditar({ ...formEditar, rol })} />
           {usuarioEditar.id === currentUserId && <p className="users-current-account-note">No puedes cambiar tu rol. Al guardar tendrás que iniciar sesión nuevamente.</p>}
           <label className="users-modal-field" htmlFor="edit-user-password"><span>Nueva contraseña (opcional)</span></label>
           <div className="users-password-field">
@@ -283,6 +285,6 @@ function UserField({ label, value, onChange, type = 'text', placeholder, require
   return <label className="users-modal-field"><span>{label}</span><input type={type} value={value} placeholder={placeholder} required={required} onChange={(event) => onChange(event.target.value)} /></label>;
 }
 
-function RoleField({ value, onChange, disabled = false }: { value: RolUsuario; onChange: (value: RolUsuario) => void; disabled?: boolean }) {
-  return <label className="users-modal-field"><span>Rol</span><select value={value} disabled={disabled} onChange={(event) => onChange(event.target.value as RolUsuario)}>{ROLES.map((rol) => <option key={rol} value={rol}>{etiquetaRol(rol)}</option>)}</select></label>;
+function RoleField({ roles, value, onChange, disabled = false }: { roles: RolUsuario[]; value: RolUsuario; onChange: (value: RolUsuario) => void; disabled?: boolean }) {
+  return <label className="users-modal-field"><span>Rol</span><select value={value} disabled={disabled} onChange={(event) => onChange(event.target.value as RolUsuario)}>{roles.map((rol) => <option key={rol} value={rol}>{etiquetaRol(rol)}</option>)}</select></label>;
 }

@@ -25,7 +25,7 @@ export type DashboardUser = {
   rol: string;
 };
 
-type DashboardRole = 'coordinador' | 'docente' | 'portero';
+type DashboardRole = 'admin' | 'coordinador' | 'docente' | 'portero';
 type DashboardSection = 'dashboard' | 'usuarios' | 'personas' | 'seguimiento' | 'estadisticas' | 'salidas' | 'comunicaciones' | 'calendario' | 'reportes' | 'convivencia' | 'configuracion' | 'perfil' | 'auditoria';
 
 const DASHBOARD_SECTIONS: DashboardSection[] = ['dashboard', 'usuarios', 'personas', 'seguimiento', 'estadisticas', 'salidas', 'comunicaciones', 'calendario', 'reportes', 'convivencia', 'configuracion', 'perfil', 'auditoria'];
@@ -173,6 +173,7 @@ const EMPTY_STATS: DashboardStats = {
 };
 
 const ROLE_LABELS: Record<DashboardRole, string> = {
+  admin: 'Administrador',
   coordinador: 'Coordinador',
   docente: 'Docente',
   portero: 'Portero',
@@ -191,11 +192,11 @@ const NAV_GROUPS: Array<{
 ];
 
 function esRolGestor(role: DashboardRole) {
-  return role === 'coordinador';
+  return role === 'admin' || role === 'coordinador';
 }
 
 function tieneAccesoSeccion(roles: DashboardRole[], role: DashboardRole) {
-  return roles.includes(role);
+  return roles.includes(role) || (role === 'admin' && roles.includes('coordinador'));
 }
 
 function puedeAbrirSeccion(section: DashboardSection, role: DashboardRole) {
@@ -232,6 +233,7 @@ function SidebarIcon({ name }: { name: SidebarIconName }) {
 
 function normalizeRole(rol: string): DashboardRole {
   const value = rol.trim().toLowerCase();
+  if (value === 'admin' || value === 'administrador' || value === 'administradora') return 'admin';
   if (value.includes('coord')) return 'coordinador';
   if (value.includes('doc')) return 'docente';
   if (value.includes('port')) return 'portero';
@@ -256,7 +258,27 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
   const [dashboardSnapshot, setDashboardSnapshot] = useState<DashboardStats | null>(null);
   const [dashboardError, setDashboardError] = useState('');
   const [globalSearch, setGlobalSearch] = useState(() => searchParams.get('buscar') || '');
+  const [uiPreferences, setUiPreferences] = useState({ densidad: 'comoda' as 'comoda' | 'compacta', reducirMovimiento: false });
   const role = useMemo(() => normalizeRole(usuario.rol), [usuario.rol]);
+
+  useEffect(() => {
+    const leerPreferencias = () => setUiPreferences({
+      densidad: localStorage.getItem('sigde_ui_density') === 'compacta' ? 'compacta' : 'comoda',
+      reducirMovimiento: localStorage.getItem('sigde_reduce_motion') === 'true',
+    });
+    const actualizarPreferencias = (event: Event) => {
+      const detail = (event as CustomEvent<{ densidad?: string; reducirMovimiento?: boolean }>).detail;
+      if (!detail) return leerPreferencias();
+      setUiPreferences({ densidad: detail.densidad === 'compacta' ? 'compacta' : 'comoda', reducirMovimiento: Boolean(detail.reducirMovimiento) });
+    };
+    leerPreferencias();
+    window.addEventListener('sigde-preferences-change', actualizarPreferencias);
+    window.addEventListener('storage', leerPreferencias);
+    return () => {
+      window.removeEventListener('sigde-preferences-change', actualizarPreferencias);
+      window.removeEventListener('storage', leerPreferencias);
+    };
+  }, []);
 
   useEffect(() => {
     if (!profileOpen) return;
@@ -397,7 +419,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
   }
 
   return (
-    <main data-theme="dark" className={sidebarCollapsed ? 'app-shell app-shell--sidebar-collapsed' : 'app-shell'}>
+    <main data-theme="dark" data-density={uiPreferences.densidad} data-reduce-motion={uiPreferences.reducirMovimiento ? 'true' : 'false'} className={sidebarCollapsed ? 'app-shell app-shell--sidebar-collapsed' : 'app-shell'}>
       <aside className="app-sidebar" aria-label="Navegación principal">
         <div className="app-sidebar-head">
           <div className="app-brand">
@@ -641,7 +663,7 @@ function IntelligentAlertsCard({ alerts, onViewAll, onOpenAlert }: { alerts: Das
         const priority = alert.nivelAtencion === 'high' ? 'high' : alert.estado === 'monitoring' ? 'tracking' : 'active';
         return <button type="button" className="intelligent-alert-row" onClick={() => onOpenAlert(alert.id)} key={alert.id}>
           <span className={`intelligent-alert-icon intelligent-alert-icon--${priority}`}><SidebarIcon name="sparkles" /></span>
-          <span className="intelligent-alert-copy"><strong>{alert.titulo}</strong><small>{alert.estudiante} · {alert.resumenCorto}</small><em>{alert.nivelAtencion === 'high' ? 'Revisión humana prioritaria' : alert.nivelAtencion === 'medium' ? 'Seguimiento recomendado' : 'Observación'} · {alert.origen === 'rule+local' ? 'Análisis local' : alert.origen === 'rule+ai' ? 'IA externa' : 'Regla'}</em></span>
+          <span className="intelligent-alert-copy"><strong>{alert.titulo}</strong><small>{alert.estudiante} · {alert.resumenCorto}</small><em>{alert.nivelAtencion === 'high' ? 'Revisión humana prioritaria' : alert.nivelAtencion === 'medium' ? 'Seguimiento recomendado' : 'Observación'} · {alert.origen === 'rule+local' ? 'Agente local' : alert.origen === 'rule+ai' ? 'Análisis heredado' : 'Regla'}</em></span>
           <span className="intelligent-alert-meta"><time dateTime={alert.actualizadoEn}>{formatearActividadReciente(alert.actualizadoEn)}</time>{alert.estado === 'new' && <i title="Nueva o no revisada" />}</span>
         </button>;
       }) : <p className="recent-activity-empty">No hay alertas activas en este momento.</p>}
@@ -864,11 +886,11 @@ function DashboardContent({
   }
 
   if (section === 'usuarios') {
-    return <UsersWorkspace currentUserId={usuario.id} />;
+    return <UsersWorkspace currentUserId={usuario.id} currentRole={role} />;
   }
 
   if (section === 'configuracion') {
-    return <SettingsWorkspace />;
+    return <SettingsWorkspace role={role} />;
   }
 
   if (section === 'auditoria') {

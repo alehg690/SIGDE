@@ -151,6 +151,8 @@ async function sincronizarAnalisisPendientes(usuario: SesionUsuario) {
 }
 
 export async function evaluarAlertaEstudiante(estudianteId: number, usuario: SesionUsuario, forzarAnalisis = false) {
+  const alertasHabilitadas = await obtenerValorConfiguracion('alertas.habilitadas', 'true');
+  if (alertasHabilitadas !== 'true') return { data: null };
   const umbral = Number(await obtenerValorConfiguracion('alertas.umbralReportes', '3'));
   const periodoDias = Number(await obtenerValorConfiguracion('alertas.periodoDias', '30'));
   const inicio = periodStart(periodoDias);

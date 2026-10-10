@@ -4,7 +4,7 @@ import { getEmailTransporter } from '@backend/config/email';
 import { isEmailEnabled } from '@backend/config/env';
 import { reportServerError } from '@backend/utils/logger';
 import { registrarAccion } from '@backend/services/auditoria.service';
-import type { SesionUsuario } from '@backend/types/roles';
+import { esRolCoordinador, type SesionUsuario } from '@backend/types/roles';
 
 export type SalidaInput = {
   estudianteId: string;
@@ -71,7 +71,7 @@ export async function crearSalida(input: SalidaInput, usuario: SesionUsuario) {
 }
 
 export async function firmarSalida(id: string, firma: string, usuario: SesionUsuario) {
-  if (usuario.rol !== 'Coordinador') return { error: 'No tienes permisos para firmar salidas', status: 403 };
+  if (!esRolCoordinador(usuario.rol)) return { error: 'No tienes permisos para firmar salidas', status: 403 };
   const columnasPermitidas = new Set(['firmaDirector', 'firmaDocente', 'firmaCoordinacion', 'firmaAcudiente']);
   if (!columnasPermitidas.has(firma)) return { error: 'Firma no válida', status: 400 };
   const result = await db.execute({ sql: `UPDATE Salida SET ${firma} = 1, actualizadoEn = CURRENT_TIMESTAMP WHERE id = ? RETURNING *`, args: [id] });
