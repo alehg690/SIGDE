@@ -191,6 +191,14 @@ export default function StudentsWorkspace({
     };
   }, []);
 
+  useEffect(() => {
+    if (mensaje?.tipo !== "success" || modal) return;
+    const timer = window.setTimeout(() => {
+      setMensaje((actual) => actual?.tipo === "success" ? null : actual);
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [mensaje, modal]);
+
   const filtrados = useMemo(() => {
     const termino = busqueda.trim().toLocaleLowerCase("es");
     return estudiantes.filter((item) => {
