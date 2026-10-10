@@ -29,6 +29,6 @@ La operación programada, los secretos de GitHub y el procedimiento de restaurac
 6. Crear en Gmail la etiqueta **SIGDE** y una regla que la aplique solo a los remitentes o comunicaciones que deban importarse.
 7. Desplegar, entrar a **Configuración → Correo institucional** como coordinación y seleccionar **Conectar con Google**.
 
-El permiso solicitado es `gmail.readonly`. El token de acceso permanente se cifra antes de guardarse, los mensajes se deduplican por su identificador de Gmail y las comunicaciones se crean como borradores para revisión humana. Las fechas explícitas encontradas en el texto se agregan al calendario. La tarea de Vercel sincroniza la etiqueta cada diez minutos.
+El permiso solicitado es `gmail.readonly`. El token de acceso permanente se cifra antes de guardarse, los mensajes se deduplican por su identificador de Gmail y las comunicaciones se crean como borradores para revisión humana. Las fechas explícitas encontradas en el texto se agregan al calendario. La tarea de Vercel sincroniza la etiqueta una vez al día; coordinación también puede ejecutar una sincronización manual desde Configuración.
 
 Los scripts `migrate:*`, `auth:unlock`, `seed:dashboard`, `seed:dashboard:clean` e `import:11-2` son operaciones administrativas. `import:11-2` no forma parte de un checkout limpio ni del pipeline de despliegue.
