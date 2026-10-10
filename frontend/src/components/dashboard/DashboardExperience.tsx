@@ -258,27 +258,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
   const [dashboardSnapshot, setDashboardSnapshot] = useState<DashboardStats | null>(null);
   const [dashboardError, setDashboardError] = useState('');
   const [globalSearch, setGlobalSearch] = useState(() => searchParams.get('buscar') || '');
-  const [uiPreferences, setUiPreferences] = useState({ densidad: 'comoda' as 'comoda' | 'compacta', reducirMovimiento: false });
   const role = useMemo(() => normalizeRole(usuario.rol), [usuario.rol]);
-
-  useEffect(() => {
-    const leerPreferencias = () => setUiPreferences({
-      densidad: localStorage.getItem('sigde_ui_density') === 'compacta' ? 'compacta' : 'comoda',
-      reducirMovimiento: localStorage.getItem('sigde_reduce_motion') === 'true',
-    });
-    const actualizarPreferencias = (event: Event) => {
-      const detail = (event as CustomEvent<{ densidad?: string; reducirMovimiento?: boolean }>).detail;
-      if (!detail) return leerPreferencias();
-      setUiPreferences({ densidad: detail.densidad === 'compacta' ? 'compacta' : 'comoda', reducirMovimiento: Boolean(detail.reducirMovimiento) });
-    };
-    leerPreferencias();
-    window.addEventListener('sigde-preferences-change', actualizarPreferencias);
-    window.addEventListener('storage', leerPreferencias);
-    return () => {
-      window.removeEventListener('sigde-preferences-change', actualizarPreferencias);
-      window.removeEventListener('storage', leerPreferencias);
-    };
-  }, []);
 
   useEffect(() => {
     if (!profileOpen) return;
@@ -419,7 +399,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
   }
 
   return (
-    <main data-theme="dark" data-density={uiPreferences.densidad} data-reduce-motion={uiPreferences.reducirMovimiento ? 'true' : 'false'} className={sidebarCollapsed ? 'app-shell app-shell--sidebar-collapsed' : 'app-shell'}>
+    <main data-theme="dark" className={sidebarCollapsed ? 'app-shell app-shell--sidebar-collapsed' : 'app-shell'}>
       <aside className="app-sidebar" aria-label="Navegación principal">
         <div className="app-sidebar-head">
           <div className="app-brand">
@@ -483,7 +463,6 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
             role={role}
             initialSearch={searchParams.get('buscar') ?? globalSearch}
             initialAlertId={Number(searchParams.get('alerta')) || undefined}
-            onCurrentUserUpdated={() => router.refresh()}
           />
           <section className="dashboard-empty-canvas" aria-label="Área de trabajo vacía" />
         </>)}
@@ -838,7 +817,6 @@ function DashboardContent({
   section,
   studentsViewKey,
   usuario,
-  onCurrentUserUpdated,
   role,
   initialSearch,
   initialAlertId,
@@ -848,7 +826,6 @@ function DashboardContent({
   section: DashboardSection;
   studentsViewKey: number;
   usuario: DashboardUser;
-  onCurrentUserUpdated: () => void;
   role: DashboardRole;
   initialSearch: string;
   initialAlertId?: number;
@@ -882,7 +859,7 @@ function DashboardContent({
   }
 
   if (section === 'perfil') {
-    return <ProfileWorkspace key={usuario.id} usuario={usuario} onUpdated={onCurrentUserUpdated} />;
+    return <ProfileWorkspace key={usuario.id} usuario={usuario} />;
   }
 
   if (section === 'usuarios') {

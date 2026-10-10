@@ -63,11 +63,6 @@ async function main() {
     assert.equal(JSON.parse(audit).cambioContrasena,true);
     assert.equal(audit.includes('NuevaPrueba2026'),false);
     assert.equal(audit.includes(changed.contrasena),false);
-    const { cerrarOtrasSesiones } = require('../backend/src/services/perfil.service.ts');
-    const perfilDocente = { ...docente, versionSesion:Number(changed.versionSesion) };
-    const cierre = await cerrarOtrasSesiones(perfilDocente);
-    assert.equal(cierre.status,200);
-    assert.equal(Number((await db.execute('SELECT versionSesion FROM Usuario WHERE id=2')).rows[0].versionSesion),Number(changed.versionSesion)+1);
     const recoveryCode = '654321';
     await db.execute({
       sql: 'UPDATE Usuario SET tokenRecuperacion = ?, tokenExpira = ? WHERE id = 2',

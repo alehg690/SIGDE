@@ -48,11 +48,8 @@ async function main() {
     const usuario = { id: 1, nombre: 'Docente demo', correo: 'demo@example.test', rol: 'Docente', versionSesion: 1 };
     const coordinador = { id: 2, nombre: 'Otra persona', correo: 'otra@example.test', rol: 'Coordinador', versionSesion: 1 };
     const administrador = { id: 3, nombre: 'Admin demo', correo: 'admin@example.test', rol: 'Admin', versionSesion: 1 };
-    const { actualizarPerfil } = require('../backend/src/services/perfil.service.ts');
-    assert.equal((await actualizarPerfil('  ', usuario)).status, 400);
-    assert.equal((await actualizarPerfil('Nombre actualizado', usuario)).status, 200);
     const cuentas = (await db.execute('SELECT * FROM Usuario ORDER BY id')).rows;
-    assert.equal(cuentas[0].nombre, 'Nombre actualizado');
+    assert.equal(cuentas[0].nombre, 'Docente demo');
     assert.equal(cuentas[0].rol, 'Docente');
     assert.equal(cuentas[1].nombre, 'Otra persona');
 

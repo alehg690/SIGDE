@@ -4694,7 +4694,7 @@ button {
 .settings-actions { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 0; }
 .settings-actions p { margin: 0; color: #829aae; font-size: .75rem; }
 .settings-action-buttons { display: flex; justify-content: flex-end; gap: 10px; }
-.settings-actions button:disabled, .profile-inline-actions button:disabled, .profile-session-button:disabled { cursor: not-allowed; opacity: .5; }
+.settings-actions button:disabled { cursor: not-allowed; opacity: .5; }
 
 .profile-workspace { display: grid; gap: 16px; }
 .profile-workspace > .module-page-heading { margin-bottom: 0; }
@@ -4709,31 +4709,11 @@ button {
 .profile-section-form { width: 100%; }
 .profile-card-content { display: grid; min-width: 0; gap: 15px; }
 .profile-card-content > .feedback { margin: 0; }
-.profile-name-fields { grid-template-columns: 1fr; }
 .profile-workspace .profile-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; }
 .profile-workspace .profile-list div { min-width: 0; border-color: var(--module-border); background: rgba(8, 26, 44, .54); padding: 11px 12px; }
 .profile-workspace .profile-list dt { color: #7f98ad; font-size: .66rem; text-transform: uppercase; }
 .profile-workspace .profile-list dd { margin-top: 4px; color: #d8e6f1; font-size: .76rem; }
 .profile-help { margin: 0; color: #788fa3; font-size: .72rem; line-height: 1.5; }
-.profile-inline-actions { display: flex; justify-content: flex-end; gap: 10px; }
-.profile-preference-grid { display: grid; gap: 13px; }
-.profile-preference-grid > label:not(.profile-check-option) { display: grid; gap: 6px; color: #afc1d2; font-size: .76rem; font-weight: 700; }
-.profile-preference-grid select { width: 100%; min-height: 40px; border: 1px solid var(--module-border); border-radius: 9px; outline: 0; background: var(--module-surface-soft); color: var(--module-text); padding: 8px 11px; }
-.profile-preference-grid small { color: #71899f; font-size: .69rem; font-weight: 500; line-height: 1.4; }
-.profile-check-option { display: flex; align-items: flex-start; gap: 10px; border: 1px solid var(--module-border); border-radius: 10px; background: rgba(8, 26, 44, .54); cursor: pointer; padding: 12px; }
-.profile-check-option input { margin-top: 3px; accent-color: #318bd0; }
-.profile-check-option > span { display: grid; gap: 3px; }
-.profile-check-option strong { color: #d8e6f1; font-size: .76rem; }
-.profile-session-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
-.profile-session-row > div { display: grid; gap: 4px; }
-.profile-session-row strong { color: #dceaf5; font-size: .78rem; }
-.profile-session-row span { color: #788fa3; font-size: .7rem; line-height: 1.45; }
-.profile-session-button { flex: 0 0 auto; }
-
-.app-shell[data-density='compacta'] .workspace-panel { padding: 18px; }
-.app-shell[data-density='compacta'] .settings-card { gap: 16px; padding: 16px; }
-.app-shell[data-density='compacta'] table th, .app-shell[data-density='compacta'] table td { padding-top: 9px; padding-bottom: 9px; }
-.app-shell[data-reduce-motion='true'] *, .app-shell[data-reduce-motion='true'] *::before, .app-shell[data-reduce-motion='true'] *::after { scroll-behavior: auto !important; transition-duration: .001ms !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
 
 .audit-log-card { overflow: hidden; border: 1px solid var(--module-border); border-radius: 15px; background: rgba(7, 25, 43, .62); }
 .audit-table-wrap { max-height: 540px; overflow: auto; }
@@ -5156,11 +5136,9 @@ button {
   .statistics-kpis,
   .statistics-grid,
   .settings-fields { grid-template-columns: 1fr; }
-  .settings-action-buttons, .profile-inline-actions { width: 100%; }
-  .settings-action-buttons button, .profile-inline-actions button { flex: 1; }
+  .settings-action-buttons { width: 100%; }
+  .settings-action-buttons button { flex: 1; }
   .profile-workspace .profile-list { grid-template-columns: 1fr; }
-  .profile-session-row { align-items: stretch; flex-direction: column; }
-  .profile-session-button { width: 100%; }
   .coexistence-form-grid { grid-template-columns: 1fr; }
   .coexistence-description, .coexistence-rule { grid-column: auto; }
   .coexistence-form-actions { align-items: stretch; flex-direction: column; }
