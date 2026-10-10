@@ -72,25 +72,3 @@ export function getEmailConfig() {
   const pass = requiredValue('EMAIL_PASS');
   return { user, pass };
 }
-
-export function getGmailIntegrationConfig() {
-  const enabled = process.env.GMAIL_INTEGRATION_ENABLED?.trim().toLowerCase() === 'true';
-  const account = process.env.GMAIL_INSTITUTIONAL_ACCOUNT?.trim().toLowerCase() || '';
-  const clientId = process.env.GMAIL_OAUTH_CLIENT_ID?.trim() || '';
-  const clientSecret = process.env.GMAIL_OAUTH_CLIENT_SECRET?.trim() || '';
-  const importQuery = process.env.GMAIL_IMPORT_QUERY?.trim() || 'label:SIGDE';
-  const allowedSenders = (process.env.GMAIL_ALLOWED_SENDERS || '')
-    .split(',')
-    .map((value) => value.trim().toLowerCase())
-    .filter(Boolean);
-
-  return {
-    enabled,
-    account,
-    clientId,
-    clientSecret,
-    importQuery,
-    allowedSenders,
-    configured: enabled && Boolean(account && clientId && clientSecret && allowedSenders.length),
-  };
-}

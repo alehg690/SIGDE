@@ -76,8 +76,6 @@ model Usuario {
   comunicaciones    Comunicacion[]
   alertasRevisadas  Alerta[] @relation("AlertaRevisadaPor")
   cambiosAlertas    AlertaHistorial[]
-  conexionesGmail   GmailIntegration[]
-  horariosActualizados HorarioInstitucional[]
 }
 
 model Comunicacion {
@@ -93,59 +91,8 @@ model Comunicacion {
   publicadoEn     DateTime?
   visualizaciones Int      @default(0)
   archivos        ComunicacionArchivo[]
-  mensajesGmail   GmailProcessedMessage[]
 
   @@index([estado, publicadoEn])
-}
-
-model GmailIntegration {
-  id                      Int      @id @default(autoincrement())
-  correo                  String   @unique
-  refreshTokenCifrado     String
-  conectadoPorId          Int
-  conectadoPor            Usuario  @relation(fields: [conectadoPorId], references: [id])
-  conectadoEn             DateTime @default(now())
-  ultimaSincronizacionEn  DateTime?
-  ultimoError             String?
-  activo                  Boolean  @default(true)
-
-  @@index([activo])
-}
-
-model GmailProcessedMessage {
-  messageId       String        @id
-  threadId        String?
-  asunto          String
-  comunicacionId  Int?
-  comunicacion    Comunicacion? @relation(fields: [comunicacionId], references: [id], onDelete: SetNull)
-  eventosJson     String?
-  accion          String        @default("comunicacion")
-  procesadoEn     DateTime      @default(now())
-}
-
-model HorarioInstitucional {
-  id              Int      @id @default(autoincrement())
-  titulo          String
-  contenido       String
-  periodo         String?
-  activo          Boolean  @default(true)
-  origenMessageId String?  @unique
-  actualizadoPorId Int
-  actualizadoPor  Usuario  @relation(fields: [actualizadoPorId], references: [id])
-  creadoEn        DateTime @default(now())
-  archivos        HorarioInstitucionalArchivo[]
-
-  @@index([activo, creadoEn])
-}
-
-model HorarioInstitucionalArchivo {
-  id          Int      @id @default(autoincrement())
-  horarioId   Int
-  nombre      String
-  mimeType    String
-  tamano      Int
-  contenido   Bytes
-  horario     HorarioInstitucional @relation(fields: [horarioId], references: [id], onDelete: Cascade)
 }
 
 model ComunicacionArchivo {

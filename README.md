@@ -19,7 +19,6 @@ Los acudientes no reciben cuentas de acceso. El sistema conserva sus datos de co
 - Prisma, SQLite local y Turso/libSQL en producción
 - Autenticación con cookies HTTP-only, `jose` y `bcryptjs`
 - Nodemailer para correo institucional opcional
-- Integración OAuth de Gmail para importar comunicaciones y fechas institucionales
 - Arquitectura por capas con controladores API delgados y servicios de dominio
 
 ## Ejecución local
@@ -80,7 +79,5 @@ SIGDE es una aplicación web, no una APK. La entrega desplegada debe realizarse 
 3. Configura `EMAIL_USER` y `EMAIL_PASS` únicamente si `EMAIL_ENABLED=true`.
 4. Aplica, después de crear un backup, las migraciones de `database/libsql-migrations` que aún no estén registradas en la base de producción. No ejecutes automáticamente migraciones destructivas durante el despliegue.
 5. Importa el repositorio en Vercel y ejecuta la compilación con `npm run build`.
-
-La configuración de Gmail institucional y su URI de redirección se documentan en `docs/production-deployment.md`.
 
 No publiques archivos `.env`, tokens, contraseñas de aplicación ni datos reales de estudiantes en el repositorio.

@@ -5,16 +5,6 @@ import { parseReportDate } from '@/lib/report-dates';
 
 type ConfigRow = { clave: string; valor: string; actualizadoEn: string };
 type Feedback = { tipo: 'success' | 'error'; texto: string };
-type GmailStatus = {
-  configured: boolean;
-  connected: boolean;
-  account: string | null;
-  importQuery: string;
-  allowedSenders?: string[];
-  connectedAt?: string | null;
-  lastSyncAt?: string | null;
-  lastError?: string | null;
-};
 type ConfigForm = {
   institucion: string;
   sede: string;
@@ -52,8 +42,6 @@ export default function SettingsWorkspace({ role }: { role: 'admin' | 'coordinad
   const [cargaCorrecta, setCargaCorrecta] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const [gmail, setGmail] = useState<GmailStatus | null>(null);
-  const [gmailBusy, setGmailBusy] = useState(false);
 
   const cargar = useCallback(async () => {
     const response = await fetch('/api/configuracion', { cache: 'no-store' });
@@ -81,12 +69,6 @@ export default function SettingsWorkspace({ role }: { role: 'admin' | 'coordinad
     setCargaCorrecta(true);
   }, []);
 
-  const cargarGmail = useCallback(async () => {
-    if (!puedeEditarGestion) return;
-    const response = await fetch('/api/integraciones/gmail', { cache: 'no-store' });
-    if (response.ok) setGmail(await response.json() as GmailStatus);
-  }, [puedeEditarGestion]);
-
   useEffect(() => {
     let activa = true;
     const timer = window.setTimeout(() => {
@@ -96,57 +78,6 @@ export default function SettingsWorkspace({ role }: { role: 'admin' | 'coordinad
     }, 0);
     return () => { activa = false; window.clearTimeout(timer); };
   }, [cargar]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => { void cargarGmail(); }, 0);
-    return () => window.clearTimeout(timer);
-  }, [cargarGmail]);
-
-  async function conectarGmail() {
-    setGmailBusy(true);
-    setFeedback(null);
-    try {
-      const response = await fetch('/api/integraciones/gmail', { method: 'POST' });
-      const body = await response.json().catch(() => null);
-      if (!response.ok || !body?.url) throw new Error(body?.error || 'No se pudo iniciar la conexión con Google.');
-      window.location.assign(body.url);
-    } catch (error) {
-      setFeedback({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo conectar Gmail.' });
-      setGmailBusy(false);
-    }
-  }
-
-  async function sincronizarGmail() {
-    setGmailBusy(true);
-    setFeedback(null);
-    try {
-      const response = await fetch('/api/integraciones/gmail/sync', { method: 'POST' });
-      const body = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(body?.error || 'No se pudo sincronizar Gmail.');
-      setFeedback({ tipo: 'success', texto: `Gmail sincronizado: ${body.communications} comunicaciones, ${body.events} eventos y ${body.schedules} horarios nuevos.` });
-      await cargarGmail();
-    } catch (error) {
-      setFeedback({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo sincronizar Gmail.' });
-    } finally {
-      setGmailBusy(false);
-    }
-  }
-
-  async function desconectarGmail() {
-    if (!window.confirm('¿Desconectar Gmail institucional de SIGDE?')) return;
-    setGmailBusy(true);
-    setFeedback(null);
-    try {
-      const response = await fetch('/api/integraciones/gmail', { method: 'DELETE' });
-      if (!response.ok) throw new Error('No se pudo desconectar Gmail.');
-      setFeedback({ tipo: 'success', texto: 'La cuenta de Gmail fue desconectada.' });
-      await cargarGmail();
-    } catch (error) {
-      setFeedback({ tipo: 'error', texto: error instanceof Error ? error.message : 'No se pudo desconectar Gmail.' });
-    } finally {
-      setGmailBusy(false);
-    }
-  }
 
   const tieneCambios = useMemo(() => Object.keys(form).some((key) => form[key as keyof ConfigForm] !== guardada[key as keyof ConfigForm]), [form, guardada]);
 
@@ -248,19 +179,6 @@ export default function SettingsWorkspace({ role }: { role: 'admin' | 'coordinad
           <label><span>Periodo de evaluación</span><div className="settings-input-suffix"><input type="number" min="1" max="365" value={form.periodoDias} disabled={guardando} onChange={(event) => setForm({ ...form, periodoDias: event.target.value })} required /><span>días</span></div><small>Entre 1 y 365 días.</small></label>
         </div>
       </section>
-      {puedeEditarGestion && <section className="settings-card">
-        <div className="settings-card-heading"><span>04</span><div><h3>Correo institucional</h3><p>Clasifica correos autorizados: actualiza horarios, agenda actividades y publica comunicaciones.</p></div></div>
-        <div className="settings-fields">
-          <label><span>Cuenta autorizada</span><input value={gmail?.account || 'Sin configurar'} disabled /><small>El acceso es de solo lectura y SIGDE nunca recibe la contraseña.</small></label>
-          <label><span>Estado</span><input value={!gmail ? 'Consultando…' : !gmail.configured ? 'Faltan credenciales de Google' : gmail.connected ? 'Conectada' : 'Pendiente de autorización'} disabled /><small>{gmail?.lastSyncAt ? `Última sincronización: ${new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' }).format(parseReportDate(gmail.lastSyncAt))}` : `Filtro: ${gmail?.importQuery || 'label:SIGDE'}`}</small></label>
-          <label><span>Remitentes autorizados</span><textarea value={(gmail?.allowedSenders || []).join('\n') || 'Sin configurar'} disabled rows={2} /><small>Cualquier otro remitente será ignorado.</small></label>
-        </div>
-        {gmail?.lastError && <p className="feedback error" role="alert">Último error: {gmail.lastError}</p>}
-        <div className="settings-action-buttons">
-          {!gmail?.connected && <button type="button" className="module-primary-action" disabled={gmailBusy || !gmail?.configured} onClick={() => void conectarGmail()}>{gmailBusy ? 'Abriendo Google…' : 'Conectar con Google'}</button>}
-          {gmail?.connected && <><button type="button" className="module-primary-action" disabled={gmailBusy} onClick={() => void sincronizarGmail()}>{gmailBusy ? 'Sincronizando…' : 'Sincronizar ahora'}</button><button type="button" className="module-secondary-action" disabled={gmailBusy} onClick={() => void desconectarGmail()}>Desconectar</button></>}
-        </div>
-      </section>}
       <div className="settings-actions"><p>{tieneCambios ? 'Tienes cambios pendientes. Las reglas nuevas se aplicarán a las alertas futuras.' : 'La configuración está actualizada.'}</p><div className="settings-action-buttons"><button type="button" className="module-secondary-action" disabled={guardando || !tieneCambios} onClick={() => { setForm(guardada); setFeedback(null); }}>Descartar cambios</button><button type="submit" className="module-primary-action" disabled={guardando || !tieneCambios}>{guardando ? 'Guardando...' : 'Guardar configuración'}</button></div></div>
     </form>}
   </section>;
