@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import StudentsWorkspace from '@/components/students/StudentsWorkspace';
+import GroupsWorkspace from '@/components/groups/GroupsWorkspace';
 import CommunicationsWorkspace from '@/components/communications/CommunicationsWorkspace';
 import ReportsWorkspace from '@/components/reports/ReportsWorkspace';
 import StudentSearch from '@/components/reports/StudentSearch';
@@ -19,6 +20,7 @@ import type { Estudiante } from '@/types/students';
 import { parseReportDate } from '@/lib/report-dates';
 import { useDialogFocus } from '@/hooks/useDialogFocus';
 import { DOCUMENT_TYPES, NUMERIC_DOCUMENT_TYPES, RELATIONSHIPS } from '@/lib/identity-options';
+import { coincideBusqueda } from '@/lib/search-normalization';
 
 export type DashboardUser = {
   id: number;
@@ -28,9 +30,9 @@ export type DashboardUser = {
 };
 
 type DashboardRole = 'admin' | 'coordinador' | 'docente' | 'portero';
-type DashboardSection = 'dashboard' | 'usuarios' | 'personas' | 'seguimiento' | 'estadisticas' | 'salidas' | 'comunicaciones' | 'calendario' | 'reportes' | 'convivencia' | 'configuracion' | 'perfil' | 'auditoria';
+type DashboardSection = 'dashboard' | 'usuarios' | 'grupos' | 'personas' | 'seguimiento' | 'estadisticas' | 'salidas' | 'comunicaciones' | 'calendario' | 'reportes' | 'convivencia' | 'configuracion' | 'perfil' | 'auditoria';
 
-const DASHBOARD_SECTIONS: DashboardSection[] = ['dashboard', 'usuarios', 'personas', 'seguimiento', 'estadisticas', 'salidas', 'comunicaciones', 'calendario', 'reportes', 'convivencia', 'configuracion', 'perfil', 'auditoria'];
+const DASHBOARD_SECTIONS: DashboardSection[] = ['dashboard', 'usuarios', 'grupos', 'personas', 'seguimiento', 'estadisticas', 'salidas', 'comunicaciones', 'calendario', 'reportes', 'convivencia', 'configuracion', 'perfil', 'auditoria'];
 
 function sectionFromUrl(value: string | null): DashboardSection {
   return DASHBOARD_SECTIONS.includes(value as DashboardSection) ? value as DashboardSection : 'dashboard';
@@ -189,7 +191,7 @@ const NAV_GROUPS: Array<{
   { label: 'OPERATIVO', items: [{ id: 'reportes', label: 'Reportes', roles: ['coordinador', 'docente'] }, { id: 'convivencia', label: 'Convivencia', roles: ['coordinador', 'docente'] }, { id: 'salidas', label: 'Salidas', roles: ['coordinador', 'portero'] }] },
   { label: 'ANALÍTICA', items: [{ id: 'seguimiento', label: 'Seguimiento', roles: ['coordinador', 'docente'] }, { id: 'estadisticas', label: 'Estadísticas', roles: ['coordinador', 'docente'] }] },
   { label: 'INFORMACIÓN', items: [{ id: 'comunicaciones', label: 'Comunicaciones', roles: ['coordinador', 'docente'] }, { id: 'calendario', label: 'Calendario', roles: ['coordinador', 'docente', 'portero'] }] },
-  { label: 'GESTIÓN', items: [{ id: 'usuarios', label: 'Usuarios', roles: ['coordinador'] }, { id: 'personas', label: 'Estudiantes', roles: ['coordinador', 'docente'] }, { id: 'configuracion', label: 'Configuración', roles: ['coordinador'] }, { id: 'perfil', label: 'Perfil', roles: ['coordinador', 'docente', 'portero'] }] },
+  { label: 'GESTIÓN', items: [{ id: 'usuarios', label: 'Usuarios', roles: ['coordinador'] }, { id: 'grupos', label: 'Grupos', roles: ['coordinador'] }, { id: 'personas', label: 'Estudiantes', roles: ['coordinador', 'docente'] }, { id: 'configuracion', label: 'Configuración', roles: ['coordinador'] }, { id: 'perfil', label: 'Perfil', roles: ['coordinador', 'docente', 'portero'] }] },
   { label: 'SEGURIDAD', items: [{ id: 'auditoria', label: 'Auditoría', roles: ['coordinador'] }] },
 ];
 
@@ -205,16 +207,17 @@ function puedeAbrirSeccion(section: DashboardSection, role: DashboardRole) {
   return NAV_GROUPS.some((group) => group.items.some((item) => item.id === section && tieneAccesoSeccion(item.roles, role)));
 }
 
-type SidebarIconName = 'dashboard' | 'users' | 'graduation' | 'document' | 'door' | 'message' | 'calendar' | 'chart' | 'settings' | 'profile' | 'logout' | 'chevron' | 'chevronDown' | 'search' | 'sparkles';
+type SidebarIconName = 'dashboard' | 'users' | 'groups' | 'graduation' | 'document' | 'door' | 'message' | 'calendar' | 'chart' | 'settings' | 'profile' | 'logout' | 'chevron' | 'chevronDown' | 'search' | 'sparkles';
 
 const ICON_BY_SECTION: Record<DashboardSection, SidebarIconName> = {
-  dashboard: 'dashboard', usuarios: 'users', personas: 'graduation', seguimiento: 'document', estadisticas: 'chart', salidas: 'door', comunicaciones: 'message', calendario: 'calendar', reportes: 'chart', convivencia: 'document', configuracion: 'settings', perfil: 'profile', auditoria: 'document',
+  dashboard: 'dashboard', usuarios: 'users', grupos: 'groups', personas: 'graduation', seguimiento: 'document', estadisticas: 'chart', salidas: 'door', comunicaciones: 'message', calendario: 'calendar', reportes: 'chart', convivencia: 'document', configuracion: 'settings', perfil: 'profile', auditoria: 'document',
 };
 
 function SidebarIcon({ name }: { name: SidebarIconName }) {
   const paths: Record<SidebarIconName, React.ReactNode> = {
     dashboard: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
     users: <><circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2" /><path d="M3.5 20c.5-3.2 2.4-5 5.5-5s5 1.8 5.5 5M15 15.5c2.8.1 4.5 1.6 5 4.5" /></>,
+    groups: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M9 9v11M15 9v11" /></>,
     graduation: <><path d="m3 9 9-5 9 5-9 5-9-5Z" /><path d="M7 11.2V16c2.8 2 7.2 2 10 0v-4.8M21 9v6" /></>,
     document: <><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v5h5M9 12h6M9 16h6" /></>,
     door: <><path d="M5 21V4a1 1 0 0 1 1-1h11a1 1 0 0 1 1 1v17M3 21h18M9 21V7h5v14M12 14h.01" /></>,
@@ -838,6 +841,9 @@ function DashboardContent({
   if (section === 'estadisticas') return statsError
     ? <p className="feedback error" role="alert">{statsError}</p>
     : <StatisticsWorkspace stats={stats ?? EMPTY_STATS} loading={!stats} canExport={esRolGestor(role)} />;
+  if (section === 'grupos') {
+    return <GroupsWorkspace canManage={esRolGestor(role)} />;
+  }
   if (section === 'personas') {
     return <StudentsWorkspace key={studentsViewKey} currentUserId={usuario.id} canManage={esRolGestor(role)} />;
   }
@@ -894,7 +900,7 @@ function ControlSalidasWorkspace({ role }: { role: DashboardRole }) {
   useDialogFocus<HTMLElement>(mostrarFormulario, () => setMostrarFormulario(false), !guardando);
   const seleccionado = estudiantes.find((item) => item.id === Number(estudianteId));
   const documentoSoloNumeros = NUMERIC_DOCUMENT_TYPES.has(recoge.tipoDocumento);
-  const salidasVisibles = salidas.filter((salida) => [salida.estudiante, salida.grado, salida.grupo, salida.acudiente, salida.recogeNombre, salida.recogeApellido, salida.recogeCedula].join(' ').toLocaleLowerCase('es').includes(busqueda.trim().toLocaleLowerCase('es')));
+  const salidasVisibles = salidas.filter((salida) => coincideBusqueda(busqueda, [salida.estudiante, salida.grado, salida.grupo, salida.acudiente, salida.recogeNombre, salida.recogeApellido, salida.recogeCedula]));
 
   const cargar = useCallback(async () => {
     const [estudiantesRespuesta, salidasRespuesta] = await Promise.all([fetch('/api/estudiantes'), fetch('/api/salidas')]);

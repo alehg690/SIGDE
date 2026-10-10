@@ -25,6 +25,27 @@ type AlertFilters = { historial?: boolean; busqueda?: string; estado?: string; n
 const EVIDENCE_COLUMNS = `r.id, r.tipoFalta, COALESCE(r.fechaHecho, r.fecha, r.creadoEn) AS fecha,
   r.situacion, r.descripcion, r.lugar, r.actuacionInicial, r.estado, r.confidencial`;
 
+function expresionBusquedaSinTildes(campo: string) {
+  const reemplazos = [
+    ['á', 'a'], ['Á', 'a'], ['é', 'e'], ['É', 'e'], ['í', 'i'], ['Í', 'i'],
+    ['ó', 'o'], ['Ó', 'o'], ['ú', 'u'], ['Ú', 'u'], ['ü', 'u'], ['Ü', 'u'],
+    ['ñ', 'n'], ['Ñ', 'n'],
+  ];
+  return reemplazos.reduce((expresion, [original, reemplazo]) => `REPLACE(${expresion}, '${original}', '${reemplazo}')`, `LOWER(${campo})`);
+}
+
+const NOMBRE_ESTUDIANTE_BUSQUEDA = `REPLACE(${expresionBusquedaSinTildes('e.nombre')}, 'h', '')`;
+
+function normalizarTerminoBusqueda(valor: string) {
+  return valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').replaceAll('h', '').trim().replace(/\s+/g, ' ');
+}
+
+function coincideTerminosBusqueda(consulta: string, valores: unknown[]) {
+  const palabras = normalizarTerminoBusqueda(consulta).split(/[^a-z0-9]+/).filter(Boolean);
+  const contenido = normalizarTerminoBusqueda(valores.join(' ')).split(/[^a-z0-9]+/).filter(Boolean);
+  return palabras.every((palabra) => contenido.some((termino) => termino.startsWith(palabra)));
+}
+
 function scopeClause(usuario: SesionUsuario, studentAlias = 'e') {
   if (esRolCoordinador(usuario.rol)) return { sql: '1 = 1', args: [] as Array<string | number> };
   return {
@@ -209,7 +230,13 @@ export async function listarAlertas(usuario: SesionUsuario, filters: AlertFilter
   const conditions = [scope.sql];
   const args: Array<string | number> = [...scope.args];
   if (!filters.historial) conditions.push("a.estado IN ('new', 'reviewed', 'monitoring')");
-  if (filters.busqueda?.trim()) { conditions.push("(LOWER(e.nombre) LIKE LOWER(?) OR LOWER(e.grado || '-' || e.grupo) LIKE LOWER(?))"); const query = `%${filters.busqueda.trim()}%`; args.push(query, query); }
+  if (filters.busqueda?.trim()) {
+    const palabras = normalizarTerminoBusqueda(filters.busqueda).split(/[^a-z0-9]+/).filter(Boolean);
+    for (const palabra of palabras) {
+      conditions.push(`(${NOMBRE_ESTUDIANTE_BUSQUEDA} LIKE ? OR LOWER(e.grado || '-' || e.grupo) LIKE ?)`);
+      args.push(`%${palabra}%`, `%${palabra}%`);
+    }
+  }
   if (filters.estado && ALL_STATUSES.includes(filters.estado as AlertStatus)) { conditions.push('a.estado = ?'); args.push(filters.estado); }
   if (filters.nivel && ATTENTION_LEVELS.includes(filters.nivel as (typeof ATTENTION_LEVELS)[number])) { conditions.push('a.nivelAtencion = ?'); args.push(filters.nivel); }
   if (filters.regla?.trim()) { conditions.push('a.ruleId = ?'); args.push(filters.regla.trim()); }
@@ -220,7 +247,10 @@ export async function listarAlertas(usuario: SesionUsuario, filters: AlertFilter
     sql: `SELECT a.id, a.estudianteId, a.ruleId, a.tipo, a.titulo, a.resumenCorto, a.cantidadReportes, a.estado, a.nivelAtencion, a.confianza, a.periodoInicio, a.periodoFin, a.origen, a.primerDetectadoEn, a.ultimoDetectadoEn, a.revisadoEn, a.resueltoEn, a.creadoEn, a.actualizadoEn, e.nombre AS estudiante, e.grado, e.grupo FROM Alerta a INNER JOIN Estudiante e ON e.id = a.estudianteId WHERE ${conditions.join(' AND ')} ORDER BY CASE a.estado WHEN 'new' THEN 0 WHEN 'reviewed' THEN 1 WHEN 'monitoring' THEN 2 ELSE 3 END, CASE a.nivelAtencion WHEN 'high' THEN 0 WHEN 'medium' THEN 1 WHEN 'low' THEN 2 ELSE 3 END, datetime(a.actualizadoEn) DESC LIMIT 500`,
     args,
   });
-  return { data: result.rows };
+  const rows = filters.busqueda?.trim()
+    ? result.rows.filter((row) => coincideTerminosBusqueda(filters.busqueda!, [row.estudiante, row.grado, row.grupo, `${row.grado}-${row.grupo}`]))
+    : result.rows;
+  return { data: rows };
 }
 
 export async function listarAlertasActivas(incluirResueltas = false, usuario?: SesionUsuario) {

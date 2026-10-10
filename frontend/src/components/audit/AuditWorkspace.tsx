@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { parseReportDate } from '@/lib/report-dates';
+import { coincideBusqueda } from '@/lib/search-normalization';
 
 type AuditLog = {
   id: number;
@@ -57,10 +58,8 @@ export default function AuditWorkspace() {
 
   const entidades = useMemo(() => [...new Set(logs.map((log) => log.entidad))].sort((a, b) => a.localeCompare(b, 'es')), [logs]);
   const filtrados = useMemo(() => {
-    const termino = busqueda.trim().toLocaleLowerCase('es');
     return logs.filter((log) => {
-      const texto = [log.usuario, log.accion, log.entidad, log.entidadId, log.detalle].join(' ').toLocaleLowerCase('es');
-      return (!termino || texto.includes(termino)) && (entidad === 'Todas' || log.entidad === entidad);
+      return coincideBusqueda(busqueda, [log.usuario, log.accion, log.entidad, log.entidadId, log.detalle]) && (entidad === 'Todas' || log.entidad === entidad);
     });
   }, [busqueda, entidad, logs]);
 

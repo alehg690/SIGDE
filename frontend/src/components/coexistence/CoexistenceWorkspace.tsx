@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import type { Estudiante } from '@/types/students';
 import { parseReportDate } from '@/lib/report-dates';
+import { coincideBusqueda } from '@/lib/search-normalization';
 
 type TipoSituacion = 'Tipo I' | 'Tipo II' | 'Tipo III';
 type Regla = { tipo: TipoSituacion; articulo: string; descripcion: string; competencia: string; accion: string; instancia: string; requiereSiuce: boolean; pasosRaice: number[] };
@@ -68,9 +69,7 @@ export default function CoexistenceWorkspace() {
   const pasos = manual?.pasosRaice.filter((item) => item.aplicaA.includes(tipo)) ?? [];
   const pasoSeleccionado = pasos.find((item) => item.paso === Number(paso)) ?? pasos[0] ?? null;
   const filtrados = useMemo(() => {
-    const termino = busqueda.trim().toLocaleLowerCase('es');
-    if (!termino) return casos;
-    return casos.filter((caso) => [caso.estudiante, caso.grado, caso.tipo, caso.descripcion, caso.etapa, caso.creadoPorNombre].join(' ').toLocaleLowerCase('es').includes(termino));
+    return casos.filter((caso) => coincideBusqueda(busqueda, [caso.estudiante, caso.grado, caso.tipo, caso.descripcion, caso.etapa, caso.creadoPorNombre]));
   }, [busqueda, casos]);
 
   async function registrar(event: FormEvent<HTMLFormElement>) {

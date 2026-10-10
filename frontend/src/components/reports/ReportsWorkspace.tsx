@@ -2,6 +2,7 @@
 
 import StudentSearch from './StudentSearch';
 import { parseReportDate } from '@/lib/report-dates';
+import { coincideBusqueda } from '@/lib/search-normalization';
 import ObservadorFields, { observadorVacio, ObservadorDetalle } from './ObservadorFields';
 import type { Observador } from '@backend/types/observador';
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -189,16 +190,14 @@ export default function ReportsWorkspace({
   const docentes = useMemo(() => [...new Set(reportes.map((item) => item.docente))].sort((a, b) => a.localeCompare(b, 'es')), [reportes]);
   const cursos = useMemo(() => [...new Set(reportes.map((item) => `${item.grado}-${item.grupo}`))].sort((a, b) => a.localeCompare(b, 'es', { numeric: true })), [reportes]);
   const filtrados = useMemo(() => {
-    const termino = busqueda.trim().toLocaleLowerCase('es');
     const ahora = new Date();
     return reportes.filter((reporte) => {
-      const contenido = [reporte.estudiante, reporte.docente, reporte.grado, reporte.grupo, reporte.descripcion, reporte.situacion, reporte.lugar].join(' ').toLocaleLowerCase('es');
       const fecha = parseReportDate(reporte.fechaHecho || reporte.fecha);
       const dias = (ahora.getTime() - fecha.getTime()) / 86_400_000;
       const coincidePeriodo = periodo === 'Todos'
         || (periodo === 'mes' && fecha.getFullYear() === ahora.getFullYear() && fecha.getMonth() === ahora.getMonth())
         || (periodo !== 'mes' && dias >= 0 && dias <= Number(periodo));
-      return (!termino || contenido.includes(termino))
+      return coincideBusqueda(busqueda, [reporte.estudiante, reporte.docente, reporte.grado, reporte.grupo, reporte.descripcion, reporte.situacion, reporte.lugar])
         && (tipo === 'Todos' || reporte.tipoFalta === tipo)
         && (estado === 'Todos' || reporte.estado === estado)
         && (docente === 'Todos' || reporte.docente === docente)

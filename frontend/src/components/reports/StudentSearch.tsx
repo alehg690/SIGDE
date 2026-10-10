@@ -2,11 +2,8 @@
 
 import { useId, useRef, useState } from 'react';
 import type { Estudiante } from '@/types/students';
+import { coincideBusqueda, normalizarBusqueda } from '@/lib/search-normalization';
 import styles from './StudentSearch.module.css';
-
-function normalizar(texto: string) {
-  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim();
-}
 
 export default function StudentSearch({ estudiantes, value, onChange }: {
   estudiantes: Estudiante[];
@@ -20,11 +17,8 @@ export default function StudentSearch({ estudiantes, value, onChange }: {
   const [activo, setActivo] = useState(-1);
   const seleccionado = estudiantes.find(item => String(item.id) === value);
   const texto = seleccionado?.nombre ?? consulta;
-  const palabras = normalizar(texto).split(/\s+/).filter(Boolean);
-  const resultados = palabras.length ? estudiantes.filter(item => {
-    const nombre = normalizar(item.nombre);
-    return palabras.every(palabra => nombre.includes(palabra));
-  }) : [];
+  const palabras = normalizarBusqueda(texto).split(/\s+/).filter(Boolean);
+  const resultados = palabras.length ? estudiantes.filter((item) => coincideBusqueda(texto, [item.nombre])) : [];
   const mostrar = abierto && palabras.length > 0;
 
   function seleccionar(alumno: Estudiante) {

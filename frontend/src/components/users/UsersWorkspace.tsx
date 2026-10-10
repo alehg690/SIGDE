@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { parseReportDate } from '@/lib/report-dates';
 import { useDialogFocus } from '@/hooks/useDialogFocus';
+import { coincideBusqueda } from '@/lib/search-normalization';
 
 type RolUsuario = 'Admin' | 'Coordinador' | 'Docente' | 'Porteria';
 type Usuario = { id: number; nombre: string; correo: string; rol: RolUsuario; activo: boolean; creadoEn: string; ultimoAcceso: string | null };
@@ -101,10 +102,9 @@ export default function UsersWorkspace({ currentUserId, currentRole }: { current
   }, [cargarUsuarios]);
 
   const usuariosFiltrados = useMemo(() => {
-    const termino = busqueda.trim().toLocaleLowerCase('es');
     return usuarios.filter((usuario) => {
       const coincideRol = filtroRol === 'Todos' || usuario.rol === filtroRol;
-      const coincideTexto = !termino || `${usuario.nombre} ${usuario.correo} ${usuario.rol}`.toLocaleLowerCase('es').includes(termino);
+      const coincideTexto = coincideBusqueda(busqueda, [usuario.nombre, usuario.correo, usuario.rol]);
       return coincideRol && coincideTexto;
     });
   }, [busqueda, filtroRol, usuarios]);

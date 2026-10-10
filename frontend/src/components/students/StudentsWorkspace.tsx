@@ -9,9 +9,10 @@ import {
 import type { Estudiante, EstudianteFormData } from "@/types/students";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { DOCUMENT_TYPES, RELATIONSHIPS } from "@/lib/identity-options";
+import { coincideBusqueda } from "@/lib/search-normalization";
 
 type Feedback = { tipo: "success" | "error"; texto: string };
-const ESTADOS = ["Activo", "Desescolarizado", "Egresado"];
+const ESTADOS = ["Activo", "Desescolarizado", "Egresado", "Retirado/a"];
 const EMPTY_FORM: EstudianteFormData = {
   primerNombre: "",
   segundoNombre: "",
@@ -180,15 +181,11 @@ export default function StudentsWorkspace({
   }, [mensaje, modal]);
 
   const filtrados = useMemo(() => {
-    const termino = busqueda.trim().toLocaleLowerCase("es");
     return estudiantes.filter((item) => {
       const grupo = etiquetaGrupoAcademico(item.grado, item.grupo);
       return (
         (filtroGrupo === "Todos" || grupo === filtroGrupo) &&
-        (!termino ||
-          `${item.nombre} ${item.correo || ""} ${item.documento || ""} ${grupo}`
-            .toLocaleLowerCase("es")
-            .includes(termino))
+        coincideBusqueda(busqueda, [item.nombre, item.correo, item.documento, grupo])
       );
     });
   }, [busqueda, estudiantes, filtroGrupo]);

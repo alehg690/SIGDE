@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GRUPOS_ACADEMICOS } from '@/lib/academic-groups';
 import { useDialogFocus } from '@/hooks/useDialogFocus';
 import { parseReportDate } from '@/lib/report-dates';
+import { coincideBusqueda } from '@/lib/search-normalization';
 
 type Tipo = 'Circular' | 'Comunicado' | 'Aviso' | 'Citación';
 type Comunicacion = {
@@ -52,8 +53,7 @@ export default function CommunicationsWorkspace({ canManage }: { canManage: bool
 
   const visibles = useMemo(() => items.filter((item) => {
     const coincideTipo = filtro === 'Todos' || item.tipo === filtro;
-    const term = query.trim().toLocaleLowerCase('es');
-    return coincideTipo && (!term || [item.titulo, item.contenido, item.destinatarios, item.autor].some((value) => value.toLocaleLowerCase('es').includes(term)));
+    return coincideTipo && coincideBusqueda(query, [item.titulo, item.contenido, item.destinatarios, item.autor]);
   }), [items, filtro, query]);
   const publicados = items.filter((item) => item.estado === 'Publicado').length;
 

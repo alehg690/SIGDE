@@ -33,11 +33,13 @@ require.extensions['.ts'] = function (module, filename) {
 const { NextRequest } = require('next/server');
 const { db } = require('../backend/src/config/database.ts');
 const { crearToken } = require('../backend/src/utils/jwt.ts');
+const { coincideBusqueda, normalizarBusqueda } = require('../frontend/src/lib/search-normalization.ts');
 const all = ['Admin', 'Coordinador', 'Docente', 'Porteria'];
 const teaching = ['Admin', 'Coordinador', 'Docente'];
 const management = ['Admin', 'Coordinador'];
 const routes = [
   ['usuarios', management, 'POST', management],
+  ['grupos', management],
   ['estudiantes', all, 'POST', management],
   ['acudientes', management, 'POST', management],
   ['reportes', teaching, 'POST', teaching],
@@ -69,6 +71,12 @@ async function main() {
       await db.execute({ sql: 'INSERT INTO Usuario(id,nombre,correo,contrasena,rol) VALUES(?,?,?,?,?)', args: [id, rol, `${id}@example.test`, 'unused', rol] });
       tokens[rol] = await crearToken({ id, rol, versionSesion: 1 });
     }
+    assert.equal(normalizarBusqueda('  MÓNICA Muñoz  '), 'monica munoz');
+    assert.equal(coincideBusqueda('Monica Munoz', ['Mónica', 'Muñoz']), true);
+    assert.equal(coincideBusqueda('Mon', ['Mónica']), true);
+    assert.equal(coincideBusqueda('Marta', ['Martha']), true);
+    assert.equal(coincideBusqueda('Maria', ['Mariana']), true);
+    checks += 5;
     for (const [route, readers, method, writers] of routes) {
       const handlers = require(path.join(root, 'frontend/src/app/api', route, 'route.ts'));
       for (const rol of [null, ...all]) {
@@ -84,10 +92,38 @@ async function main() {
         }
       }
     }
+    const groupDetail = require('../frontend/src/app/api/grupos/[grado]/[grupo]/route.ts');
+    for (const rol of [null, 'Docente', 'Porteria']) {
+      cookieToken = rol ? tokens[rol] : undefined;
+      const response = await groupDetail.PATCH(new NextRequest('http://localhost/api/grupos/11/1', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ directorId: 2 }),
+      }), { params: Promise.resolve({ grado: '11', grupo: '1' }) });
+      assert.equal(response.status, !rol ? 401 : 403, `PATCH grupos/11/1: ${rol}`);
+      checks++;
+    }
+    cookieToken = tokens.Coordinador;
+    const groupUpdated = await groupDetail.PATCH(new NextRequest('http://localhost/api/grupos/11/1', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ directorId: 2 }),
+    }), { params: Promise.resolve({ grado: '11', grupo: '1' }) });
+    assert.equal(groupUpdated.status, 200);
+    assert.equal((await db.execute("SELECT directorId FROM GrupoEscolar WHERE grado='11' AND grupo='1'")).rows[0].directorId, 2);
+    checks++;
     await db.execute("INSERT INTO Acudiente(id,nombre,contacto) VALUES(1,'Acudiente ficticio','Sin contacto')");
-    await db.execute("INSERT INTO Estudiante(id,nombre,grado,grupo,acudienteId) VALUES(1,'Estudiante ficticio','11','1',1)");
+    await db.execute("INSERT INTO Estudiante(id,nombre,grado,grupo,acudienteId) VALUES(1,'Mónica Muñoz','11','1',1)");
+    await db.execute("INSERT INTO Estudiante(id,nombre,grado,grupo,acudienteId) VALUES(2,'Martha Pérez','11','1',1)");
     await db.execute("UPDATE GrupoEscolar SET directorId=2 WHERE grado='11' AND grupo='1'");
     await db.execute("INSERT INTO Reporte(id,estudianteId,docenteId,tipoFalta,descripcion,confidencial) VALUES(1,1,1,'TIPO_I','Reporte público de otro autor',0),(2,1,1,'TIPO_I','Reporte reservado',1),(3,1,2,'TIPO_I','Reporte propio',0)");
+    await db.execute("INSERT INTO Alerta(id,estudianteId,cantidadReportes,analisisIaJson,versionPrompt) VALUES(1,1,3,'{}','search-test')");
+    await db.execute("INSERT INTO Alerta(id,estudianteId,cantidadReportes,analisisIaJson,versionPrompt) VALUES(2,2,3,'{}','search-test')");
+    const alerts = require('../frontend/src/app/api/alertas/route.ts');
+    cookieToken = tokens.Coordinador;
+    const unaccentedAlertSearch = await alerts.GET(new NextRequest('http://localhost/api/alertas?historial=1&buscar=Monica%20Munoz'));
+    assert.equal(unaccentedAlertSearch.status, 200);
+    assert.equal((await unaccentedAlertSearch.json())[0]?.estudiante, 'Mónica Muñoz');
+    const distinctNameSearch = await alerts.GET(new NextRequest('http://localhost/api/alertas?historial=1&buscar=Marta'));
+    assert.equal(distinctNameSearch.status, 200);
+    assert.equal((await distinctNameSearch.json())[0]?.estudiante, 'Martha Pérez');
+    checks += 4;
     const listReports = require('../frontend/src/app/api/reportes/route.ts');
     const detailReports = require('../frontend/src/app/api/reportes/[id]/route.ts');
     cookieToken = tokens.Docente;
@@ -135,7 +171,7 @@ async function main() {
     await db.execute('UPDATE Usuario SET activo=0 WHERE id=2');
     const reports = require('../frontend/src/app/api/reportes/route.ts');
     assert.equal((await reports.GET(new NextRequest('http://localhost/api/reportes'))).status, 401);
-    console.log(`OK: ${checks} comprobaciones de lectura y escrituras denegadas en 16 rutas, más revocación de cuenta inactiva.`);
+    console.log(`OK: ${checks} comprobaciones de permisos en 17 rutas, más revocación de cuenta inactiva.`);
   } finally { db.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
