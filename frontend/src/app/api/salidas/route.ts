@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
       estudianteId: String(body.estudianteId || ''),
       recogeNombre: String(body.recogeNombre || ''),
       recogeApellido: String(body.recogeApellido || ''),
+      recogeTipoDocumento: String(body.recogeTipoDocumento || ''),
       recogeCedula: String(body.recogeCedula || ''),
       recogeParentesco: String(body.recogeParentesco || ''),
       recogeCorreo: String(body.recogeCorreo || ''),

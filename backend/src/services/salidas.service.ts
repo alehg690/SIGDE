@@ -10,24 +10,32 @@ export type SalidaInput = {
   estudianteId: string;
   recogeNombre: string;
   recogeApellido: string;
+  recogeTipoDocumento: string;
   recogeCedula: string;
   recogeParentesco: string;
   recogeCorreo: string;
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const TIPOS_DOCUMENTO = new Set(['RC', 'TI', 'CC', 'CE', 'PPT', 'PEP', 'NUIP']);
+const TIPOS_DOCUMENTO_NUMERICO = new Set(['RC', 'TI', 'CC', 'NUIP']);
+const PARENTESCOS = new Set(['Madre', 'Padre', 'Abuela', 'Abuelo', 'Hermana', 'Hermano', 'Tía', 'Tío', 'Tutor legal', 'Otro']);
 
 function validarInput(input: SalidaInput) {
   const data = {
     estudianteId: Number(input.estudianteId),
     recogeNombre: input.recogeNombre.trim(), recogeApellido: input.recogeApellido.trim(),
+    recogeTipoDocumento: input.recogeTipoDocumento.trim().toUpperCase(),
     recogeCedula: input.recogeCedula.trim(), recogeParentesco: input.recogeParentesco.trim(),
     recogeCorreo: input.recogeCorreo.trim().toLowerCase(),
   };
   if (!Number.isInteger(data.estudianteId) || data.estudianteId <= 0) return { error: 'Selecciona un estudiante válido', status: 400 };
   if (!data.recogeNombre || !data.recogeApellido || !data.recogeCedula || !data.recogeParentesco) return { error: 'Completa los datos de la persona que recoge al estudiante', status: 400 };
+  if (!TIPOS_DOCUMENTO.has(data.recogeTipoDocumento)) return { error: 'Selecciona un tipo de documento válido', status: 400 };
+  if (!PARENTESCOS.has(data.recogeParentesco)) return { error: 'Selecciona un parentesco válido', status: 400 };
   if ([data.recogeNombre, data.recogeApellido, data.recogeParentesco].some((valor) => valor.length > 100)) return { error: 'Los datos de la persona que recoge son demasiado largos', status: 400 };
-  if (!/^[A-Za-z0-9.-]{4,30}$/.test(data.recogeCedula)) return { error: 'El documento de la persona que recoge no tiene un formato válido', status: 400 };
+  if (TIPOS_DOCUMENTO_NUMERICO.has(data.recogeTipoDocumento) && !/^\d{4,20}$/.test(data.recogeCedula)) return { error: 'Este tipo de documento solo admite números', status: 400 };
+  if (!TIPOS_DOCUMENTO_NUMERICO.has(data.recogeTipoDocumento) && !/^[A-Za-z0-9.-]{4,30}$/.test(data.recogeCedula)) return { error: 'El documento de la persona que recoge no tiene un formato válido', status: 400 };
   if (data.recogeCorreo.length > 254) return { error: 'El correo de la persona que recoge es demasiado largo', status: 400 };
   if (!EMAIL_PATTERN.test(data.recogeCorreo)) return { error: 'Ingresa un correo válido para la persona que recoge', status: 400 };
   return { data };
@@ -40,7 +48,7 @@ async function obtenerEstudianteConAcudiente(estudianteId: number) {
 
 export async function listarSalidas(usuario: SesionUsuario) {
   const soloHoy = usuario.rol === 'Porteria';
-  const result = await db.execute({ sql: `SELECT s.id, s.estudianteId, e.nombre AS estudiante, e.grado, e.grupo, e.jornada, a.nombre AS acudiente, s.recogeNombre, s.recogeApellido, s.recogeCedula, s.recogeParentesco, s.estado, s.creadoEn, u.nombre AS registradoPorNombre FROM Salida s INNER JOIN Estudiante e ON e.id = s.estudianteId INNER JOIN Acudiente a ON a.id = s.acudienteId INNER JOIN Usuario u ON u.id = s.registradoPorId ${soloHoy ? "WHERE date(s.creadoEn, '-5 hours') = date('now', '-5 hours')" : ''} ORDER BY s.creadoEn DESC`, args: [] });
+  const result = await db.execute({ sql: `SELECT s.id, s.estudianteId, e.nombre AS estudiante, e.grado, e.grupo, e.jornada, a.nombre AS acudiente, s.recogeNombre, s.recogeApellido, s.recogeTipoDocumento, s.recogeCedula, s.recogeParentesco, s.estado, s.creadoEn, u.nombre AS registradoPorNombre FROM Salida s INNER JOIN Estudiante e ON e.id = s.estudianteId INNER JOIN Acudiente a ON a.id = s.acudienteId INNER JOIN Usuario u ON u.id = s.registradoPorId ${soloHoy ? "WHERE date(s.creadoEn, '-5 hours') = date('now', '-5 hours')" : ''} ORDER BY s.creadoEn DESC`, args: [] });
   return { data: result.rows };
 }
 
@@ -64,7 +72,7 @@ export async function crearSalida(input: SalidaInput, usuario: SesionUsuario) {
   if (!estudiante) return { error: 'Estudiante no encontrado o inactivo', status: 404 };
 
   const id = randomUUID();
-  const result = await db.execute({ sql: `INSERT INTO Salida (id, estudianteId, acudienteId, motivo, tipo, urgencia, estado, registradoPorId, recogeNombre, recogeApellido, recogeCedula, recogeParentesco, recogeCorreo) VALUES (?, ?, ?, ?, 'ordinaria', 0, 'completada', ?, ?, ?, ?, ?, ?) RETURNING id, creadoEn`, args: [id, data.estudianteId, Number(estudiante.acudienteId), 'Salida registrada en portería', usuario.id, data.recogeNombre, data.recogeApellido, data.recogeCedula, data.recogeParentesco, data.recogeCorreo] });
+  const result = await db.execute({ sql: `INSERT INTO Salida (id, estudianteId, acudienteId, motivo, tipo, urgencia, estado, registradoPorId, recogeNombre, recogeApellido, recogeTipoDocumento, recogeCedula, recogeParentesco, recogeCorreo) VALUES (?, ?, ?, ?, 'ordinaria', 0, 'completada', ?, ?, ?, ?, ?, ?, ?) RETURNING id, creadoEn`, args: [id, data.estudianteId, Number(estudiante.acudienteId), 'Salida registrada en portería', usuario.id, data.recogeNombre, data.recogeApellido, data.recogeTipoDocumento, data.recogeCedula, data.recogeParentesco, data.recogeCorreo] });
   await registrarAccion({ usuarioId: usuario.id, accion: 'registrar_salida', entidad: 'Salida', entidadId: id, detalle: { estudianteId: data.estudianteId } });
   const correoEnviado = await enviarAvisoSalida([...(String(estudiante.acudientesCorreo || '').split('|')), data.recogeCorreo], String(estudiante.nombre), `${data.recogeNombre} ${data.recogeApellido}`);
   return { data: { ...result.rows[0], estudiante: estudiante.nombre, grado: estudiante.grado, grupo: estudiante.grupo, jornada: estudiante.jornada, acudiente: estudiante.acudiente, correoEnviado }, status: 201 };

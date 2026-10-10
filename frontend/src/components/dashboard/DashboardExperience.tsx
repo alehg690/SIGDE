@@ -18,6 +18,7 @@ import MobileNavigation from '@/components/dashboard/MobileNavigation';
 import type { Estudiante } from '@/types/students';
 import { parseReportDate } from '@/lib/report-dates';
 import { useDialogFocus } from '@/hooks/useDialogFocus';
+import { DOCUMENT_TYPES, NUMERIC_DOCUMENT_TYPES, RELATIONSHIPS } from '@/lib/identity-options';
 
 export type DashboardUser = {
   id: number;
@@ -878,7 +879,7 @@ function DashboardContent({
   return null;
 }
 
-type SalidaRegistrada = { id: string; estudiante: string; grado: string; grupo: string; jornada: string; acudiente: string; recogeNombre: string; recogeApellido: string; recogeCedula: string; recogeParentesco: string; estado: string; creadoEn: string; registradoPorNombre: string };
+type SalidaRegistrada = { id: string; estudiante: string; grado: string; grupo: string; jornada: string; acudiente: string; recogeNombre: string; recogeApellido: string; recogeTipoDocumento: string | null; recogeCedula: string; recogeParentesco: string; estado: string; creadoEn: string; registradoPorNombre: string };
 
 function ControlSalidasWorkspace({ role }: { role: DashboardRole }) {
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
@@ -889,9 +890,10 @@ function ControlSalidasWorkspace({ role }: { role: DashboardRole }) {
   const envioEnCurso = useRef(false);
   const [busqueda, setBusqueda] = useState('');
   const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
-  const [recoge, setRecoge] = useState({ nombre: '', apellido: '', cedula: '', parentesco: '', correo: '' });
+  const [recoge, setRecoge] = useState({ nombre: '', apellido: '', tipoDocumento: 'CC', cedula: '', parentesco: '', correo: '' });
   useDialogFocus<HTMLElement>(mostrarFormulario, () => setMostrarFormulario(false), !guardando);
   const seleccionado = estudiantes.find((item) => item.id === Number(estudianteId));
+  const documentoSoloNumeros = NUMERIC_DOCUMENT_TYPES.has(recoge.tipoDocumento);
   const salidasVisibles = salidas.filter((salida) => [salida.estudiante, salida.grado, salida.grupo, salida.acudiente, salida.recogeNombre, salida.recogeApellido, salida.recogeCedula].join(' ').toLocaleLowerCase('es').includes(busqueda.trim().toLocaleLowerCase('es')));
 
   const cargar = useCallback(async () => {
@@ -919,11 +921,11 @@ function ControlSalidasWorkspace({ role }: { role: DashboardRole }) {
     setGuardando(true);
     setMensaje(null);
     try {
-      const response = await fetch('/api/salidas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estudianteId, recogeNombre: recoge.nombre, recogeApellido: recoge.apellido, recogeCedula: recoge.cedula, recogeParentesco: recoge.parentesco, recogeCorreo: recoge.correo }) });
+      const response = await fetch('/api/salidas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estudianteId, recogeNombre: recoge.nombre, recogeApellido: recoge.apellido, recogeTipoDocumento: recoge.tipoDocumento, recogeCedula: recoge.cedula, recogeParentesco: recoge.parentesco, recogeCorreo: recoge.correo }) });
       const data = await response.json().catch(() => null);
       if (!response.ok) throw new Error(typeof data?.error === 'string' ? data.error : 'No se pudo registrar la salida.');
       setMensaje({ tipo: 'success', texto: data?.correoEnviado ? 'Salida registrada y correo de aviso enviado.' : 'Salida registrada, pero no se pudo enviar el aviso por correo.' });
-      setRecoge({ nombre: '', apellido: '', cedula: '', parentesco: '', correo: '' }); setEstudianteId(''); setMostrarFormulario(false);
+      setRecoge({ nombre: '', apellido: '', tipoDocumento: 'CC', cedula: '', parentesco: '', correo: '' }); setEstudianteId(''); setMostrarFormulario(false);
       try {
         await cargar();
       } catch {
@@ -936,8 +938,8 @@ function ControlSalidasWorkspace({ role }: { role: DashboardRole }) {
   return <section className="workspace-panel exit-control-workspace">
     <div className="exit-page-heading"><div><h2>Salidas</h2><p>{role === 'portero' ? 'Consulta y registra las salidas del turno de hoy.' : 'Consulta el historial institucional y registra nuevas salidas.'}</p></div><button className="exit-register-trigger" type="button" onClick={() => { setMensaje(null); setMostrarFormulario(true); }}>↗ Registrar salida</button></div>
     {mensaje && !mostrarFormulario && <p role="status" className={`feedback ${mensaje.tipo}`}>{mensaje.texto}</p>}
-    <div className="exit-history"><div><div><h3>{role === 'portero' ? 'Salidas de hoy' : 'Historial de salidas'}</h3><p>{salidas.length ? `${salidasVisibles.length} de ${salidas.length} registros` : 'Aún no hay registros'}</p></div><label className="exit-history-search"><span className="sr-only">Buscar salida</span><input type="search" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} placeholder="Buscar estudiante, acudiente o documento" /></label></div><div className="exit-table-wrap" tabIndex={0} role="region" aria-label="Historial de salidas"><table><thead><tr><th>Estudiante</th><th>Grado</th><th>Jornada</th><th>Acudiente</th><th>Persona que recoge</th><th>Estado</th><th>Fecha y hora</th></tr></thead><tbody>{salidasVisibles.length ? salidasVisibles.map((salida) => <tr key={salida.id}><td><strong>{salida.estudiante}</strong></td><td>{salida.grado} · {salida.grupo}</td><td>{salida.jornada === 'Sin registrar' ? 'Sin registrar' : salida.jornada}</td><td>{salida.acudiente}</td><td><strong>{salida.recogeNombre && salida.recogeApellido ? `${salida.recogeNombre} ${salida.recogeApellido}` : 'Sin registrar'}</strong><small>{salida.recogeParentesco && salida.recogeCedula ? `${salida.recogeParentesco} · ${salida.recogeCedula}` : 'Dato no disponible'}</small></td><td><span className="exit-status">{salida.estado}</span></td><td><strong>{parseReportDate(salida.creadoEn).toLocaleString('es-CO', { timeZone: 'America/Bogota', dateStyle: 'medium', timeStyle: 'short' })}</strong><small>Registró: {salida.registradoPorNombre}</small></td></tr>) : <tr><td colSpan={7}>{salidas.length ? 'No hay salidas que coincidan con la búsqueda.' : 'Aún no hay salidas registradas.'}</td></tr>}</tbody></table></div></div>
-    {mostrarFormulario && <div className="exit-modal-backdrop" role="presentation" onMouseDown={() => { if (!envioEnCurso.current) setMostrarFormulario(false); }}><form className="exit-modal" role="dialog" aria-modal="true" aria-labelledby="exit-modal-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={registrarSalida}><header><div><span aria-hidden="true">↗</span><h3 id="exit-modal-title">Registrar salida</h3></div><button type="button" aria-label="Cerrar" disabled={guardando} onClick={() => setMostrarFormulario(false)}>×</button></header><div className="exit-modal-body">{mensaje && <p role="alert" className={`feedback ${mensaje.tipo}`}>{mensaje.texto}</p>}<div className="exit-student-search"><StudentSearch estudiantes={estudiantes} value={estudianteId} onChange={(alumno) => setEstudianteId(alumno ? String(alumno.id) : '')} /></div>{seleccionado && <div className="exit-selected-student"><div><strong>{seleccionado.nombre}</strong><span>{seleccionado.grado}-{seleccionado.grupo} · Jornada {seleccionado.jornada}</span></div><div><small>Acudiente registrado</small><strong>{seleccionado.acudiente.nombre}</strong></div></div>}<div className="exit-modal-fields"><UserInput label="Nombre" value={recoge.nombre} onChange={(nombre) => setRecoge({ ...recoge, nombre })} required /><UserInput label="Apellido" value={recoge.apellido} onChange={(apellido) => setRecoge({ ...recoge, apellido })} required /><UserInput label="Cédula" value={recoge.cedula} onChange={(cedula) => setRecoge({ ...recoge, cedula })} required /><UserInput label="Parentesco" value={recoge.parentesco} onChange={(parentesco) => setRecoge({ ...recoge, parentesco })} required /><UserInput label="Correo electrónico" value={recoge.correo} onChange={(correo) => setRecoge({ ...recoge, correo })} type="email" required /></div><p className="exit-notice">Al guardar, se enviará un aviso al acudiente registrado y a la persona que recoge al estudiante.</p></div><footer><button type="button" className="exit-modal-cancel" disabled={guardando} onClick={() => setMostrarFormulario(false)}>Cancelar</button><button className="exit-modal-submit" type="submit" disabled={guardando}>{guardando ? 'Registrando...' : 'Registrar salida'}</button></footer></form></div>}
+    <div className="exit-history"><div><div><h3>{role === 'portero' ? 'Salidas de hoy' : 'Historial de salidas'}</h3><p>{salidas.length ? `${salidasVisibles.length} de ${salidas.length} registros` : 'Aún no hay registros'}</p></div><label className="exit-history-search"><span className="sr-only">Buscar salida</span><input type="search" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} placeholder="Buscar estudiante, acudiente o documento" /></label></div><div className="exit-table-wrap" tabIndex={0} role="region" aria-label="Historial de salidas"><table><thead><tr><th>Estudiante</th><th>Grado</th><th>Jornada</th><th>Acudiente</th><th>Persona que recoge</th><th>Estado</th><th>Fecha y hora</th></tr></thead><tbody>{salidasVisibles.length ? salidasVisibles.map((salida) => <tr key={salida.id}><td><strong>{salida.estudiante}</strong></td><td>{salida.grado} · {salida.grupo}</td><td>{salida.jornada === 'Sin registrar' ? 'Sin registrar' : salida.jornada}</td><td>{salida.acudiente}</td><td><strong>{salida.recogeNombre && salida.recogeApellido ? `${salida.recogeNombre} ${salida.recogeApellido}` : 'Sin registrar'}</strong><small>{salida.recogeParentesco && salida.recogeCedula ? `${salida.recogeParentesco} · ${salida.recogeTipoDocumento || 'Documento'} ${salida.recogeCedula}` : 'Dato no disponible'}</small></td><td><span className="exit-status">{salida.estado}</span></td><td><strong>{parseReportDate(salida.creadoEn).toLocaleString('es-CO', { timeZone: 'America/Bogota', dateStyle: 'medium', timeStyle: 'short' })}</strong><small>Registró: {salida.registradoPorNombre}</small></td></tr>) : <tr><td colSpan={7}>{salidas.length ? 'No hay salidas que coincidan con la búsqueda.' : 'Aún no hay salidas registradas.'}</td></tr>}</tbody></table></div></div>
+    {mostrarFormulario && <div className="exit-modal-backdrop" role="presentation" onMouseDown={() => { if (!envioEnCurso.current) setMostrarFormulario(false); }}><form className="exit-modal" role="dialog" aria-modal="true" aria-labelledby="exit-modal-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={registrarSalida}><header><div><span aria-hidden="true">↗</span><h3 id="exit-modal-title">Registrar salida</h3></div><button type="button" aria-label="Cerrar" disabled={guardando} onClick={() => setMostrarFormulario(false)}>×</button></header><div className="exit-modal-body">{mensaje && <p role="alert" className={`feedback ${mensaje.tipo}`}>{mensaje.texto}</p>}<div className="exit-student-search"><StudentSearch estudiantes={estudiantes} value={estudianteId} onChange={(alumno) => setEstudianteId(alumno ? String(alumno.id) : '')} /></div>{seleccionado && <div className="exit-selected-student"><div><strong>{seleccionado.nombre}</strong><span>{seleccionado.grado}-{seleccionado.grupo} · Jornada {seleccionado.jornada}</span></div><div><small>Acudiente registrado</small><strong>{seleccionado.acudiente.nombre}</strong></div></div>}<div className="exit-modal-fields"><UserInput label="Nombre" value={recoge.nombre} onChange={(nombre) => setRecoge({ ...recoge, nombre })} required /><UserInput label="Apellido" value={recoge.apellido} onChange={(apellido) => setRecoge({ ...recoge, apellido })} required /><UserSelect label="Tipo de documento" value={recoge.tipoDocumento} options={DOCUMENT_TYPES.map(([value, label]) => ({ value, label }))} onChange={(tipoDocumento) => setRecoge({ ...recoge, tipoDocumento, cedula: '' })} required /><UserInput label="Número de documento" value={recoge.cedula} onChange={(cedula) => setRecoge({ ...recoge, cedula: documentoSoloNumeros ? cedula.replace(/\D/g, '') : cedula })} inputMode={documentoSoloNumeros ? 'numeric' : 'text'} pattern={documentoSoloNumeros ? '\\d{4,20}' : '[A-Za-z0-9.-]{4,30}'} maxLength={documentoSoloNumeros ? 20 : 30} required /><UserSelect label="Parentesco" value={recoge.parentesco} placeholder="Selecciona el parentesco" options={RELATIONSHIPS.map((item) => ({ value: item, label: item }))} onChange={(parentesco) => setRecoge({ ...recoge, parentesco })} required /><UserInput label="Correo electrónico" value={recoge.correo} onChange={(correo) => setRecoge({ ...recoge, correo })} type="email" required /></div><p className="exit-notice">Al guardar, se enviará un aviso al acudiente registrado y a la persona que recoge al estudiante.</p></div><footer><button type="button" className="exit-modal-cancel" disabled={guardando} onClick={() => setMostrarFormulario(false)}>Cancelar</button><button className="exit-modal-submit" type="submit" disabled={guardando}>{guardando ? 'Registrando...' : 'Registrar salida'}</button></footer></form></div>}
   </section>;
 }
 
@@ -946,12 +948,18 @@ function UserInput({
   value,
   onChange,
   type = 'text',
+  inputMode,
+  pattern,
+  maxLength,
   required = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   type?: string;
+  inputMode?: 'numeric' | 'text';
+  pattern?: string;
+  maxLength?: number;
   required?: boolean;
 }) {
   return (
@@ -959,10 +967,24 @@ function UserInput({
       <span>{label}</span>
       <input
         type={type}
+        inputMode={inputMode}
+        pattern={pattern}
+        maxLength={maxLength}
         value={value}
         required={required}
         onChange={(event) => onChange(event.target.value)}
       />
     </label>
   );
+}
+
+function UserSelect({ label, value, options, onChange, placeholder, required = false }: {
+  label: string;
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  required?: boolean;
+}) {
+  return <label className="user-field"><span>{label}</span><select value={value} required={required} onChange={(event) => onChange(event.target.value)}>{placeholder && <option value="">{placeholder}</option>}{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>;
 }

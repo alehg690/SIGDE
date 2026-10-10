@@ -108,8 +108,11 @@ async function main() {
     console.log('OK: reportes propios y del grupo dirigido, confidencialidad y parámetros inválidos en los controladores.');
     const exits = require('../frontend/src/app/api/salidas/route.ts');
     cookieToken = tokens.Porteria;
-    const exitInput = { estudianteId: '1', recogeNombre: 'Persona', recogeApellido: 'Ficticia', recogeCedula: '123456', recogeParentesco: 'Madre', recogeCorreo: 'persona@example.test' };
+    const exitInput = { estudianteId: '1', recogeNombre: 'Persona', recogeApellido: 'Ficticia', recogeTipoDocumento: 'CC', recogeCedula: '123456', recogeParentesco: 'Madre', recogeCorreo: 'persona@example.test' };
     const postExit = (data) => exits.POST(new NextRequest('http://localhost/api/salidas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }));
+    assert.equal((await postExit({ ...exitInput, recogeCedula: '12A456' })).status, 400);
+    assert.equal((await postExit({ ...exitInput, recogeTipoDocumento: 'PASAPORTE' })).status, 400);
+    assert.equal((await postExit({ ...exitInput, recogeParentesco: 'Vecino' })).status, 400);
     assert.equal((await postExit({ ...exitInput, recogeCorreo: 'incorrecto' })).status, 400);
     assert.equal((await postExit({ ...exitInput, estudianteId: '999' })).status, 404);
     const createdExit = await postExit(exitInput);

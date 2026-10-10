@@ -8,29 +8,9 @@ import {
 } from "@/lib/academic-groups";
 import type { Estudiante, EstudianteFormData } from "@/types/students";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
+import { DOCUMENT_TYPES, RELATIONSHIPS } from "@/lib/identity-options";
 
 type Feedback = { tipo: "success" | "error"; texto: string };
-const TIPOS_DOCUMENTO = [
-  ["RC", "Registro civil"],
-  ["TI", "Tarjeta de identidad"],
-  ["CC", "Cédula de ciudadanía"],
-  ["CE", "Cédula de extranjería"],
-  ["PPT", "Permiso por protección temporal"],
-  ["PEP", "Permiso especial de permanencia"],
-  ["NUIP", "Número único de identificación"],
-];
-const PARENTESCOS = [
-  "Madre",
-  "Padre",
-  "Abuela",
-  "Abuelo",
-  "Hermana",
-  "Hermano",
-  "Tía",
-  "Tío",
-  "Tutor legal",
-  "Otro",
-];
 const ESTADOS = ["Activo", "Desescolarizado", "Egresado"];
 const EMPTY_FORM: EstudianteFormData = {
   primerNombre: "",
@@ -624,7 +604,7 @@ function StudentFormFields({
             label="Tipo de documento"
             value={form.tipoDocumento}
             onChange={(value) => update("tipoDocumento", value)}
-            options={TIPOS_DOCUMENTO}
+            options={DOCUMENT_TYPES.map((item) => [...item])}
             required
           />
           <Field
@@ -706,7 +686,7 @@ function StudentFormFields({
             label="Tipo de documento"
             value={form.acudienteTipoDocumento}
             onChange={(value) => update("acudienteTipoDocumento", value)}
-            options={TIPOS_DOCUMENTO}
+            options={DOCUMENT_TYPES.map((item) => [...item])}
             required
           />
           <Field
@@ -720,7 +700,7 @@ function StudentFormFields({
             label="Parentesco"
             value={form.acudienteParentesco}
             onChange={(value) => update("acudienteParentesco", value)}
-            options={PARENTESCOS.map((item) => [item, item])}
+            options={RELATIONSHIPS.map((item) => [item, item])}
             placeholder="Selecciona el parentesco"
             required
           />
