@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { parseReportDate } from '@/lib/report-dates';
 
 type AlertStatus = 'new' | 'reviewed' | 'monitoring' | 'resolved' | 'dismissed';
 type AttentionLevel = 'informational' | 'low' | 'medium' | 'high';
@@ -34,7 +35,7 @@ function origenLabel(origen: string, detail = false) {
 
 function fechaLegible(value: string | null) {
   if (!value) return 'Sin fecha';
-  const date = new Date(value);
+  const date = parseReportDate(value);
   if (Number.isNaN(date.getTime())) return 'Sin fecha';
   return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' }).format(date);
 }

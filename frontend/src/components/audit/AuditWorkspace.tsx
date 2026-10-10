@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { parseReportDate } from '@/lib/report-dates';
 
 type AuditLog = {
   id: number;
@@ -18,7 +19,7 @@ function humanizar(value: string) {
 }
 
 function fechaLegible(value: string) {
-  const date = new Date(value);
+  const date = parseReportDate(value);
   if (Number.isNaN(date.getTime())) return 'Sin fecha';
   return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'medium', timeZone: 'America/Bogota' }).format(date);
 }
@@ -65,7 +66,7 @@ export default function AuditWorkspace() {
 
   const usuarios = new Set(logs.map((log) => log.usuarioId)).size;
   const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
-  const accionesHoy = logs.filter((log) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date(log.creadoEn)) === hoy).length;
+  const accionesHoy = logs.filter((log) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(parseReportDate(log.creadoEn)) === hoy).length;
 
   return <section className="workspace-panel audit-workspace">
     <header className="module-page-heading"><div className="module-title"><h2>Auditoría y seguridad</h2><p>Consulta acciones críticas, responsables y fecha exacta de cada cambio.</p></div><span className="audit-retention-note">Últimos 200 movimientos</span></header>

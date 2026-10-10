@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { parseReportDate } from '@/lib/report-dates';
 
 type ConfigRow = { clave: string; valor: string; actualizadoEn: string };
 type Feedback = { tipo: 'success' | 'error'; texto: string };
@@ -148,7 +149,7 @@ export default function SettingsWorkspace({ role }: { role: 'admin' | 'coordinad
   }
 
   return <section className="workspace-panel settings-workspace">
-    <header className="module-page-heading"><div className="module-title"><h2>Configuración del sistema</h2><p>Ajusta los datos institucionales y las reglas automáticas de seguimiento.</p></div>{ultimaActualizacion && <span className="settings-updated">Actualizado {new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' }).format(new Date(ultimaActualizacion))}</span>}</header>
+    <header className="module-page-heading"><div className="module-title"><h2>Configuración del sistema</h2><p>Ajusta los datos institucionales y las reglas automáticas de seguimiento.</p></div>{ultimaActualizacion && <span className="settings-updated">Actualizado {new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' }).format(parseReportDate(ultimaActualizacion))}</span>}</header>
     {feedback && <p className={`feedback ${feedback.tipo}`} role={feedback.tipo === 'error' ? 'alert' : 'status'}>{feedback.texto}</p>}
     {cargando ? <p className="module-loading">Cargando configuración...</p> : !cargaCorrecta ? <button type="button" className="secondary-button" onClick={() => { setCargando(true); void cargar().catch(() => setFeedback({ tipo: 'error', texto: 'No se pudo cargar la configuración. Intenta nuevamente.' })).finally(() => setCargando(false)); }}>Reintentar carga</button> : <form className="settings-form" onSubmit={guardar}>
       <section className="settings-card">

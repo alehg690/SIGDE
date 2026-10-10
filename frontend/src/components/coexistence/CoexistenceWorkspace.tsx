@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import type { Estudiante } from '@/types/students';
+import { parseReportDate } from '@/lib/report-dates';
 
 type TipoSituacion = 'Tipo I' | 'Tipo II' | 'Tipo III';
 type Regla = { tipo: TipoSituacion; articulo: string; descripcion: string; competencia: string; accion: string; instancia: string; requiereSiuce: boolean; pasosRaice: number[] };
@@ -16,7 +17,7 @@ async function leerError(response: Response, fallback: string) {
 }
 
 function fechaLegible(value: string) {
-  const date = new Date(value);
+  const date = parseReportDate(value);
   if (Number.isNaN(date.getTime())) return 'Sin fecha';
   return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' }).format(date);
 }

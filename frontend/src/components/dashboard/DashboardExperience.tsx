@@ -679,13 +679,13 @@ function tipoReporte(value: string) {
 }
 
 function formatearHora(value: string) {
-  const date = new Date(value);
+  const date = parseReportDate(value);
   if (Number.isNaN(date.getTime())) return '--:--';
   return date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Bogota' });
 }
 
 function formatearActividadReciente(value: string) {
-  const date = new Date(value);
+  const date = parseReportDate(value);
   if (Number.isNaN(date.getTime())) return 'Reciente';
   const minutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000));
   if (minutes < 1) return 'Ahora';

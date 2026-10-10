@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { calcularFortaleza } from '@/lib/password-strength';
@@ -28,7 +28,7 @@ function PasswordField({ id, label, value, onChange, autocomplete, disabled }: {
 
 export default function FirstPasswordChange({ nombre }: { nombre: string }) {
   const router = useRouter();
-  const { usuario, cargando, refrescarSesion, cerrarSesion } = useAuth();
+  const { refrescarSesion, cerrarSesion } = useAuth();
   const [actual, setActual] = useState('');
   const [nueva, setNueva] = useState('');
   const [confirmacion, setConfirmacion] = useState('');
@@ -36,14 +36,9 @@ export default function FirstPasswordChange({ nombre }: { nombre: string }) {
   const [error, setError] = useState('');
   const fortaleza = useMemo(() => nueva ? calcularFortaleza(nueva) : null, [nueva]);
 
-  useEffect(() => {
-    if (!cargando && !usuario) window.location.replace('/');
-  }, [cargando, usuario]);
-
   async function guardar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
-    if (!usuario) return;
     if (nueva !== confirmacion) return setError('Las contraseñas nuevas no coinciden. Revísalas e inténtalo de nuevo.');
     if (nueva.length < 8 || !/[A-Za-zÁÉÍÓÚÑáéíóúñ]/.test(nueva) || !/[0-9]/.test(nueva)) {
       return setError('La nueva contraseña debe tener al menos 8 caracteres y combinar letras y números.');
@@ -69,11 +64,6 @@ export default function FirstPasswordChange({ nombre }: { nombre: string }) {
     } finally {
       setGuardando(false);
     }
-  }
-
-  // Evita mostrar el formulario hasta verificar la sesión y el cambio obligatorio en el servidor.
-  if (cargando || !usuario || !usuario.requiereCambioContrasena) {
-    return <main className="first-password-screen"><p className="first-password-loading" role="status">{cargando ? 'Verificando tu sesión...' : !usuario ? 'Volviendo al inicio...' : 'Abriendo tu panel...'}</p></main>;
   }
 
   return <main className="first-password-screen">
