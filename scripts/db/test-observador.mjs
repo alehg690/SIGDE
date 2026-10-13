@@ -22,7 +22,7 @@ for(const change of [{documentoReferencia:'Documento inválido'},{fecha:'2026-02
 assert.equal(validarObservador({...acta,documentoReferencia:'',referenciaNormativa:''}).data.referenciaNormativa,'');
 assert.equal(validarObservador({...acta,situacionAcademica:'Texto que no debe persistir.'}).data.situacionAcademica,'');
 assert.equal(datosReporteObservador(acta).fechaHecho,`${yesterday}T13:00:00.000Z`);
-const preview=crearCorreoObservador({numero:4,acudiente:'María <González>',estudiante:'Juan & David',grado:'8°',grupo:'B',docente:'Laura Martínez',observador:acta});
+const preview=crearCorreoObservador({numero:4,destinatario:'María <González>',estudiante:'Juan & David',grado:'8°',grupo:'B',docente:'Laura Martínez',observador:acta});
 assert.match(preview.subject,/Observador #04/);assert.match(preview.html,/SITUACIÓN TIPO I/);assert.match(preview.html,/background:#f4c430/);assert.doesNotMatch(preview.html,/#8a6500/);assert.match(preview.html,/María &lt;González&gt;/);assert.match(preview.html,/Juan &amp; David/);assert.doesNotMatch(preview.html,/Evidencia|REFERENCIA INSTITUCIONAL/);
 const db=createClient({url:pathToFileURL(join(mkdtempSync(join(tmpdir(),'sigde-observador-')),'test.db')).href});
 globalThis.observadorTest={db,...helpers,...uploads};

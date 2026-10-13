@@ -13,7 +13,7 @@ export async function notificarAcudientePorReporte(reporteId: number) {
       SELECT r.id, r.estudianteId, r.tipoFalta, r.descripcion, r.observador,
              (SELECT COUNT(*) FROM Reporte previo
               WHERE previo.estudianteId = r.estudianteId AND previo.observador IS NOT NULL AND previo.id <= r.id) AS numeroObservador,
-             e.nombre AS estudiante, e.grado, e.grupo,
+             e.nombre AS estudiante, e.correo AS estudianteCorreo, e.grado, e.grupo,
              a.id AS acudienteId, a.nombre AS acudiente, COALESCE(a.correo, a.contacto) AS destino,
              director.id AS directorId, director.nombre AS directorNombre, director.correo AS directorCorreo,
              docente.nombre AS docenteReporta
@@ -36,7 +36,7 @@ export async function notificarAcudientePorReporte(reporteId: number) {
   const observador = row.observador ? JSON.parse(String(row.observador)) as Observador : null;
   const correoObservador = observador ? crearCorreoObservador({
     numero: Number(row.numeroObservador || 1),
-    acudiente: String(row.acudiente),
+    destinatario: String(row.acudiente),
     estudiante: String(row.estudiante),
     grado: String(row.grado),
     grupo: String(row.grupo),
@@ -70,11 +70,46 @@ export async function notificarAcudientePorReporte(reporteId: number) {
     }
   }
 
+  const estudianteCorreo = String(row.estudianteCorreo || '').trim();
+  const correosYaNotificados = new Set([destino.toLowerCase()]);
+  if (observador && estudianteCorreo.includes('@') && isEmailEnabled() && !correosYaNotificados.has(estudianteCorreo.toLowerCase())) {
+    const correoEstudiante = crearCorreoObservador({
+      numero: Number(row.numeroObservador || 1),
+      destinatario: String(row.estudiante),
+      estudiante: String(row.estudiante),
+      grado: String(row.grado),
+      grupo: String(row.grupo),
+      docente: String(row.docenteReporta),
+      observador,
+    });
+    try {
+      await getEmailTransporter().sendMail({
+        from: `"SIGDE" <${process.env.EMAIL_USER}>`,
+        to: estudianteCorreo,
+        subject: correoEstudiante.subject,
+        text: correoEstudiante.text,
+        html: correoEstudiante.html,
+      });
+      correosYaNotificados.add(estudianteCorreo.toLowerCase());
+    } catch (error) {
+      await reportServerError('student_report_notification_email_failed', error);
+    }
+  }
+
   const directorId = Number(row.directorId || 0);
   const directorCorreo = String(row.directorCorreo || '').trim();
   if (directorId > 0) {
-    const asuntoDirector = `Nuevo reporte en ${row.grado}-${row.grupo}: ${row.estudiante}`;
-    const mensajeDirector = `Hola ${row.directorNombre}. ${row.docenteReporta} registró un reporte para ${row.estudiante}, estudiante de tu grupo ${row.grado}-${row.grupo}. Descripción: ${row.descripcion}`;
+    const correoDirector = observador ? crearCorreoObservador({
+      numero: Number(row.numeroObservador || 1),
+      destinatario: String(row.directorNombre),
+      estudiante: String(row.estudiante),
+      grado: String(row.grado),
+      grupo: String(row.grupo),
+      docente: String(row.docenteReporta),
+      observador,
+    }) : null;
+    const asuntoDirector = correoDirector?.subject || `Nuevo reporte en ${row.grado}-${row.grupo}: ${row.estudiante}`;
+    const mensajeDirector = correoDirector?.text || `Hola ${row.directorNombre}. ${row.docenteReporta} registró un reporte para ${row.estudiante}, estudiante de tu grupo ${row.grado}-${row.grupo}. Descripción: ${row.descripcion}`;
     const canalDirector = directorCorreo.includes('@') ? 'email' : 'app';
 
     await db.execute({
@@ -82,14 +117,16 @@ export async function notificarAcudientePorReporte(reporteId: number) {
       args: [directorId, reporteId, canalDirector, asuntoDirector, mensajeDirector],
     });
 
-    if (canalDirector === 'email' && isEmailEnabled()) {
+    if (canalDirector === 'email' && isEmailEnabled() && !correosYaNotificados.has(directorCorreo.toLowerCase())) {
       try {
         await getEmailTransporter().sendMail({
           from: `"SIGDE" <${process.env.EMAIL_USER}>`,
           to: directorCorreo,
           subject: asuntoDirector,
           text: mensajeDirector,
+          ...(correoDirector ? { html: correoDirector.html } : {}),
         });
+        correosYaNotificados.add(directorCorreo.toLowerCase());
       } catch (error) {
         await reportServerError('group_director_notification_email_failed', error);
       }
