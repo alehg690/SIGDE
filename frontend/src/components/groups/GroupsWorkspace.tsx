@@ -99,9 +99,9 @@ export default function GroupsWorkspace({ canManage }: { canManage: boolean }) {
     <header className="groups-heading">
       <div><h2 id="groups-title">Grupos</h2><p>Consulta cada curso, sus estudiantes y el director de grupo asignado.</p></div>
       <div className="groups-summary" aria-label="Resumen de grupos">
-        <span><strong>{data.grupos.length}</strong> grupos</span>
-        <span><strong>{totalEstudiantes}</strong> estudiantes</span>
-        <span><strong>{gruposConDirector}</strong> con director</span>
+        <span><strong>{data.grupos.length}</strong> Grupos</span>
+        <span><strong>{totalEstudiantes}</strong> Estudiantes</span>
+        <span><strong>{gruposConDirector}</strong> Con director</span>
       </div>
     </header>
 
