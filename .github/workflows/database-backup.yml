@@ -23,11 +23,18 @@ jobs:
       TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
       BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
+      - name: Validate backup secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$TURSO_DATABASE_URL" || { echo "::error::Missing TURSO_DATABASE_URL secret"; exit 1; }
+          test -n "$TURSO_AUTH_TOKEN" || { echo "::error::Missing TURSO_AUTH_TOKEN secret"; exit 1; }
+          test -n "$BACKUP_ENCRYPTION_KEY" || { echo "::error::Missing BACKUP_ENCRYPTION_KEY secret"; exit 1; }
       - run: npm ci --ignore-scripts
       - name: Export and verify restoration
         run: node scripts/db/backup-libsql.mjs --output-dir "$RUNNER_TEMP/sigde-backup"

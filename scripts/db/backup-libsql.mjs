@@ -15,6 +15,24 @@ function requiredEnvironment(name) {
   return value;
 }
 
+const RETRY_DELAYS_MS = [1_000, 2_000, 4_000];
+
+async function executeWithRetry(client, statement, operation) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await client.execute(statement);
+    } catch (error) {
+      if (attempt >= RETRY_DELAYS_MS.length) {
+        throw new Error(`${operation} falló después de ${attempt + 1} intentos`, { cause: error });
+      }
+
+      const delay = RETRY_DELAYS_MS[attempt];
+      console.warn(`${operation} falló; reintentando en ${delay / 1_000}s (${attempt + 1}/${RETRY_DELAYS_MS.length})`);
+      await new Promise((resolveDelay) => setTimeout(resolveDelay, delay));
+    }
+  }
+}
+
 function quoteIdentifier(value) {
   return `"${value.replaceAll('"', '""')}"`;
 }
@@ -58,17 +76,23 @@ function terminated(statement) {
   return `${statement.trim().replace(/;$/, '')};`;
 }
 
-async function tableColumns(client, tableName) {
-  const result = await client.execute(`PRAGMA table_xinfo(${sqlLiteral(tableName)})`);
+async function tableColumns(client, tableName, retry = false) {
+  const statement = `PRAGMA table_xinfo(${sqlLiteral(tableName)})`;
+  const result = retry
+    ? await executeWithRetry(client, statement, `Lectura de columnas de ${tableName}`)
+    : await client.execute(statement);
   return result.rows
     .filter((column) => Number(column.hidden || 0) === 0)
     .map((column) => String(column.name));
 }
 
-async function readTable(client, tableName, columns) {
+async function readTable(client, tableName, columns, retry = false) {
   if (!columns.length) return [];
   const projection = columns.map(quoteIdentifier).join(', ');
-  const result = await client.execute(`SELECT ${projection} FROM ${quoteIdentifier(tableName)}`);
+  const statement = `SELECT ${projection} FROM ${quoteIdentifier(tableName)}`;
+  const result = retry
+    ? await executeWithRetry(client, statement, `Lectura de la tabla ${tableName}`)
+    : await client.execute(statement);
   return result.rows;
 }
 
@@ -123,12 +147,12 @@ const source = createClient({
 
 try {
   await mkdir(outputDirectory, { recursive: true, mode: 0o700 });
-  const schemaResult = await source.execute(`
+  const schemaResult = await executeWithRetry(source, `
     SELECT type, name, sql
     FROM sqlite_schema
     WHERE sql IS NOT NULL AND name NOT LIKE 'sqlite_%'
     ORDER BY CASE type WHEN 'table' THEN 0 WHEN 'index' THEN 1 WHEN 'view' THEN 2 ELSE 3 END, name
-  `);
+  `, 'Lectura del esquema');
   const schema = schemaResult.rows.map((row) => ({
     type: String(row.type),
     name: String(row.name),
@@ -152,8 +176,8 @@ try {
   for (const table of tables) statements.push(terminated(table.sql));
 
   for (const table of tables) {
-    const columns = await tableColumns(source, table.name);
-    const rows = await readTable(source, table.name, columns);
+    const columns = await tableColumns(source, table.name, true);
+    const rows = await readTable(source, table.name, columns, true);
     manifest.tables[table.name] = {
       columns,
       rowCount: rows.length,
