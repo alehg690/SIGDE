@@ -98,6 +98,12 @@ function EvidenceUpload({ files, onChange, disabled = false }: { files: File[]; 
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    if (!error) return;
+    const timer = window.setTimeout(() => setError(''), 5_000);
+    return () => window.clearTimeout(timer);
+  }, [error]);
+
   function selectFiles(next: File[]) {
     setDragging(false);
     if (!next.length) return;
@@ -185,6 +191,12 @@ export default function ReportsWorkspace({
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<Feedback | null>(null);
+
+  useEffect(() => {
+    if (!mensaje) return;
+    const timer = window.setTimeout(() => setMensaje(null), 5_000);
+    return () => window.clearTimeout(timer);
+  }, [mensaje]);
 
   useEffect(() => {
     if (!initialSearch) return;
@@ -453,6 +465,12 @@ function ReportDetail({ reporte, loading, currentUserId, onUpdated }: {
   const [archivosEvidencia, setArchivosEvidencia] = useState<File[]>([]);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!error) return;
+    const timer = window.setTimeout(() => setError(''), 5_000);
+    return () => window.clearTimeout(timer);
+  }, [error]);
 
   useEffect(() => {
     if (!reporte) return;

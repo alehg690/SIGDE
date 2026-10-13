@@ -4222,6 +4222,7 @@ button {
 }
 
 .report-description-field > small { text-align: right; }
+.report-character-counter { font-variant-numeric: tabular-nums; }
 .report-evidence-field > span { display: block; margin-bottom: 8px; color: #475467; font-size: .7rem; font-weight: 800; }
 .report-evidence-field > p { margin: -2px 0 13px; color: var(--muted); font-size: .68rem; }
 .report-upload { min-width: 0; }

@@ -40,7 +40,7 @@ export default function ObservadorFields({ value, onChange, estudiante }: { valu
       {ORDEN_DIA_ITEMS.map((item, index) => <label key={item.label}><span><b>{index + 1}.</b> {item.label} *</span><textarea value={ordenDia[index]} minLength={3} maxLength={300} onChange={e => changeOrdenDia(index, e.target.value)} placeholder={item.placeholder} required /></label>)}
     </div></fieldset>
     <fieldset className="report-form-section"><legend><span>3</span> Desarrollo de la reunión</legend><div className="report-form-grid">
-      <label className="report-description-field"><span>Desarrollo de la reunión *</span><textarea value={value.desarrollo} minLength={20} maxLength={2000} onChange={e => change('desarrollo', e.target.value)} placeholder="Describe lo conversado y los acuerdos alcanzados." required /></label>
+      <label className="report-description-field"><span>Desarrollo de la reunión *</span><textarea value={value.desarrollo} minLength={20} maxLength={2000} onChange={e => change('desarrollo', e.target.value)} placeholder="Describe lo conversado y los acuerdos alcanzados." aria-describedby="report-development-counter" required /><small id="report-development-counter" className="report-character-counter" aria-live="polite">{value.desarrollo.length.toLocaleString('es-CO')} / 2.000 caracteres</small></label>
     </div></fieldset>
   </>;
 }
