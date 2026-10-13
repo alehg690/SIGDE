@@ -14,12 +14,16 @@ async function load(file,prefix=''){
 const helpers=await load('backend/src/services/observador.service.ts');
 const uploads=await load('backend/src/utils/uploads.ts');
 const {validarObservador,datosReporteObservador}=helpers;
+const {crearCorreoObservador}=await load('backend/src/templates/observer-email.ts');
 const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
 const acta={fecha:yesterday,horaInicio:'08:00',horaFinal:'09:00',sede:'Sede principal',jornada:'Mañana',grupo:'11-1',acudiente:'Acudiente de prueba',cedulaAcudiente:'12345678',motivo:'Revisión de compromisos',tipoSituacion:'1',situacionAcademica:'',ordenDia:'Escucha de las partes y acuerdos.',desarrollo:'Se escucharon las partes y se acordó realizar seguimiento.',documentoReferencia:'Manual de Convivencia',referenciaNormativa:'Artículo 20, literal a'};
 assert.ok(validarObservador(acta).data);
 for(const change of [{documentoReferencia:'Documento inválido'},{fecha:'2026-02-30'},{ordenDia:''},{desarrollo:'Breve'},{tipoSituacion:'0',situacionAcademica:''}]) assert.equal(validarObservador({...acta,...change}).status,400);
 assert.equal(validarObservador({...acta,documentoReferencia:'',referenciaNormativa:''}).data.referenciaNormativa,'');
+assert.equal(validarObservador({...acta,situacionAcademica:'Texto que no debe persistir.'}).data.situacionAcademica,'');
 assert.equal(datosReporteObservador(acta).fechaHecho,`${yesterday}T13:00:00.000Z`);
+const preview=crearCorreoObservador({numero:4,acudiente:'María <González>',estudiante:'Juan & David',grado:'8°',grupo:'B',docente:'Laura Martínez',observador:acta});
+assert.match(preview.subject,/Observador #04/);assert.match(preview.html,/SITUACIÓN TIPO I/);assert.match(preview.html,/María &lt;González&gt;/);assert.match(preview.html,/Juan &amp; David/);assert.doesNotMatch(preview.html,/Evidencia|REFERENCIA INSTITUCIONAL/);
 const db=createClient({url:pathToFileURL(join(mkdtempSync(join(tmpdir(),'sigde-observador-')),'test.db')).href});
 globalThis.observadorTest={db,...helpers,...uploads};
 const {crearReporte,editarReporte,listarReportes,obtenerReporte,agregarObservacionReporte,agregarEvidenciaReporte,agregarArchivoEvidencia,obtenerArchivoEvidencia}=await load('backend/src/services/reportes.service.ts',`const {db,validarObservador,datosReporteObservador,contenidoBinario,firmaArchivoValida,nombreArchivoSeguro}=globalThis.observadorTest;const registrarAccion=async()=>{};const notificarAcudientePorReporte=async()=>{};const evaluarAlertaEstudiante=async()=>{};const esRolCoordinador=(rol)=>rol==='Coordinador';\n`);

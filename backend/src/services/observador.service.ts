@@ -5,7 +5,7 @@ export function validarObservador(value: unknown): { data: Observador } | { erro
   if (!value || typeof value !== 'object' || Array.isArray(value)) return fail('Completa las tres secciones del observador.');
   const raw = value as Record<string, unknown>;
   const fields = ['fecha', 'horaInicio', 'motivo', 'tipoSituacion', 'ordenDia', 'desarrollo'] as const;
-  const labels: Record<string, string> = { fecha: 'Fecha', horaInicio: 'Hora de inicio', horaFinal: 'Hora final', sede: 'Sede', jornada: 'Jornada', grupo: 'Grupo', acudiente: 'Padre de familia o acudiente legal', cedulaAcudiente: 'CC del acudiente', motivo: 'Motivo de la citación', tipoSituacion: 'Situación o condición tipo', ordenDia: 'Orden del día', desarrollo: 'Desarrollo de la reunión' };
+  const labels: Record<string, string> = { fecha: 'Fecha', horaInicio: 'Hora de inicio', horaFinal: 'Hora final', sede: 'Sede', jornada: 'Jornada', grupo: 'Grupo', acudiente: 'Padre de familia o acudiente legal', cedulaAcudiente: 'CC del acudiente', motivo: 'Motivo del Observador', tipoSituacion: 'Situación o condición tipo', ordenDia: 'Orden del día', desarrollo: 'Desarrollo de la reunión' };
   const data = {} as Observador;
   for (const field of fields) {
     if (typeof raw[field] !== 'string' || !raw[field].trim()) return fail(`Completa el campo obligatorio: ${labels[field]}.`);
@@ -18,7 +18,7 @@ export function validarObservador(value: unknown): { data: Observador } | { erro
     if (Number.isNaN(new Date(raw.fechaRegistro).getTime())) return fail('Fecha del equipo inválida.');
     data.fechaRegistro = raw.fechaRegistro;
   }
-  data.situacionAcademica = typeof raw.situacionAcademica === 'string' ? raw.situacionAcademica.trim() : '';
+  data.situacionAcademica = data.tipoSituacion === '0' && typeof raw.situacionAcademica === 'string' ? raw.situacionAcademica.trim() : '';
   data.documentoReferencia = typeof raw.documentoReferencia === 'string' ? raw.documentoReferencia.trim() as Observador['documentoReferencia'] : '';
   data.referenciaNormativa = typeof raw.referenciaNormativa === 'string' ? raw.referenciaNormativa.trim() : '';
   if (data.situacionAcademica.length > 2000 || (data.tipoSituacion === '0' && data.situacionAcademica.length < 3)) return fail('Explica qué pasó en la situación académica (máximo 2000 caracteres).');

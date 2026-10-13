@@ -4,11 +4,16 @@ import { isEmailEnabled } from '@backend/config/env';
 import { reportServerError } from '@backend/utils/logger';
 import { registrarAccion } from '@backend/services/auditoria.service';
 import type { SesionUsuario } from '@backend/types/roles';
+import type { Observador } from '@backend/types/observador';
+import { crearCorreoObservador } from '@backend/templates/observer-email';
 
 export async function notificarAcudientePorReporte(reporteId: number) {
   const result = await db.execute({
     sql: `
-      SELECT r.id, r.tipoFalta, r.descripcion, e.nombre AS estudiante, e.grado, e.grupo,
+      SELECT r.id, r.estudianteId, r.tipoFalta, r.descripcion, r.observador,
+             (SELECT COUNT(*) FROM Reporte previo
+              WHERE previo.estudianteId = r.estudianteId AND previo.observador IS NOT NULL AND previo.id <= r.id) AS numeroObservador,
+             e.nombre AS estudiante, e.grado, e.grupo,
              a.id AS acudienteId, a.nombre AS acudiente, COALESCE(a.correo, a.contacto) AS destino,
              director.id AS directorId, director.nombre AS directorNombre, director.correo AS directorCorreo,
              docente.nombre AS docenteReporta
@@ -28,8 +33,18 @@ export async function notificarAcudientePorReporte(reporteId: number) {
   if (!row) return;
 
   const categoria = row.tipoFalta === 'ACADEMICA' ? 'académico' : 'de convivencia';
-  const asunto = `Reporte ${categoria} - ${row.estudiante}`;
-  const mensaje = `Se registró un reporte ${categoria} para ${row.estudiante}. Descripción: ${row.descripcion}`;
+  const observador = row.observador ? JSON.parse(String(row.observador)) as Observador : null;
+  const correoObservador = observador ? crearCorreoObservador({
+    numero: Number(row.numeroObservador || 1),
+    acudiente: String(row.acudiente),
+    estudiante: String(row.estudiante),
+    grado: String(row.grado),
+    grupo: String(row.grupo),
+    docente: String(row.docenteReporta),
+    observador,
+  }) : null;
+  const asunto = correoObservador?.subject || `Reporte ${categoria} - ${row.estudiante}`;
+  const mensaje = correoObservador?.text || `Se registró un reporte ${categoria} para ${row.estudiante}. Descripción: ${row.descripcion}`;
   const destino = String(row.destino || '');
   const canal = destino.includes('@') ? 'email' : 'app';
 
@@ -48,6 +63,7 @@ export async function notificarAcudientePorReporte(reporteId: number) {
         to: destino,
         subject: asunto,
         text: mensaje,
+        ...(correoObservador ? { html: correoObservador.html } : {}),
       });
     } catch (error) {
       await reportServerError('report_notification_email_failed', error);
