@@ -5,7 +5,7 @@ import { parseReportDate } from '@/lib/report-dates';
 import { coincideBusqueda } from '@/lib/search-normalization';
 import ObservadorFields, { observadorVacio, ObservadorDetalle } from './ObservadorFields';
 import type { Observador } from '@backend/types/observador';
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DragEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Estudiante } from '@/types/students';
 import type {
   EstadoReporte,
@@ -33,6 +33,10 @@ const TRANSICIONES: Record<EstadoReporte, EstadoReporte[]> = {
   Cerrado: ['EnRevision'],
   Anulado: [],
 };
+const EVIDENCE_ACCEPT = '.pdf,.jpg,.jpeg,.png,.webp,.docx';
+const EVIDENCE_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']);
+const MAX_EVIDENCE_SIZE = 4 * 1024 * 1024;
+const MAX_EVIDENCE_FILES = 5;
 
 type Feedback = { tipo: 'success' | 'error'; texto: string };
 type Vista = 'consulta' | 'registro';
@@ -78,6 +82,68 @@ function estadoClase(estado: EstadoReporte) {
   return estado.toLowerCase().replace('enrevision', 'revision');
 }
 
+function EvidencePreview({ file, onRemove, disabled }: { file: File; onRemove: () => void; disabled: boolean }) {
+  const previewUrl = useMemo(() => file.type.startsWith('image/') ? URL.createObjectURL(file) : '', [file]);
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+  return <article className="report-upload-preview">
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    {previewUrl ? <img src={previewUrl} alt={`Vista previa de ${file.name}`} /> : <span className="report-upload-filetype" aria-hidden="true">{file.name.split('.').pop()?.toUpperCase() || 'DOC'}</span>}
+    <div><strong>{file.name}</strong><small>{(file.size / 1024 / 1024).toFixed(2)} MB · listo para adjuntar</small></div>
+    <button type="button" disabled={disabled} onClick={onRemove}>Quitar</button>
+  </article>;
+}
+
+function EvidenceUpload({ files, onChange, disabled = false }: { files: File[]; onChange: (files: File[]) => void; disabled?: boolean }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+  const [error, setError] = useState('');
+
+  function selectFiles(next: File[]) {
+    setDragging(false);
+    if (!next.length) return;
+    if (next.some((file) => !EVIDENCE_TYPES.has(file.type) || file.size > MAX_EVIDENCE_SIZE)) {
+      setError('Todos los archivos deben ser PDF, JPG, PNG, WebP o DOCX de máximo 4 MB.');
+      if (inputRef.current) inputRef.current.value = '';
+      return;
+    }
+    const unique = [...files];
+    for (const file of next) {
+      if (!unique.some((current) => current.name === file.name && current.size === file.size && current.lastModified === file.lastModified)) unique.push(file);
+    }
+    if (unique.length > MAX_EVIDENCE_FILES) {
+      setError(`Puedes adjuntar máximo ${MAX_EVIDENCE_FILES} archivos por carga.`);
+      if (inputRef.current) inputRef.current.value = '';
+      return;
+    }
+    setError('');
+    onChange(unique);
+    if (inputRef.current) inputRef.current.value = '';
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    if (!disabled) selectFiles(Array.from(event.dataTransfer.files));
+  }
+
+  return <div className="report-upload">
+    <div
+      className={`report-upload-zone${dragging ? ' report-upload-zone--dragging' : ''}`}
+      onDragEnter={(event) => { event.preventDefault(); if (!disabled) setDragging(true); }}
+      onDragOver={(event) => event.preventDefault()}
+      onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false); }}
+      onDrop={handleDrop}
+    >
+      <input ref={inputRef} type="file" accept={EVIDENCE_ACCEPT} multiple disabled={disabled} onChange={(event) => selectFiles(Array.from(event.target.files ?? []))} />
+      <span className="report-upload-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6.5A2.5 2.5 0 0 1 5.5 4h4l2 2h7A2.5 2.5 0 0 1 21 8.5v9A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5z"/><path d="M12 16v-6m0 0-2.5 2.5M12 10l2.5 2.5"/></svg></span>
+      <strong>{dragging ? 'Suelta los archivos aquí' : 'Arrastra tus archivos para adjuntarlos'}</strong>
+      <small>Hasta 5 archivos PDF, JPG, PNG, WebP o DOCX · máximo 4 MB cada uno</small>
+      <button type="button" disabled={disabled} onClick={() => inputRef.current?.click()}>Seleccionar archivos</button>
+    </div>
+    {files.length > 0 && <div className="report-upload-previews">{files.map((file, index) => <EvidencePreview key={`${file.name}-${file.size}-${file.lastModified}`} file={file} disabled={disabled} onRemove={() => onChange(files.filter((_, current) => current !== index))} />)}</div>}
+    {error && <p className="report-upload-error" role="alert">{error}</p>}
+  </div>;
+}
+
 function urlSegura(value: string) {
   if (/^\/api\/reportes\/\d+\/evidencias\/\d+\/archivo$/.test(value)) return true;
   try {
@@ -108,7 +174,7 @@ export default function ReportsWorkspace({
   const [seleccionadoId, setSeleccionadoId] = useState<number | null>(null);
   const [vista, setVista] = useState<Vista>('consulta');
   const [form, setForm] = useState<ReporteFormData>(() => crearFormularioVacio());
-  const [archivo, setArchivo] = useState<File | null>(null);
+  const [archivos, setArchivos] = useState<File[]>([]);
   const [busqueda, setBusqueda] = useState(initialSearch);
   const [tipo, setTipo] = useState('Todos');
   const [estado, setEstado] = useState('Todos');
@@ -140,7 +206,7 @@ export default function ReportsWorkspace({
     setEstudiantes(nuevosEstudiantes.filter((item) => item.activo && !item.archivado));
     setSeleccionadoId((actual) => {
       const objetivo = preferidoId ?? actual;
-      return nuevosReportes.some((item) => item.id === objetivo) ? objetivo : nuevosReportes[0]?.id ?? null;
+      return objetivo && nuevosReportes.some((item) => item.id === objetivo) ? objetivo : null;
     });
   }, [consultaHistorial]);
 
@@ -186,6 +252,18 @@ export default function ReportsWorkspace({
     return () => { detalleSolicitud.current += 1; window.clearTimeout(timer); };
   }, [cargarDetalle, seleccionadoId]);
 
+  useEffect(() => {
+    if (!seleccionadoId) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setSeleccionadoId(null); };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [seleccionadoId]);
+
   const estados = useMemo(() => [...new Set(reportes.map((item) => item.estado))].sort(), [reportes]);
   const docentes = useMemo(() => [...new Set(reportes.map((item) => item.docente))].sort((a, b) => a.localeCompare(b, 'es')), [reportes]);
   const cursos = useMemo(() => [...new Set(reportes.map((item) => `${item.grado}-${item.grupo}`))].sort((a, b) => a.localeCompare(b, 'es', { numeric: true })), [reportes]);
@@ -209,8 +287,8 @@ export default function ReportsWorkspace({
   async function registrar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (enviando.current) return;
-    if (archivo && (archivo.size > 4 * 1024 * 1024 || !['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(archivo.type))) {
-      setMensaje({ tipo: 'error', texto: 'Adjunta un PDF, imagen o DOCX de máximo 4 MB.' });
+    if (archivos.length > MAX_EVIDENCE_FILES || archivos.some((archivo) => archivo.size > MAX_EVIDENCE_SIZE || !EVIDENCE_TYPES.has(archivo.type))) {
+      setMensaje({ tipo: 'error', texto: 'Adjunta hasta cinco archivos PDF, imagen o DOCX de máximo 4 MB cada uno.' });
       return;
     }
     enviando.current = true;
@@ -228,15 +306,16 @@ export default function ReportsWorkspace({
       });
       if (!response.ok) throw new Error(await leerError(response, 'No se pudo registrar el reporte.'));
       const creado = await response.json() as { id: number; avisos?: string[] };
-      let avisoArchivo = '';
-      if (archivo) {
+      const archivosFallidos: string[] = [];
+      for (const archivo of archivos) {
         const adjunto = new FormData();
         adjunto.set('archivo', archivo);
         const subida = await fetch(`/api/reportes/${creado.id}/evidencias/archivo`, { method: 'POST', body: adjunto }).catch(() => null);
-        if (!subida?.ok) avisoArchivo = ` El reporte se guardó, pero no se pudo adjuntar el archivo: ${subida ? await leerError(subida, 'inténtalo desde el detalle del reporte') : 'inténtalo desde el detalle del reporte'}.`;
+        if (!subida?.ok) archivosFallidos.push(archivo.name);
       }
+      const avisoArchivo = archivosFallidos.length ? ` El reporte se guardó, pero no se pudieron adjuntar: ${archivosFallidos.join(', ')}.` : '';
       setForm(crearFormularioVacio());
-      setArchivo(null);
+      setArchivos([]);
       setVista('consulta');
       setBusqueda(''); setTipo('Todos'); setEstado('Todos'); setDocente('Todos'); setCurso('Todos'); setPeriodo('Todos');
       setMensaje({
@@ -274,7 +353,10 @@ export default function ReportsWorkspace({
 
   return <section className="workspace-panel reports-workspace">
     <header className="reports-heading">
-      <div className="module-title"><h2>{estudianteId === undefined ? 'Reportes disciplinarios' : 'Historial de reportes del estudiante'}</h2><p>Documenta los hechos, conserva evidencias y acompaña el seguimiento institucional.</p></div>
+      <div className="reports-heading-copy">
+        <span className="reports-heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4M10 12h5m-5 3h5"/></svg></span>
+        <div className="module-title"><span className="reports-heading-kicker">Seguimiento institucional</span><h2>{estudianteId === undefined ? 'Reportes disciplinarios' : 'Historial de reportes del estudiante'}</h2><p>Documenta los hechos, conserva evidencias y acompaña el seguimiento institucional.</p></div>
+      </div>
       {estudianteId === undefined && <div className="reports-view-switch" aria-label="Vista del módulo">
         <button type="button" className={vista === 'consulta' ? 'active' : ''} onClick={() => setVista('consulta')}>Consultar</button>
         <button type="button" className={vista === 'registro' ? 'active' : ''} onClick={() => setVista('registro')}>Nuevo reporte</button>
@@ -282,21 +364,22 @@ export default function ReportsWorkspace({
     </header>
     {mensaje && <p className={`feedback ${mensaje.tipo}`} role={mensaje.tipo === 'error' ? 'alert' : 'status'}>{mensaje.texto}</p>}
     <div className="reports-summary" aria-label="Resumen de reportes">
-      <article><span>Total visible</span><strong>{reportes.length}</strong><small>Según tus permisos</small></article>
-      <article><span>Pendientes</span><strong>{pendientes}</strong><small>Esperan revisión</small></article>
-      <article><span>En revisión</span><strong>{enRevision}</strong><small>Con seguimiento activo</small></article>
-      <article><span>Este mes</span><strong>{esteMes}</strong><small>Nuevos registros</small></article>
+      <article className="reports-summary--total"><i aria-hidden="true">01</i><span>Total visible</span><strong>{reportes.length}</strong><small>Según tus permisos</small></article>
+      <article className="reports-summary--pending"><i aria-hidden="true">02</i><span>Pendientes</span><strong>{pendientes}</strong><small>Esperan revisión</small></article>
+      <article className="reports-summary--review"><i aria-hidden="true">03</i><span>En revisión</span><strong>{enRevision}</strong><small>Con seguimiento activo</small></article>
+      <article className="reports-summary--month"><i aria-hidden="true">04</i><span>Este mes</span><strong>{esteMes}</strong><small>Nuevos registros</small></article>
     </div>
     {vista === 'registro'
-      ? <ReportCreateForm form={form} setForm={setForm} archivo={archivo} setArchivo={setArchivo} estudiantes={estudiantes} guardando={guardando} onSubmit={registrar} onCancel={() => { setVista('consulta'); setMensaje(null); }} />
+      ? <ReportCreateForm form={form} setForm={setForm} archivos={archivos} setArchivos={setArchivos} estudiantes={estudiantes} guardando={guardando} onSubmit={registrar} onCancel={() => { setVista('consulta'); setMensaje(null); }} />
       : <div className="reports-consultation">
           <div className="reports-list-panel">
+            <header className="reports-consultation-header"><div><span>Explorador de reportes</span><h3>Consulta y seguimiento</h3></div><small>Selecciona un registro para abrir su trazabilidad</small></header>
             <div className="reports-toolbar">
               <label className="reports-search"><span>Buscar reporte</span><input type="search" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} placeholder="Estudiante, curso, docente o situación" /></label>
               <label><span>Tipo</span><select value={tipo} onChange={(event) => setTipo(event.target.value)}><option>Todos</option>{Object.entries(TIPO_LABELS).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
               <label><span>Estado</span><select value={estado} onChange={(event) => setEstado(event.target.value)}><option>Todos</option>{estados.map((item) => <option value={item} key={item}>{ESTADO_LABELS[item]}</option>)}</select></label>
               <label><span>Curso</span><select value={curso} onChange={(event) => setCurso(event.target.value)}><option>Todos</option>{cursos.map((item) => <option key={item}>{item}</option>)}</select></label>
-              <label><span>Periodo</span><select value={periodo} onChange={(event) => setPeriodo(event.target.value as Periodo)}><option value="Todos">Todo el historial</option><option value="7">Últimos 7 días</option><option value="30">Últimos 30 días</option><option value="mes">Este mes</option></select></label>
+              <label><span>Periodo</span><select value={periodo} onChange={(event) => setPeriodo(event.target.value as Periodo)}><option value="Todos">Todos</option><option value="7">Últimos 7 días</option><option value="30">Últimos 30 días</option><option value="mes">Este mes</option></select></label>
               <label><span>{canManage ? 'Docente' : 'Autor'}</span><select value={docente} onChange={(event) => setDocente(event.target.value)}><option>Todos</option>{docentes.map((item) => <option key={item}>{item}</option>)}</select></label>
             </div>
             <div className="reports-list-heading"><strong>Registros</strong><span>{cargando ? 'Cargando...' : `${filtrados.length} resultados`}</span>{hayFiltros && <button type="button" onClick={() => { setBusqueda(''); setTipo('Todos'); setEstado('Todos'); setDocente('Todos'); setCurso('Todos'); setPeriodo('Todos'); }}>Limpiar filtros</button>}</div>
@@ -310,32 +393,48 @@ export default function ReportsWorkspace({
               </button>)}
             </div>
           </div>
-          <ReportDetail key={seleccionadoId ?? 'ninguno'} reporte={detalle?.id === seleccionadoId ? detalle : null} loading={cargandoDetalle} currentUserId={currentUserId} onUpdated={refrescarReporte} />
+          {seleccionadoId !== null && <div className="report-modal-backdrop" role="presentation" onMouseDown={() => setSeleccionadoId(null)}>
+            <div className="report-modal" role="dialog" aria-modal="true" aria-label="Detalle del reporte" onMouseDown={(event) => event.stopPropagation()}>
+              <button type="button" className="report-modal-close" aria-label="Cerrar detalle" onClick={() => setSeleccionadoId(null)}>×</button>
+              <ReportDetail key={seleccionadoId} reporte={detalle?.id === seleccionadoId ? detalle : null} loading={cargandoDetalle} currentUserId={currentUserId} onUpdated={refrescarReporte} />
+            </div>
+          </div>}
         </div>}
   </section>;
 }
 
-function ReportCreateForm({ form, setForm, archivo, setArchivo, estudiantes, guardando, onSubmit, onCancel }: {
+function ReportCreateForm({ form, setForm, archivos, setArchivos, estudiantes, guardando, onSubmit, onCancel }: {
   form: ReporteFormData;
   setForm: (form: ReporteFormData) => void;
-  archivo: File | null;
-  setArchivo: (file: File | null) => void;
+  archivos: File[];
+  setArchivos: (files: File[]) => void;
   estudiantes: Estudiante[];
   guardando: boolean;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onCancel: () => void;
 }) {
   return <form className="report-create-form" onSubmit={onSubmit}>
-    <div className="report-form-intro"><div><span>Nuevo reporte</span><h3>Observador · Acta de reunión</h3><p>Completa las tres secciones del formato institucional.</p></div><strong>Los campos con * son obligatorios</strong></div>
-    <ObservadorFields value={form.observador} onChange={observador => setForm({ ...form, observador })} estudiante={<StudentSearch estudiantes={estudiantes} value={form.estudianteId} onChange={alumno => {
-      setForm({ ...form, estudianteId: alumno ? String(alumno.id) : '' });
-    }} />} />
-    <div className="report-form-grid">
-      <label className="report-evidence-field report-description-field"><span>Adjuntar evidencia (opcional)</span><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.docx" onChange={e => setArchivo(e.target.files?.[0] ?? null)} /><small>{archivo ? archivo.name : 'PDF, imagen o DOCX · máximo 4 MB'}</small></label>
-      <p className="report-notification-note">Al guardar se registra la notificación al acudiente y al director de grupo configurados.</p>
+    <header className="report-form-intro">
+      <span className="report-form-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4M10 12h5m-5 3h5"/></svg></span>
+      <div><span className="report-form-kicker">Nuevo reporte</span><h3>Observador · Acta de reunión</h3><p>Registra la información de forma clara, ordenada y segura.</p></div>
+      <strong>Los campos con * son obligatorios</strong>
+      <ol className="report-form-progress" aria-label="Secciones del formulario">
+        <li><b>1</b><span>Estudiante</span></li><li><b>2</b><span>Orden del día</span></li><li><b>3</b><span>Desarrollo</span></li><li><b>4</b><span>Evidencias</span></li>
+      </ol>
+    </header>
+    <div className="report-form-sections">
+      <ObservadorFields value={form.observador} onChange={observador => setForm({ ...form, observador })} estudiante={<StudentSearch estudiantes={estudiantes} value={form.estudianteId} onChange={alumno => {
+        setForm({ ...form, estudianteId: alumno ? String(alumno.id) : '' });
+      }} />} />
+      <fieldset className="report-form-section report-evidence-section"><legend><span>4</span> Evidencias y privacidad</legend>
+        <section className="report-evidence-field" aria-labelledby="report-evidence-title"><span id="report-evidence-title">Archivos de soporte (opcional)</span><p>Adjunta documentos o imágenes que ayuden a sustentar el reporte.</p><EvidenceUpload files={archivos} onChange={setArchivos} disabled={guardando} /></section>
+        <div className="report-form-options">
+          <p className="report-notification-note"><strong>Notificaciones institucionales</strong><span>Al guardar, se notificará al acudiente y al director de grupo configurados.</span></p>
+          <label className="report-reserved-option"><input type="checkbox" checked={form.confidencial} onChange={e => setForm({ ...form, confidencial: e.target.checked })} /><span><strong>Acceso reservado</strong><small>Solo el autor y coordinación podrán consultar este reporte.</small></span></label>
+        </div>
+      </fieldset>
     </div>
-    <label className="report-reserved-option"><input type="checkbox" checked={form.confidencial} onChange={e => setForm({ ...form, confidencial: e.target.checked })} /><span>Acceso reservado · solo autor y coordinación</span></label>
-    <div className="report-form-actions"><button type="button" onClick={onCancel}>Cancelar</button><button className="primary-button" type="submit" disabled={guardando || estudiantes.length === 0}>{guardando ? 'Registrando...' : 'Registrar reporte'}</button></div>
+    <footer className="report-form-actions"><div><strong>Revisa la información antes de continuar</strong><span>El registro quedará asociado a tu usuario y a la fecha actual.</span></div><button type="button" onClick={onCancel}>Cancelar</button><button className="primary-button" type="submit" disabled={guardando || estudiantes.length === 0}>{guardando ? 'Registrando...' : 'Registrar reporte'}</button></footer>
   </form>;
 }
 
@@ -351,7 +450,7 @@ function ReportDetail({ reporte, loading, currentUserId, onUpdated }: {
   const [estado, setEstado] = useState<EstadoReporte>('Pendiente');
   const [justificacion, setJustificacion] = useState('');
   const [observacion, setObservacion] = useState('');
-  const [archivoEvidencia, setArchivoEvidencia] = useState<File | null>(null);
+  const [archivosEvidencia, setArchivosEvidencia] = useState<File[]>([]);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
@@ -371,7 +470,7 @@ function ReportDetail({ reporte, loading, currentUserId, onUpdated }: {
       setEstado(reporte.estado);
       setJustificacion('');
       setObservacion('');
-      setArchivoEvidencia(null);
+      setArchivosEvidencia([]);
       setError('');
     }, 0);
     return () => window.clearTimeout(timer);
@@ -422,21 +521,34 @@ function ReportDetail({ reporte, loading, currentUserId, onUpdated }: {
 
   async function agregarEvidencia(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!archivoEvidencia) return;
+    if (!archivosEvidencia.length) return;
     const formElement = event.currentTarget;
-    const adjunto = new FormData();
-    adjunto.set('archivo', archivoEvidencia);
-    const guardado = await ejecutar(() => fetch(`/api/reportes/${reporte!.id}/evidencias/archivo`, {
-      method: 'POST', body: adjunto,
-    }), 'Archivo adjuntado al reporte.');
-    if (guardado) {
-      setArchivoEvidencia(null);
-      formElement.reset();
+    setGuardando(true);
+    setError('');
+    try {
+      const fallidos: string[] = [];
+      for (const archivo of archivosEvidencia) {
+        const adjunto = new FormData();
+        adjunto.set('archivo', archivo);
+        const response = await fetch(`/api/reportes/${reporte!.id}/evidencias/archivo`, { method: 'POST', body: adjunto }).catch(() => null);
+        if (!response?.ok) fallidos.push(archivo.name);
+      }
+      const guardados = archivosEvidencia.length - fallidos.length;
+      if (guardados > 0) {
+        setArchivosEvidencia([]);
+        formElement.reset();
+        await onUpdated(reporte!.id, `${guardados} archivo${guardados === 1 ? '' : 's'} adjuntado${guardados === 1 ? '' : 's'} al reporte.`);
+      }
+      if (fallidos.length) setError(`No se pudieron adjuntar: ${fallidos.join(', ')}.`);
+    } catch {
+      setError('Los archivos se procesaron, pero no fue posible actualizar el detalle. Recarga la página para verificar el resultado.');
+    } finally {
+      setGuardando(false);
     }
   }
 
   if (loading) return <aside className="report-detail-panel report-detail-loading" aria-live="polite"><span /><span /><span /><p>Cargando trazabilidad...</p></aside>;
-  if (!reporte) return <aside className="report-detail-panel"><div className="report-detail-empty"><strong>Selecciona un reporte</strong><p>Aquí podrás consultar hechos, evidencias, observaciones y seguimiento.</p></div></aside>;
+  if (!reporte) return <aside className="report-detail-panel report-detail-panel--empty"><div className="report-detail-empty"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4M10 12h5m-5 3h5"/></svg></span><strong>Selecciona un reporte</strong><p>Aquí podrás consultar hechos, evidencias, observaciones y seguimiento.</p></div></aside>;
 
   const estadosDisponibles = [reporte.estado, ...TRANSICIONES[reporte.estado]];
   return <aside className="report-detail-panel">
@@ -462,7 +574,7 @@ function ReportDetail({ reporte, loading, currentUserId, onUpdated }: {
 
     <section className="report-trace-section"><header><div><span>Evidencias</span><strong>{reporte.evidencias.length}</strong></div>{reporte.permisos.puedeAgregarEvidencia && <small>Archivos adjuntos</small>}</header>
       <div className="report-evidence-list">{reporte.evidencias.length ? reporte.evidencias.map((item) => urlSegura(item.url) && <a href={item.url} target="_blank" rel="noreferrer" key={item.id}><span>{item.tipo}</span><strong>{item.nombre}</strong><small>{fechaLegible(item.creadoEn)}</small></a>) : <p>Sin evidencias vinculadas.</p>}</div>
-      {reporte.permisos.puedeAgregarEvidencia && <details className="report-inline-form"><summary>Adjuntar archivo</summary><form onSubmit={agregarEvidencia}><label className="wide"><span>Archivo (PDF, imagen o DOCX · máximo 4 MB)</span><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.docx" onChange={(event) => setArchivoEvidencia(event.target.files?.[0] ?? null)} required /></label><button type="submit" disabled={guardando || !archivoEvidencia}>{guardando ? 'Guardando...' : 'Adjuntar archivo'}</button></form></details>}
+      {reporte.permisos.puedeAgregarEvidencia && <details className="report-inline-form"><summary>Adjuntar archivos</summary><form onSubmit={agregarEvidencia}><div className="wide"><EvidenceUpload files={archivosEvidencia} onChange={setArchivosEvidencia} disabled={guardando} /></div><button type="submit" disabled={guardando || !archivosEvidencia.length}>{guardando ? 'Guardando...' : 'Adjuntar archivos'}</button></form></details>}
     </section>
 
     <section className="report-trace-section"><header><div><span>Historial de observaciones</span><strong>{reporte.observacionesLista.length}</strong></div></header>
