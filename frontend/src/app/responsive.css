@@ -279,6 +279,35 @@
   .profile-menu-name { max-width: 85px; }
 }
 
+/* Respuesta del sistema visual compartido. */
+@media (max-width: 1280px) {
+  .ui-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1023px) {
+  .ui-module-header { max-width: 100%; }
+}
+
+@media (max-width: 900px) {
+  .ui-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 767px) {
+  .ui-module-header { align-items: stretch; flex-direction: column; padding: 20px; }
+  .ui-module-header__action, .ui-module-header__action > * { width: 100%; }
+  .ui-modal-backdrop { align-items: end; padding: 0; }
+  .ui-modal, .ui-modal--large { width: 100%; max-height: 94dvh; border-radius: var(--radius-modal) var(--radius-modal) 0 0; }
+  .ui-modal__header, .ui-modal__footer, .ui-modal__body { padding-inline: 16px; }
+}
+
+@media (max-width: 600px) {
+  .ui-module-header__copy { align-items: flex-start; }
+}
+
+@media (max-width: 470px) {
+  .ui-kpi-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
 @media (pointer: coarse) {
   .app-shell :where(button, summary), .statistics-export-actions a, .legal-back { min-height: 44px; }
   .app-shell :where(.users-actions-cell > button, .students-actions-cell > button, .sidebar-logout) { min-width: 44px; }
