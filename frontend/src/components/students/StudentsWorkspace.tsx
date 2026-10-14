@@ -1,7 +1,9 @@
 "use client";
 
 import ReportsWorkspace from "@/components/reports/ReportsWorkspace";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import ModuleHeader from "@/components/ui/ModuleHeader";
+import KpiGrid from "@/components/ui/KpiGrid";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   etiquetaGrupoAcademico,
   GRUPOS_ACADEMICOS,
@@ -13,6 +15,7 @@ import { coincideBusqueda } from "@/lib/search-normalization";
 
 type Feedback = { tipo: "success" | "error"; texto: string };
 const ESTADOS = ["Activo", "Desescolarizado", "Egresado", "Retirado/a"];
+const PAGE_SIZE = 25;
 const EMPTY_FORM: EstudianteFormData = {
   primerNombre: "",
   segundoNombre: "",
@@ -125,7 +128,11 @@ export default function StudentsWorkspace({
   const [historial, setHistorial] = useState<Estudiante | null>(null);
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
   const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("Todos");
+  const [filtroGrado, setFiltroGrado] = useState("Todos");
   const [filtroGrupo, setFiltroGrupo] = useState("Todos");
+  const [filtroJornada, setFiltroJornada] = useState("Todas");
+  const [pagina, setPagina] = useState(1);
   const [modal, setModal] = useState<"crear" | "editar" | null>(null);
   const [form, setForm] = useState<EstudianteFormData>(EMPTY_FORM);
   const [editando, setEditando] = useState<Estudiante | null>(null);
@@ -134,6 +141,7 @@ export default function StudentsWorkspace({
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<Feedback | null>(null);
+  const formularioInicial = useRef("");
   useDialogFocus<HTMLElement>(Boolean(modal || archivar), () => {
     if (modal) cerrarModal();
     else setArchivar(null);
@@ -184,20 +192,39 @@ export default function StudentsWorkspace({
     return estudiantes.filter((item) => {
       const grupo = etiquetaGrupoAcademico(item.grado, item.grupo);
       return (
+        (filtroEstado === "Todos" || item.estado === filtroEstado) &&
+        (filtroGrado === "Todos" || item.grado.replace("°", "") === filtroGrado) &&
         (filtroGrupo === "Todos" || grupo === filtroGrupo) &&
+        (filtroJornada === "Todas" || item.jornada === filtroJornada) &&
         coincideBusqueda(busqueda, [item.nombre, item.correo, item.documento, grupo])
       );
     });
-  }, [busqueda, estudiantes, filtroGrupo]);
+  }, [busqueda, estudiantes, filtroEstado, filtroGrado, filtroGrupo, filtroJornada]);
+
+  const resumen = useMemo(() => ({
+    total: estudiantes.length,
+    activos: estudiantes.filter((item) => item.estado === "Activo").length,
+    desescolarizados: estudiantes.filter((item) => item.estado === "Desescolarizado").length,
+    otros: estudiantes.filter((item) => !["Activo", "Desescolarizado"].includes(item.estado)).length,
+  }), [estudiantes]);
+
+  const gruposDisponibles = useMemo(() => GRUPOS_ACADEMICOS.filter((item) =>
+    filtroGrado === "Todos" || item.grado === filtroGrado
+  ), [filtroGrado]);
+  const totalPaginas = Math.max(1, Math.ceil(filtrados.length / PAGE_SIZE));
+  const estudiantesVisibles = filtrados.slice((pagina - 1) * PAGE_SIZE, pagina * PAGE_SIZE);
 
   function abrirCrear() {
     setForm(EMPTY_FORM);
+    formularioInicial.current = JSON.stringify(EMPTY_FORM);
     setEditando(null);
     setMensaje(null);
     setModal("crear");
   }
   function abrirEditar(estudiante: Estudiante) {
-    setForm(studentToForm(estudiante));
+    const siguienteFormulario = studentToForm(estudiante);
+    setForm(siguienteFormulario);
+    formularioInicial.current = JSON.stringify(siguienteFormulario);
     setEditando(estudiante);
     setMenuId(null);
     setMensaje(null);
@@ -205,6 +232,8 @@ export default function StudentsWorkspace({
   }
   function cerrarModal() {
     if (!guardando) {
+      const tieneCambios = JSON.stringify(form) !== formularioInicial.current;
+      if (tieneCambios && !window.confirm("Hay cambios sin guardar. ¿Quieres cerrar el formulario?")) return;
       setModal(null);
       setEditando(null);
     }
@@ -281,66 +310,95 @@ export default function StudentsWorkspace({
     }
   }
 
-  if (historial) return <>
-    <header className="reports-heading">
-      <div className="module-title"><h2>{historial.nombre}</h2><p>{etiquetaGrupoAcademico(historial.grado, historial.grupo)}</p></div>
-      <button type="button" className="module-primary-action" onClick={() => setHistorial(null)}>Volver a estudiantes</button>
-    </header>
+  if (historial) return <section className="student-history-workspace ui-workspace">
+    <ModuleHeader
+      kicker="Expediente del estudiante"
+      title={historial.nombre}
+      description={`${etiquetaGrupoAcademico(historial.grado, historial.grupo)} · Jornada ${historial.jornada} · ${historial.estado}`}
+      icon={<span className="student-history-avatar">{iniciales(historial.nombre)}</span>}
+      action={<button type="button" className="ui-button ui-button--secondary" onClick={() => setHistorial(null)}>← Volver al directorio</button>}
+    />
     <ReportsWorkspace key={historial.id} currentUserId={currentUserId} canManage={canManage} estudianteId={historial.id} />
-  </>;
+  </section>;
 
   return (
     <section
-      className="workspace-panel students-directory-workspace"
+      className="students-directory-workspace ui-workspace"
       onClick={() => setMenuId(null)}
     >
-      <header className="students-directory-heading">
-        <div>
-          <h2>Estudiantes</h2>
-          <p>
-            {cargando
-              ? "Cargando estudiantes..."
-              : `${estudiantes.length} estudiantes registrados`}
-          </p>
-        </div>
-        {canManage && (
+      <ModuleHeader
+        kicker="Gestión académica"
+        title="Directorio de estudiantes"
+        description="Consulta la información académica, el estado y el historial institucional de cada estudiante."
+        icon={<svg viewBox="0 0 24 24"><path d="m3 9 9-5 9 5-9 5z"/><path d="M7 11.2V16c2.8 2 7.2 2 10 0v-4.8M21 9v6"/></svg>}
+        action={canManage ? (
           <button
             type="button"
+            className="ui-button ui-button--primary students-create-action"
             onClick={(event) => {
               event.stopPropagation();
               abrirCrear();
             }}
           >
-            <span aria-hidden="true">＋</span> Registrar estudiante
+            <span aria-hidden="true">＋</span> Nuevo estudiante
           </button>
-        )}
-      </header>
+        ) : undefined}
+      />
+      <KpiGrid label="Resumen de estudiantes" items={[
+        { label: "Total", value: cargando ? "—" : resumen.total, detail: "En el directorio actual", icon: <svg viewBox="0 0 24 24"><path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20"/><circle cx="10" cy="8" r="4"/><path d="M17 11a3 3 0 0 1 3 3v1"/></svg> },
+        { label: "Activos", value: cargando ? "—" : resumen.activos, detail: "Con matrícula activa", icon: <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg> },
+        { label: "Desescolarizados", value: cargando ? "—" : resumen.desescolarizados, detail: "Requieren seguimiento", icon: <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6m0 4h.01"/></svg> },
+        { label: "Otros estados", value: cargando ? "—" : resumen.otros, detail: "Egresados o retirados", icon: <svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8m-8 4h8m-8 4h5"/></svg> },
+      ]} />
       {mensaje && !modal && (
         <p className={`feedback ${mensaje.tipo}`} role="status">
           {mensaje.texto}
         </p>
       )}
       <div className="students-directory-toolbar">
-        <label>
+        <label className="students-search-field">
           <span aria-hidden="true">⌕</span>
           <span className="sr-only">Buscar estudiante</span>
           <input
             type="search"
             value={busqueda}
-            onChange={(event) => setBusqueda(event.target.value)}
+            onChange={(event) => { setBusqueda(event.target.value); setPagina(1); }}
             placeholder={canManage ? "Buscar por nombre o documento..." : "Buscar por nombre o grupo..."}
           />
         </label>
         <label>
+          <span className="students-filter-label">Estado</span>
+          <select value={filtroEstado} onChange={(event) => { setFiltroEstado(event.target.value); setPagina(1); }}>
+            <option value="Todos">Todos</option>
+            {ESTADOS.map((estado) => <option key={estado}>{estado}</option>)}
+          </select>
+        </label>
+        <label>
+          <span className="students-filter-label">Grado</span>
+          <select value={filtroGrado} onChange={(event) => { setFiltroGrado(event.target.value); setFiltroGrupo("Todos"); setPagina(1); }}>
+            <option value="Todos">Todos</option>
+            {["6", "7", "8", "9", "10", "11"].map((grado) => <option key={grado}>{grado}°</option>)}
+          </select>
+        </label>
+        <label>
+          <span className="students-filter-label">Grupo</span>
           <span className="sr-only">Filtrar por grupo</span>
           <select
             value={filtroGrupo}
-            onChange={(event) => setFiltroGrupo(event.target.value)}
+            onChange={(event) => { setFiltroGrupo(event.target.value); setPagina(1); }}
           >
-            <option value="Todos">Todos los grupos</option>
-            {GRUPOS_ACADEMICOS.map((grupo) => (
+            <option value="Todos">Todos</option>
+            {gruposDisponibles.map((grupo) => (
               <option key={grupo.etiqueta}>{grupo.etiqueta}</option>
             ))}
+          </select>
+        </label>
+        <label>
+          <span className="students-filter-label">Jornada</span>
+          <select value={filtroJornada} onChange={(event) => { setFiltroJornada(event.target.value); setPagina(1); }}>
+            <option value="Todas">Todas</option>
+            <option>Mañana</option>
+            <option>Tarde</option>
           </select>
         </label>
       </div>
@@ -361,7 +419,11 @@ export default function StudentsWorkspace({
               </tr>
             </thead>
             <tbody>
-              {filtrados.map((estudiante) => (
+              {cargando && Array.from({ length: 5 }, (_, index) => (
+                <tr className="students-loading-row" key={`loading-${index}`} aria-hidden="true">
+                  <td><span /></td><td><span /></td><td><span /></td><td><span /></td><td><span /></td><td><span /></td><td /></tr>
+              ))}
+              {estudiantesVisibles.map((estudiante) => (
                 <tr key={estudiante.id}>
                   <td>
                     <div className="students-name-cell">
@@ -442,11 +504,20 @@ export default function StudentsWorkspace({
           </table>
           {!cargando && filtrados.length === 0 && (
             <div className="students-directory-empty">
+              <span className="students-empty-icon" aria-hidden="true">⌕</span>
               <strong>No hay estudiantes para mostrar</strong>
               <p>Prueba otra búsqueda o selecciona un grupo diferente.</p>
             </div>
           )}
         </div>
+        {!cargando && filtrados.length > 0 && <footer className="students-table-footer">
+          <span>Mostrando {(pagina - 1) * PAGE_SIZE + 1}–{Math.min(pagina * PAGE_SIZE, filtrados.length)} de {filtrados.length}</span>
+          <div>
+            <button type="button" disabled={pagina === 1} onClick={() => setPagina((actual) => Math.max(1, actual - 1))}>← Anterior</button>
+            <strong>{pagina} / {totalPaginas}</strong>
+            <button type="button" disabled={pagina === totalPaginas} onClick={() => setPagina((actual) => Math.min(totalPaginas, actual + 1))}>Siguiente →</button>
+          </div>
+        </footer>}
       </div>
 
       {modal && (
@@ -464,15 +535,18 @@ export default function StudentsWorkspace({
             onSubmit={guardar}
           >
             <header>
-              <div>
+              <div className="students-modal-heading">
+                <span aria-hidden="true">{modal === "crear" ? "+" : "✎"}</span>
+                <div>
                 <h3 id="student-modal-title">
                   {modal === "crear"
                     ? "Registrar estudiante"
                     : "Editar estudiante"}
                 </h3>
                 <p>
-                  Completa la información académica y del acudiente principal.
+                  {modal === "crear" ? "Completa la información académica y del acudiente principal." : `Actualiza la información de ${editando?.nombre || "este estudiante"}.`}
                 </p>
+                </div>
               </div>
               <button type="button" aria-label="Cerrar" onClick={cerrarModal}>
                 ×
@@ -487,6 +561,7 @@ export default function StudentsWorkspace({
               <StudentFormFields form={form} setForm={setForm} />
             </div>
             <footer>
+              <p><strong>{modal === "crear" ? "Nuevo registro" : "Edición de estudiante"}</strong><span>Los campos marcados son obligatorios.</span></p>
               <button type="button" onClick={cerrarModal}>
                 Cancelar
               </button>
@@ -570,7 +645,7 @@ function StudentFormFields({
     <>
       <fieldset>
         <legend>
-          <span>1</span> Información del estudiante
+          <span>1</span><div>Información personal<small>Identificación y datos de contacto</small></div>
         </legend>
         <div className="students-fields-grid">
           <Field
@@ -618,6 +693,13 @@ function StudentFormFields({
             type="email"
             required
           />
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>
+          <span>2</span><div>Información académica<small>Grupo, jornada y estado actual</small></div>
+        </legend>
+        <div className="students-fields-grid students-fields-grid--academic">
           <SelectField
             label="Grupo"
             value={grupoSeleccionado}
@@ -652,7 +734,7 @@ function StudentFormFields({
       </fieldset>
       <fieldset>
         <legend>
-          <span>2</span> Acudiente principal
+          <span>3</span><div>Acudiente principal<small>Responsable y datos de contacto</small></div>
         </legend>
         <div className="students-fields-grid">
           <Field

@@ -124,6 +124,10 @@
   .report-row { grid-template-columns: 60px minmax(0, 1fr) 90px; }
   .report-row-trace { display: block; grid-column: 2 / -1; }
   .weekly-insight-actions { flex-wrap: wrap; gap: 10px; }
+  .students-directory-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .students-search-field { grid-column: 1 / -1; }
 }
 
 @media (max-width: 1250px) {
@@ -237,6 +241,9 @@
   .users-directory-toolbar > label, .students-directory-toolbar > label:first-child { flex-basis: auto; width: 100%; }
   .users-role-filters { width: 100%; }
   .users-role-filters button { flex: 1 1 auto; }
+  .students-directory-toolbar { grid-template-columns: minmax(0, 1fr); padding: 14px; }
+  .students-search-field { grid-column: auto; }
+  .students-directory-toolbar select { min-width: 0; }
   .users-table-footer, .students-table-footer { flex-wrap: wrap; gap: 12px; }
   .report-row { grid-template-columns: 48px minmax(0, 1fr); }
   .report-row > :nth-child(n + 3) { grid-column: 2; justify-self: start; text-align: left; }
@@ -260,6 +267,7 @@
   .users-modal, .students-modal, .exit-modal { max-height: calc(100dvh - 20px); width: 100%; }
   .users-modal-body, .students-modal-body { min-height: 0; }
   .users-modal > footer, .students-modal > footer { gap: 10px; }
+  .students-modal > footer > p { margin-bottom: 4px; }
   .students-fields-grid { grid-template-columns: minmax(0, 1fr); }
   .login-form-panel { padding: 24px; min-height: 100dvh; }
   .legal-card { padding: 24px 18px; }
@@ -285,6 +293,7 @@
 /* Respuesta del sistema visual compartido. */
 @media (max-width: 1280px) {
   .ui-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .students-directory-workspace .ui-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 1023px) {
@@ -309,6 +318,7 @@
 
 @media (max-width: 470px) {
   .ui-kpi-grid, .dashboard-metric-grid { grid-template-columns: minmax(0, 1fr); }
+  .students-directory-workspace .ui-kpi-grid { grid-template-columns: minmax(0, 1fr); }
   .dashboard-home-header { grid-template-columns: minmax(0, 1fr); }
   .dashboard-home-header-icon { display: none; }
   .dashboard-role-chip { grid-column: 1; }
