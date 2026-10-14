@@ -6016,6 +6016,63 @@ button {
   .group-student-status { grid-column: 3; }
 }
 
+/* Etapa 5: grupos alineados con el sistema visual compartido. */
+.groups-workspace { min-height: calc(100svh - 108px); }
+.groups-workspace > .ui-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.groups-toolbar {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) repeat(3, minmax(150px, auto));
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 20px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-card);
+  background: var(--ui-surface);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+}
+.groups-toolbar label { display: grid; gap: 7px; min-width: 0; }
+.groups-search { width: auto; align-self: end; }
+.groups-filter-label { color: var(--ui-text-muted); font-size: var(--font-size-2xs); font-weight: var(--font-weight-bold); }
+.groups-toolbar input,
+.groups-toolbar select { width: 100%; min-width: 0; min-height: 44px; border-color: var(--ui-border); border-radius: var(--radius-md); background-color: var(--ui-surface-raised); color: var(--ui-text); font-size: var(--font-size-sm); }
+.groups-toolbar select { appearance: none; min-width: 150px; padding-right: 38px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238aa1b8' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E"); background-position: right 12px center; background-repeat: no-repeat; }
+.groups-search > span[aria-hidden] { top: auto; bottom: 13px; transform: none; }
+.groups-grid { grid-template-columns: repeat(4, minmax(210px, 1fr)); gap: 16px; }
+.group-card { min-height: 248px; border-color: var(--ui-border); border-radius: var(--radius-card); background: linear-gradient(145deg, var(--ui-surface-raised), var(--ui-surface)); box-shadow: var(--shadow-sm); padding: 19px; }
+.group-card::after { width: 150px; height: 150px; right: -72px; top: -70px; background: var(--ui-primary-soft); }
+.group-card:hover { border-color: var(--ui-primary-border); box-shadow: var(--shadow-card); }
+.group-card-shift { border: 1px solid rgba(62, 165, 211, .18); }
+.group-card-shift--tarde { border-color: rgba(229, 165, 40, .2); }
+.group-card > strong { color: var(--ui-text); }
+.group-card-course { color: var(--ui-text-secondary); }
+.group-card-divider { background: var(--ui-border); }
+.group-card-meta { color: var(--ui-text-muted); font-size: var(--font-size-2xs); }
+.group-card-open { margin-top: 18px; border-top: 1px solid var(--ui-border); padding-top: 13px; color: var(--ui-primary); font-size: var(--font-size-xs); }
+.group-card-skeleton { display: grid; min-height: 248px; align-content: start; gap: 18px; border: 1px solid var(--ui-border); border-radius: var(--radius-card); background: var(--ui-surface); padding: 20px; }
+.group-card-skeleton > * { display: block; height: 12px; border-radius: 999px; background: linear-gradient(90deg, rgba(89,119,146,.12), rgba(120,159,192,.25), rgba(89,119,146,.12)); background-size: 200% 100%; animation: groups-loading 1.35s ease infinite; }
+.group-card-skeleton > span { width: 70px; height: 24px; }.group-card-skeleton > strong { width: 42%; height: 52px; }.group-card-skeleton > i { width: 82%; }
+@keyframes groups-loading { to { background-position: -200% 0; } }
+.groups-empty { min-height: 340px; border: 1px dashed var(--ui-border-strong); border-radius: var(--radius-card); background: var(--ui-surface); }
+.groups-empty > span { display: grid; width: 48px; height: 48px; place-items: center; margin: 0 auto 14px; border-radius: 14px; background: var(--ui-primary-soft); color: var(--ui-primary); font-size: 1.4rem; }
+.groups-empty strong { color: var(--ui-text); font-size: var(--font-size-md); }
+.groups-empty p { color: var(--ui-text-muted); font-size: var(--font-size-xs); }
+.group-detail { width: min(900px, 100%); border-color: var(--ui-border); border-radius: var(--radius-modal); background: var(--ui-surface-raised); }
+.group-detail > header { border-color: var(--ui-border); background: linear-gradient(135deg, rgba(37,111,174,.22), rgba(15,37,62,.42)); }
+.group-detail-grade { border-color: var(--ui-primary-border); background: var(--ui-primary-soft); }
+.group-detail-eyebrow { color: var(--ui-primary); }
+.group-detail h3 { color: var(--ui-text); font-size: var(--font-size-lg); }
+.group-detail > header p { color: var(--ui-text-muted); font-size: var(--font-size-xs); }
+.group-director-panel,
+.group-students { border-color: var(--ui-border); border-radius: var(--radius-card); background: var(--ui-surface); }
+.group-director-avatar { width: 44px; height: 44px; flex-basis: 44px; background: linear-gradient(145deg, #2f8bd3, #205fa5); }
+.group-director-panel small { color: var(--ui-text-subtle); }.group-director-panel strong { color: var(--ui-text); font-size: var(--font-size-sm); }.group-director-panel > div:first-child span { color: var(--ui-text-muted); }
+.group-director-editor { border-color: var(--ui-border); }.group-director-editor label { color: var(--ui-text-secondary); font-size: var(--font-size-xs); }
+.group-director-editor select { min-height: 44px; border-color: var(--ui-border); border-radius: var(--radius-md); background-color: var(--ui-surface-raised); color: var(--ui-text); font-size: var(--font-size-sm); appearance: none; padding-right: 38px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238aa1b8' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E"); background-position: right 12px center; background-repeat: no-repeat; }
+.group-director-editor button { min-height: 44px; border-radius: var(--radius-md); background: var(--ui-primary); font-size: var(--font-size-xs); }
+.group-students > header { border-color: var(--ui-border); background: var(--ui-surface-soft); }.group-students h4 { color: var(--ui-text); font-size: var(--font-size-sm); }.group-students header p { color: var(--ui-text-muted); font-size: var(--font-size-2xs); }
+.group-students li { min-height: 58px; border-color: var(--ui-border); }.group-students li > strong { color: var(--ui-text-secondary); font-size: var(--font-size-xs); }
+
 /* Consulta de reportes: composición contenida y trazabilidad legible. */
 .reports-consultation {
   --report-consult-bg: rgba(255, 255, 255, .9);

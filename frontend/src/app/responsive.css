@@ -100,6 +100,8 @@
     width: auto;
   }
   .statistics-export-actions { flex-wrap: wrap; }
+  .groups-grid { grid-template-columns: repeat(3, minmax(190px, 1fr)); }
+  .groups-toolbar { grid-template-columns: minmax(240px, 1fr) repeat(3, minmax(140px, auto)); }
 }
 
 @media (max-width: 900px) {
@@ -124,6 +126,10 @@
   .report-row { grid-template-columns: 60px minmax(0, 1fr) 90px; }
   .report-row-trace { display: block; grid-column: 2 / -1; }
   .weekly-insight-actions { flex-wrap: wrap; gap: 10px; }
+  .groups-workspace > .ui-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .groups-grid { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
+  .groups-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .groups-search { grid-column: 1 / -1; }
   .students-directory-toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -241,6 +247,11 @@
   .users-directory-toolbar > label, .students-directory-toolbar > label:first-child { flex-basis: auto; width: 100%; }
   .users-role-filters { width: 100%; }
   .users-role-filters button { flex: 1 1 auto; }
+  .groups-workspace > .ui-kpi-grid { grid-template-columns: minmax(0, 1fr); }
+  .groups-toolbar { grid-template-columns: minmax(0, 1fr); padding: 14px; }
+  .groups-search { grid-column: auto; }
+  .groups-toolbar select { min-width: 0; }
+  .groups-grid { grid-template-columns: minmax(0, 1fr); }
   .students-directory-toolbar { grid-template-columns: minmax(0, 1fr); padding: 14px; }
   .students-search-field { grid-column: auto; }
   .students-directory-toolbar select { min-width: 0; }

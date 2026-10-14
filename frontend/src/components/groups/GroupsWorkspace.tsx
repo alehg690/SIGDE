@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDialogFocus } from '@/hooks/useDialogFocus';
 import { coincideBusqueda } from '@/lib/search-normalization';
+import ModuleHeader from '@/components/ui/ModuleHeader';
+import KpiGrid from '@/components/ui/KpiGrid';
 
 type Persona = { id: number; nombre: string; correo: string };
 type EstudianteGrupo = { id: number; nombre: string; estado: string };
@@ -31,6 +33,8 @@ export default function GroupsWorkspace({ canManage }: { canManage: boolean }) {
   const [seleccionado, setSeleccionado] = useState<Grupo | null>(null);
   const [directorId, setDirectorId] = useState('');
   const [filtroGrado, setFiltroGrado] = useState('Todos');
+  const [filtroJornada, setFiltroJornada] = useState('Todas');
+  const [filtroDirector, setFiltroDirector] = useState('Todos');
   const [busqueda, setBusqueda] = useState('');
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -60,9 +64,11 @@ export default function GroupsWorkspace({ canManage }: { canManage: boolean }) {
   const gruposVisibles = useMemo(() => {
     return data.grupos.filter((grupo) => {
       const coincideGrado = filtroGrado === 'Todos' || grupo.grado === filtroGrado;
-      return coincideGrado && coincideBusqueda(busqueda, [grupo.grado, grupo.grupo, `${grupo.grado}-${grupo.grupo}`, grupo.jornada, grupo.director?.nombre]);
+      const coincideJornada = filtroJornada === 'Todas' || grupo.jornada === filtroJornada;
+      const coincideDirector = filtroDirector === 'Todos' || (filtroDirector === 'Asignado' ? Boolean(grupo.director) : !grupo.director);
+      return coincideGrado && coincideJornada && coincideDirector && coincideBusqueda(busqueda, [grupo.grado, grupo.grupo, `${grupo.grado}-${grupo.grupo}`, grupo.jornada, grupo.director?.nombre]);
     });
-  }, [busqueda, data.grupos, filtroGrado]);
+  }, [busqueda, data.grupos, filtroDirector, filtroGrado, filtroJornada]);
 
   function abrirGrupo(grupo: Grupo) {
     setSeleccionado(grupo);
@@ -95,24 +101,29 @@ export default function GroupsWorkspace({ canManage }: { canManage: boolean }) {
   const totalEstudiantes = data.grupos.reduce((total, grupo) => total + grupo.estudiantes.length, 0);
   const gruposConDirector = data.grupos.filter((grupo) => grupo.director).length;
 
-  return <section className="groups-workspace" aria-labelledby="groups-title">
-    <header className="groups-heading">
-      <div><h2 id="groups-title">Grupos</h2><p>Consulta cada curso, sus estudiantes y el director de grupo asignado.</p></div>
-      <div className="groups-summary" aria-label="Resumen de grupos">
-        <span><strong>{data.grupos.length}</strong> Grupos</span>
-        <span><strong>{totalEstudiantes}</strong> Estudiantes</span>
-        <span><strong>{gruposConDirector}</strong> Con director</span>
-      </div>
-    </header>
+  return <section className="groups-workspace ui-workspace" aria-label="Gestión de grupos escolares">
+    <ModuleHeader
+      kicker="Organización académica"
+      title="Grupos escolares"
+      description="Consulta la conformación de cada curso y administra la asignación de directores de grupo."
+      icon={<svg viewBox="0 0 24 24"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z"/></svg>}
+    />
+    <KpiGrid label="Resumen de grupos" items={[
+      { label: 'Grupos', value: cargando ? '—' : data.grupos.length, detail: 'Cursos configurados', icon: <svg viewBox="0 0 24 24"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z"/></svg> },
+      { label: 'Estudiantes', value: cargando ? '—' : totalEstudiantes, detail: 'Distribuidos por curso', icon: <svg viewBox="0 0 24 24"><path d="m3 9 9-5 9 5-9 5z"/><path d="M7 11.2V16c2.8 2 7.2 2 10 0v-4.8"/></svg> },
+      { label: 'Con director', value: cargando ? '—' : gruposConDirector, detail: `${data.grupos.length - gruposConDirector} pendientes de asignación`, icon: <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M3 20v-1.5A3.5 3.5 0 0 1 6.5 15h5a3.5 3.5 0 0 1 3.5 3.5V20m2-8 2 2 3-4"/></svg> },
+    ]} />
 
     {feedback && !seleccionado && <p className={`feedback ${feedback.tipo}`} role="alert">{feedback.texto}</p>}
 
     <div className="groups-toolbar">
       <label className="groups-search"><span aria-hidden="true">⌕</span><span className="sr-only">Buscar grupo o director</span><input type="search" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} placeholder="Buscar grupo, jornada o director" /></label>
-      <label><span className="sr-only">Filtrar por grado</span><select value={filtroGrado} onChange={(event) => setFiltroGrado(event.target.value)}><option>Todos</option>{['6', '7', '8', '9', '10', '11'].map((grado) => <option key={grado} value={grado}>Grado {grado}°</option>)}</select></label>
+      <label><span className="groups-filter-label">Grado</span><select aria-label="Filtrar por grado" value={filtroGrado} onChange={(event) => setFiltroGrado(event.target.value)}><option>Todos</option>{['6', '7', '8', '9', '10', '11'].map((grado) => <option key={grado} value={grado}>Grado {grado}°</option>)}</select></label>
+      <label><span className="groups-filter-label">Jornada</span><select aria-label="Filtrar por jornada" value={filtroJornada} onChange={(event) => setFiltroJornada(event.target.value)}><option>Todas</option><option>Mañana</option><option>Tarde</option></select></label>
+      <label><span className="groups-filter-label">Director</span><select aria-label="Filtrar por director" value={filtroDirector} onChange={(event) => setFiltroDirector(event.target.value)}><option>Todos</option><option value="Asignado">Asignado</option><option value="Sin asignar">Sin asignar</option></select></label>
     </div>
 
-    {cargando ? <div className="groups-loading" role="status">Cargando grupos...</div> : gruposVisibles.length ? <div className="groups-grid">
+    {cargando ? <div className="groups-grid groups-grid--loading" role="status" aria-label="Cargando grupos">{Array.from({ length: 8 }, (_, index) => <article className="group-card-skeleton" key={index}><span/><strong/><i/><i/></article>)}</div> : gruposVisibles.length ? <div className="groups-grid">
       {gruposVisibles.map((grupo) => <button type="button" className="group-card" key={`${grupo.grado}-${grupo.grupo}`} onClick={() => abrirGrupo(grupo)} aria-label={`Abrir grupo ${grupo.grado}-${grupo.grupo}`}>
         <span className={`group-card-shift group-card-shift--${grupo.jornada.toLocaleLowerCase('es')}`}>{grupo.jornada}</span>
         <strong>{grupo.grado}<sup>°</sup><b>{grupo.grupo}</b></strong>
@@ -121,7 +132,7 @@ export default function GroupsWorkspace({ canManage }: { canManage: boolean }) {
         <span className="group-card-meta"><span><i aria-hidden="true">♙</i>{grupo.estudiantes.length} estudiante{grupo.estudiantes.length === 1 ? '' : 's'}</span><span className={grupo.director ? '' : 'group-card-unassigned'}>{grupo.director ? grupo.director.nombre : 'Sin director'}</span></span>
         <span className="group-card-open">Ver grupo <b aria-hidden="true">›</b></span>
       </button>)}
-    </div> : <div className="groups-empty"><strong>No encontramos grupos</strong><p>Ajusta la búsqueda o el filtro de grado.</p></div>}
+    </div> : <div className="groups-empty"><span aria-hidden="true">⌕</span><strong>No encontramos grupos</strong><p>Ajusta la búsqueda o alguno de los filtros.</p></div>}
 
     {seleccionado && <div className="group-detail-backdrop" role="presentation" onMouseDown={() => { if (!guardando) setSeleccionado(null); }}>
       <section className="group-detail" role="dialog" aria-modal="true" aria-labelledby="group-detail-title" onMouseDown={(event) => event.stopPropagation()}>
