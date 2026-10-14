@@ -47,7 +47,7 @@ export default function MobileNavigation({ children, roleLabel }: { children: Re
       const rect = event.currentTarget.getBoundingClientRect();
       if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close();
     }}>
-      <header><div><strong id="mobile-navigation-title">SIGDE</strong><span>{roleLabel}</span></div><button type="button" aria-label="Cerrar menú de navegación" onClick={close}>×</button></header>
+      <header><div><strong id="mobile-navigation-title">SIGDE</strong><span>{roleLabel}</span></div><button type="button" aria-label="Cerrar menú de navegación" onClick={close}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg></button></header>
       <div className="mobile-navigation-content" onClick={(event) => { if ((event.target as HTMLElement).closest('.app-nav-item')) close(); }}>{children}</div>
     </dialog>
   </>;

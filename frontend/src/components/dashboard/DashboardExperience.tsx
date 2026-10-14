@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import StudentsWorkspace from '@/components/students/StudentsWorkspace';
@@ -265,6 +266,10 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
   const [globalSearch, setGlobalSearch] = useState(() => searchParams.get('buscar') || '');
   const role = useMemo(() => normalizeRole(usuario.rol), [usuario.rol]);
 
+  function toggleSidebar() {
+    setSidebarCollapsed((actual) => !actual);
+  }
+
   useEffect(() => {
     if (!profileOpen) return;
     function cerrarMenu(event: Event) {
@@ -408,13 +413,13 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
       <aside className="app-sidebar" aria-label="Navegación principal">
         <div className="app-sidebar-head">
           <div className="app-brand">
-          <strong>SIGDE</strong>
-          <span>{ROLE_LABELS[role]}</span>
+            <span className="app-brand-logo" aria-hidden="true"><Image src="/Logo-login.png" alt="" width={32} height={36} /></span>
+            <span className="app-brand-copy"><strong>SIGDE</strong><small>{ROLE_LABELS[role]}</small></span>
           </div>
           <button
             type="button"
             className="sidebar-toggle"
-            onClick={() => setSidebarCollapsed((actual) => !actual)}
+            onClick={toggleSidebar}
             aria-label={sidebarCollapsed ? 'Mostrar menú' : 'Ocultar menú'}
             title={sidebarCollapsed ? 'Mostrar menú' : 'Ocultar menú'}
           >
@@ -444,6 +449,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
           </div>
         </header>
 
+        <div className="app-workspace">
         {section === 'dashboard' ? (
           <section className="dashboard-weekly-summary" aria-labelledby="dashboard-title">
             <h1 id="dashboard-title">Dashboard</h1>
@@ -471,6 +477,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
           />
           <section className="dashboard-empty-canvas" aria-label="Área de trabajo vacía" />
         </>)}
+        </div>
       </section>
     </main>
   );
