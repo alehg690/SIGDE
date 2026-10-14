@@ -220,7 +220,9 @@
   .topbar-global-search { order: 3; flex-basis: 100%; max-width: none; }
   .profile-menu-name { max-width: 110px; }
   .workspace-panel { padding: 16px; }
-  .dashboard-weekly-summary { padding-inline: 0; }
+  .dashboard-weekly-summary { padding: 16px; }
+  .dashboard-home-header { grid-template-columns: 44px minmax(0, 1fr); padding: 18px; }
+  .dashboard-role-chip { grid-column: 2; justify-self: start; }
   .weekly-insight-card { gap: 10px; padding: 14px; }
   .weekly-insight-icon { width: 32px; height: 32px; flex-basis: 32px; }
   .weekly-insight-content { min-width: 0; }
@@ -305,7 +307,10 @@
 }
 
 @media (max-width: 470px) {
-  .ui-kpi-grid { grid-template-columns: minmax(0, 1fr); }
+  .ui-kpi-grid, .dashboard-metric-grid { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-home-header { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-home-header-icon { display: none; }
+  .dashboard-role-chip { grid-column: 1; }
 }
 
 @media (pointer: coarse) {

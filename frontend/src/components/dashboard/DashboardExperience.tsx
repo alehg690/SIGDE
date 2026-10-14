@@ -451,11 +451,18 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
 
         <div className="app-workspace">
         {section === 'dashboard' ? (
-          <section className="dashboard-weekly-summary" aria-labelledby="dashboard-title">
-            <h1 id="dashboard-title">Dashboard</h1>
-            <p>Resumen institucional <span aria-hidden="true">·</span> {obtenerResumenSemana()}</p>
-            {dashboardError && <p className="dashboard-data-error" role="alert">{dashboardError}</p>}
-            {role !== 'portero' && <WeeklyInsightCard summary={dashboardSnapshot?.resumenSemanal ?? null} activeAlerts={dashboardSnapshot?.metricas.alertasActivas ?? 0} onViewAnalysis={() => seleccionarSeccion('estadisticas')} />}
+          <section className="workspace-panel dashboard-weekly-summary" aria-labelledby="dashboard-title">
+            <header className="dashboard-home-header">
+              <span className="dashboard-home-header-icon"><SidebarIcon name="dashboard" /></span>
+              <div>
+                <span className="dashboard-home-kicker">Panorama institucional</span>
+                <h1 id="dashboard-title">Dashboard</h1>
+                <p>Resumen institucional <span aria-hidden="true">·</span> {obtenerResumenSemana()}</p>
+              </div>
+              <span className="dashboard-role-chip">Vista de {ROLE_LABELS[role]}</span>
+            </header>
+            {role !== 'portero' && <WeeklyInsightCard summary={dashboardSnapshot?.resumenSemanal ?? null} activeAlerts={dashboardSnapshot?.metricas.alertasActivas ?? 0} error={dashboardError} onViewAnalysis={() => seleccionarSeccion('estadisticas')} />}
+            {role === 'portero' && dashboardError && <p className="dashboard-data-error" role="alert">{dashboardError}</p>}
             <DashboardMetricCards stats={dashboardSnapshot} role={role} />
             {role !== 'portero' && <section className="dashboard-recent-grid" aria-label="Actividad y alertas recientes">
               <RecentActivityCard reports={dashboardSnapshot?.tablas.ultimosReportes ?? []} onViewAll={() => seleccionarSeccion('reportes')} />
@@ -495,10 +502,12 @@ function DashboardNavigation({ role, section, onSelect }: { role: DashboardRole;
 function WeeklyInsightCard({
   summary,
   activeAlerts,
+  error,
   onViewAnalysis,
 }: {
   summary: DashboardStats['resumenSemanal'] | null;
   activeAlerts: number;
+  error: string;
   onViewAnalysis: () => void;
 }) {
   const diferencia = summary ? summary.reportes - summary.reportesSemanaAnterior : 0;
@@ -514,7 +523,11 @@ function WeeklyInsightCard({
           <h2>Resumen automático generado por SIGDE</h2>
           <span>DATOS REALES</span>
         </div>
-        {summary ? (
+        {error ? (
+          <p className="weekly-insight-error" role="alert">No fue posible generar el resumen en este momento. {error}</p>
+        ) : summary && summary.reportes === 0 ? (
+          <p className="weekly-insight-empty">No hay actividad registrada durante la semana analizada. El resumen se actualizará cuando existan nuevos reportes.</p>
+        ) : summary ? (
           <p>
             Durante la semana analizada se registraron <strong>{summary.reportes} reportes</strong>.
             {summary.gradoMayorActividad && <> El grado <strong>{summary.gradoMayorActividad}</strong> presentó la mayor actividad con <strong>{summary.registrosGrado} reportes</strong>.</>}
@@ -561,7 +574,7 @@ function DashboardMetricCards({ stats, role }: { stats: DashboardStats | null; r
     : allCards;
 
   return (
-    <section className="dashboard-metric-grid" aria-label="Indicadores institucionales">
+    <section className="dashboard-metric-grid" aria-label="Indicadores institucionales" aria-busy={!stats}>
       {cards.map((card) => (
         <article className={`dashboard-metric-card dashboard-metric-card--${card.tone}`} key={card.label}>
           <div className="dashboard-metric-top">
@@ -578,20 +591,20 @@ function DashboardMetricCards({ stats, role }: { stats: DashboardStats | null; r
 }
 
 const ACTIVITY_SERIES = [
-  { key: 'tipoI', label: 'Tipo I', color: '#d9b44a' },
-  { key: 'tipoII', label: 'Tipo II', color: '#d97706' },
-  { key: 'tipoIII', label: 'Tipo III', color: '#ef4444' },
+  { key: 'tipoI', label: 'Tipo I', color: '#E4B648' },
+  { key: 'tipoII', label: 'Tipo II', color: '#E17C2E' },
+  { key: 'tipoIII', label: 'Tipo III', color: '#E65E67' },
 ] as const;
 
 const NOVELTY_TYPE_COLORS: Record<string, string> = {
-  TIPO_I: '#d9b44a',
-  TIPO_II: '#d97706',
-  TIPO_III: '#ef4444',
-  SALIDAS: '#3182ce',
+  TIPO_I: '#E4B648',
+  TIPO_II: '#E17C2E',
+  TIPO_III: '#E65E67',
+  SALIDAS: '#378AC9',
 };
 
 function noveltyColor(tipo: string) {
-  return NOVELTY_TYPE_COLORS[tipo] || '#6f8ba8';
+  return NOVELTY_TYPE_COLORS[tipo] || '#42B8D5';
 }
 
 function DashboardAnalytics({ stats, onOpenCalendar }: { stats: DashboardStats | null; onOpenCalendar: () => void }) {
@@ -610,14 +623,18 @@ function DashboardAnalytics({ stats, onOpenCalendar }: { stats: DashboardStats |
 }
 
 function UpcomingEventsCard({ events, onOpenCalendar }: { events: DashboardStats['tablas']['proximosEventos']; onOpenCalendar: () => void }) {
-  return <article className="dashboard-chart-card upcoming-events-card"><header className="dashboard-chart-heading"><div><h2>Agenda</h2><p>Próximos eventos institucionales</p></div><button type="button" className="upcoming-events-calendar" aria-label="Abrir calendario" onClick={onOpenCalendar}><SidebarIcon name="calendar" /></button></header><div className="upcoming-events-list">{events.length ? events.map((event, index) => <div className="upcoming-event" key={event.id}><i className={`upcoming-event-marker upcoming-event-marker--${index % 4}`} /><div><strong>{event.titulo}</strong><time dateTime={event.iniciaEn}>{new Date(event.iniciaEn).toLocaleString('es-CO', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</time></div></div>) : <p className="recent-activity-empty">No hay eventos próximos programados.</p>}</div></article>;
+  return <article className="dashboard-chart-card upcoming-events-card"><header className="dashboard-chart-heading"><div><h2>Agenda</h2><p>Próximos eventos institucionales</p></div><button type="button" className="upcoming-events-calendar" aria-label="Abrir calendario" onClick={onOpenCalendar}><SidebarIcon name="calendar" /></button></header><div className="upcoming-events-list">{events.length ? events.map((event, index) => <div className="upcoming-event" key={event.id}><i className={`upcoming-event-marker upcoming-event-marker--${index % 4}`} /><div><strong>{event.titulo}</strong><time dateTime={event.iniciaEn}>{new Date(event.iniciaEn).toLocaleString('es-CO', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</time></div></div>) : <DashboardEmptyState icon="calendar" title="Sin eventos próximos" description="La agenda se actualizará cuando se programe una actividad institucional." />}</div></article>;
+}
+
+function DashboardEmptyState({ icon, title, description }: { icon: SidebarIconName; title: string; description: string }) {
+  return <div className="dashboard-empty-state" role="status"><span><SidebarIcon name={icon} /></span><strong>{title}</strong><small>{description}</small></div>;
 }
 
 function DashboardPorteria({ stats, onOpenSalidas, onOpenCalendar }: { stats: DashboardStats | null; onOpenSalidas: () => void; onOpenCalendar: () => void }) {
   const salidas = stats?.tablas.ultimasSalidas ?? [];
   return <section className="porteria-dashboard-grid" aria-label="Operación de portería">
     <article className="dashboard-chart-card porteria-quick-card"><div><span>Control operativo</span><h2>Registro de salidas</h2><p>Consulta las novedades recientes o registra una nueva salida con los datos de la persona autorizada.</p></div><button type="button" className="module-primary-action" onClick={onOpenSalidas}>Abrir control de salidas</button></article>
-    <article className="dashboard-chart-card porteria-recent-exits"><header className="dashboard-panel-heading"><div><h2>Salidas recientes</h2><p>Últimos movimientos registrados</p></div><button type="button" className="dashboard-view-all" onClick={onOpenSalidas}>Ver todo <span aria-hidden="true">›</span></button></header><div>{salidas.length ? salidas.map((salida) => <button type="button" key={texto(salida.id)} onClick={onOpenSalidas}><span>{texto(salida.estudiante).slice(0, 1).toUpperCase()}</span><div><strong>{texto(salida.estudiante)}</strong><small>Grado {texto(salida.grado)} · {texto(salida.acudiente)}</small></div><time dateTime={texto(salida.creadoEn)}>{formatearActividadReciente(texto(salida.creadoEn))}</time></button>) : <p className="recent-activity-empty">Aún no hay salidas registradas.</p>}</div></article>
+    <article className="dashboard-chart-card porteria-recent-exits"><header className="dashboard-panel-heading"><div><h2>Salidas recientes</h2><p>Últimos movimientos registrados</p></div><button type="button" className="dashboard-view-all" onClick={onOpenSalidas}>Ver todo <span aria-hidden="true">›</span></button></header><div>{salidas.length ? salidas.map((salida) => <button type="button" key={texto(salida.id)} onClick={onOpenSalidas}><span>{texto(salida.estudiante).slice(0, 1).toUpperCase()}</span><div><strong>{texto(salida.estudiante)}</strong><small>Grado {texto(salida.grado)} · {texto(salida.acudiente)}</small></div><time dateTime={texto(salida.creadoEn)}>{formatearActividadReciente(texto(salida.creadoEn))}</time></button>) : <DashboardEmptyState icon="door" title="Sin salidas recientes" description="Los últimos movimientos aparecerán aquí." />}</div></article>
     <UpcomingEventsCard events={stats?.tablas.proximosEventos ?? []} onOpenCalendar={onOpenCalendar} />
   </section>;
 }
@@ -637,7 +654,7 @@ function RecentActivityCard({ reports, onViewAll }: { reports: Array<Record<stri
             <span className={`recent-report-type recent-report-type--${tipo.toLowerCase()}`}>{tipoReporte(tipo)}</span>
             <time dateTime={fecha}>{formatearHora(fecha)}</time>
           </button>;
-        }) : <p className="recent-activity-empty">Aún no hay reportes para mostrar.</p>}
+        }) : <DashboardEmptyState icon="document" title="Sin actividad reciente" description="Los reportes nuevos aparecerán aquí en orden cronológico." />}
       </div>
     </div>
   </article>;
@@ -657,7 +674,7 @@ function IntelligentAlertsCard({ alerts, onViewAll, onOpenAlert }: { alerts: Das
           <span className="intelligent-alert-copy"><strong>{alert.titulo}</strong><small>{alert.estudiante} · {alert.resumenCorto}</small><em>{alert.nivelAtencion === 'high' ? 'Revisión humana prioritaria' : alert.nivelAtencion === 'medium' ? 'Seguimiento recomendado' : 'Observación'} · {alert.origen === 'rule+local' ? 'Agente local' : alert.origen === 'rule+ai' ? 'Análisis heredado' : 'Regla'}</em></span>
           <span className="intelligent-alert-meta"><time dateTime={alert.actualizadoEn}>{formatearActividadReciente(alert.actualizadoEn)}</time>{alert.estado === 'new' && <i title="Nueva o no revisada" />}</span>
         </button>;
-      }) : <p className="recent-activity-empty">No hay alertas activas en este momento.</p>}
+      }) : <DashboardEmptyState icon="sparkles" title="Sin alertas activas" description="No se detectaron reincidencias que requieran atención." />}
     </div>
   </article>;
 }
@@ -702,7 +719,7 @@ function WeeklyActivityChart({ data, loading }: {
 }) {
   const [hoveredDay, setHoveredDay] = useState<number | null>(null);
   const width = 760;
-  const height = 250;
+  const height = 400;
   const padding = { top: 28, right: 20, bottom: 34, left: 42 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
@@ -737,8 +754,8 @@ function WeeklyActivityChart({ data, loading }: {
         <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Reportes diarios de la semana clasificados por tipo" onMouseLeave={() => setHoveredDay(null)}>
           <defs>
             <linearGradient id="activity-area" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#d9b44a" stopOpacity=".18" />
-              <stop offset="100%" stopColor="#d9b44a" stopOpacity="0" />
+              <stop offset="0%" stopColor="#E4B648" stopOpacity=".18" />
+              <stop offset="100%" stopColor="#E4B648" stopOpacity="0" />
             </linearGradient>
           </defs>
           {ticks.map((tick) => {
@@ -771,6 +788,7 @@ function WeeklyActivityChart({ data, loading }: {
             return <rect key={`hit-${day.dia}`} className="activity-hit-area" x={Math.max(padding.left, xFor(index) - step / 2)} y={padding.top} width={index === 0 || index === data.length - 1 ? step / 2 : step} height={chartHeight} onMouseEnter={() => setHoveredDay(index)} onFocus={() => setHoveredDay(index)} tabIndex={0} aria-label={`${day.dia}: ${day.tipoI} reportes Tipo I, ${day.tipoII} reportes Tipo II y ${day.tipoIII} reportes Tipo III`} />;
           })}
         </svg>
+        {!loading && highest === 0 && <div className="dashboard-chart-empty"><strong>Sin reportes esta semana</strong><span>La gráfica se actualizará con la próxima actividad registrada.</span></div>}
       </div>
     </article>
   );
