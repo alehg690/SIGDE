@@ -2999,6 +2999,77 @@ button {
   text-decoration: underline;
 }
 
+/* Autenticación en modo oscuro permanente. */
+.login-shell {
+  background: #061426;
+  color: var(--ui-text);
+}
+
+.login-form-panel {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(55, 138, 201, .18), transparent 38%),
+    linear-gradient(180deg, #0a1a2d 0%, #071425 100%);
+}
+
+.login-card {
+  width: min(100%, 420px);
+  border-color: rgba(142, 208, 255, .16);
+  background: linear-gradient(155deg, rgba(16, 42, 68, .97), rgba(8, 26, 46, .96));
+  box-shadow: 0 28px 70px rgba(0, 0, 0, .34);
+}
+
+.login-logo img {
+  filter: brightness(1.12) saturate(1.08) drop-shadow(0 10px 20px rgba(0, 0, 0, .28));
+}
+
+.login-card .form-header h1 { color: #f1f7fc; }
+.login-card .form-header p,
+.login-card .checkbox-label { color: #91a7bb; }
+.login-card .field-group label { color: #c3d2df; }
+
+.login-card .field-group input,
+.login-card .password-field input {
+  border-color: rgba(142, 208, 255, .18);
+  background: rgba(8, 25, 44, .82);
+  color: #eef7ff;
+  caret-color: #74c4f2;
+}
+
+.login-card .field-group input::placeholder,
+.login-card .password-field input::placeholder { color: #617991; }
+
+.login-card .field-group input:focus,
+.login-card .password-field input:focus {
+  border-color: #3b93d4;
+  background: rgba(9, 29, 50, .96);
+  box-shadow: 0 0 0 4px rgba(55, 138, 201, .15);
+}
+
+.login-card input:-webkit-autofill,
+.login-card input:-webkit-autofill:hover,
+.login-card input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #eef7ff;
+  box-shadow: 0 0 0 1000px #0d2844 inset;
+  caret-color: #eef7ff;
+  transition: background-color 9999s ease-out;
+}
+
+.login-card .icon-button { color: #7693ad; }
+.login-card .icon-button:hover,
+.login-card .icon-button:focus-visible { background: rgba(55, 138, 201, .14); color: #8ed0ff; }
+.login-card .checkbox-label input { accent-color: #378ac9; }
+.login-card .primary-button { background: linear-gradient(135deg, #2f8bd3, #205fa5); box-shadow: 0 12px 26px rgba(22, 105, 171, .26); }
+.login-card .primary-button:hover:not(:disabled) { background: linear-gradient(135deg, #42a0e5, #2778bd); }
+.login-card .secondary-button { border-color: rgba(142, 208, 255, .2); background: rgba(55, 138, 201, .12); color: #8ed0ff; }
+.login-card .secondary-button:hover,
+.login-card .secondary-button:focus-visible { border-color: rgba(142, 208, 255, .36); background: rgba(55, 138, 201, .2); color: #c8e9ff; }
+.login-card .link-button,
+.login-card .legal-login-copy a { color: #69b9ec; }
+.login-card .link-button.muted,
+.login-card .legal-login-copy { color: #7d93a9; }
+.login-card .feedback.error { background: rgba(174, 49, 62, .18); color: #ff9ba4; }
+.login-card .feedback.success { background: rgba(25, 145, 105, .16); color: #6de0b7; }
+
 .legal-page {
   min-height: 100vh;
   padding: 48px 20px;
