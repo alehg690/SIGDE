@@ -4739,6 +4739,163 @@ button {
   .reports-summary article { min-height: 104px; }
 }
 
+/* Etapa 8 · Ruta de Convivencia */
+.coexistence-workspace > .ui-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.coexistence-raice,
+.coexistence-manual,
+.coexistence-form,
+.coexistence-history { border: 1px solid var(--ui-border); border-radius: var(--radius-card); background: var(--ui-surface); box-shadow: var(--shadow-card); }
+.coexistence-raice { display: grid; grid-template-columns: minmax(220px, .7fr) minmax(0, 1.8fr); gap: var(--space-5); align-items: center; margin-bottom: var(--space-5); padding: var(--space-5); }
+.coexistence-raice header > span,
+.coexistence-manual > header span { color: var(--ui-primary); font-size: var(--font-size-2xs); font-weight: var(--font-weight-extrabold); letter-spacing: .1em; text-transform: uppercase; }
+.coexistence-raice h3,
+.coexistence-manual h3 { margin: var(--space-1) 0; color: var(--ui-text); font-size: var(--font-size-lg); }
+.coexistence-raice header p,
+.coexistence-manual > header p { margin: 0; color: var(--ui-text-muted); font-size: var(--font-size-xs); line-height: var(--line-height-body); }
+.coexistence-raice ol { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
+.coexistence-raice li { position: relative; display: grid; justify-items: center; gap: var(--space-2); min-width: 0; text-align: center; }
+.coexistence-raice li:not(:last-child)::after { position: absolute; top: 15px; left: calc(50% + 21px); width: calc(100% - 42px); height: 1px; background: var(--ui-primary-border); content: ''; }
+.coexistence-raice li b { z-index: 1; display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; background: var(--ui-primary-soft); color: var(--ui-primary); font-size: var(--font-size-2xs); }
+.coexistence-raice li strong,
+.coexistence-raice li small { display: block; overflow-wrap: anywhere; }
+.coexistence-raice li strong { color: var(--ui-text); font-size: var(--font-size-xs); }
+.coexistence-raice li small { margin-top: 2px; color: var(--ui-text-subtle); font-size: .6rem; line-height: 1.35; }
+.coexistence-manual { margin-bottom: var(--space-5); overflow: hidden; }
+.coexistence-manual > header { display: flex; align-items: end; justify-content: space-between; gap: var(--space-4); border-bottom: 1px solid var(--ui-border); padding: var(--space-5); }
+.coexistence-manual > header > small { max-width: 310px; color: var(--ui-text-subtle); font-size: var(--font-size-2xs); text-align: right; }
+.coexistence-manual > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); padding: var(--space-5); }
+.coexistence-manual-card { min-width: 0; border: 1px solid var(--ui-border); border-top: 3px solid var(--ui-info); border-radius: var(--radius-md); background: var(--ui-surface-soft); padding: var(--space-4); }
+.coexistence-manual-card--tipo-ii { border-top-color: var(--ui-warning); }
+.coexistence-manual-card--tipo-iii { border-top-color: var(--ui-danger); }
+.coexistence-manual-card > div { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.coexistence-manual-card > div span { color: var(--ui-info); font-size: var(--font-size-xs); font-weight: var(--font-weight-extrabold); }
+.coexistence-manual-card--tipo-ii > div span { color: var(--ui-warning); }
+.coexistence-manual-card--tipo-iii > div span { color: var(--ui-danger); }
+.coexistence-manual-card em { border-radius: var(--radius-pill); background: var(--ui-warning-soft); color: var(--ui-warning); padding: 4px 7px; font-size: .57rem; font-style: normal; font-weight: var(--font-weight-bold); }
+.coexistence-manual-card h4 { margin: var(--space-3) 0 var(--space-2); color: var(--ui-text); font-size: var(--font-size-sm); }
+.coexistence-manual-card > p { min-height: 72px; margin: 0; color: var(--ui-text-muted); font-size: var(--font-size-2xs); line-height: 1.55; }
+.coexistence-manual-card dl { display: grid; gap: var(--space-2); margin: var(--space-3) 0; }
+.coexistence-manual-card dl div { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: var(--space-2); border-top: 1px solid var(--ui-border); padding-top: var(--space-2); }
+.coexistence-manual-card dt { color: var(--ui-text-subtle); font-size: .59rem; font-weight: var(--font-weight-bold); text-transform: uppercase; }
+.coexistence-manual-card dd { margin: 0; color: var(--ui-text-secondary); font-size: var(--font-size-2xs); line-height: 1.4; }
+.coexistence-manual-card details { border-top: 1px solid var(--ui-border); padding-top: var(--space-3); }
+.coexistence-manual-card summary { color: var(--ui-primary); cursor: pointer; font-size: var(--font-size-2xs); font-weight: var(--font-weight-bold); }
+.coexistence-manual-card ul { display: grid; gap: var(--space-2); margin: var(--space-3) 0 0; padding-left: 18px; color: var(--ui-text-muted); font-size: var(--font-size-2xs); line-height: 1.45; }
+.coexistence-form { margin: 0 0 var(--space-5); }
+.coexistence-form-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-height: 84px; border-color: var(--ui-border); background: linear-gradient(135deg, var(--ui-primary-soft), transparent); padding: var(--space-5); }
+.coexistence-form-heading > div > span { color: var(--ui-primary); font-size: var(--font-size-2xs); font-weight: var(--font-weight-extrabold); letter-spacing: .1em; text-transform: uppercase; }
+.coexistence-form-heading h3 { color: var(--ui-text); font-size: var(--font-size-lg); }
+.coexistence-form-heading p { color: var(--ui-text-muted); font-size: var(--font-size-xs); }
+.coexistence-form-heading > strong { border: 1px solid var(--ui-primary-border); border-radius: var(--radius-pill); background: var(--ui-primary-soft); color: var(--ui-primary); padding: 7px 10px; font-size: var(--font-size-2xs); }
+.coexistence-form-progress { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); margin: 0; border-bottom: 1px solid var(--ui-border); padding: 0; list-style: none; }
+.coexistence-form-progress li { display: flex; min-width: 0; min-height: 56px; align-items: center; justify-content: center; gap: var(--space-2); border-right: 1px solid var(--ui-border); color: var(--ui-text-subtle); padding: var(--space-2); font-size: .62rem; font-weight: var(--font-weight-semibold); text-align: center; }
+.coexistence-form-progress li:last-child { border-right: 0; }
+.coexistence-form-progress li b { display: grid; width: 24px; height: 24px; flex: 0 0 24px; place-items: center; border-radius: 50%; background: var(--ui-surface-soft); color: var(--ui-text-subtle); font-size: .6rem; }
+.coexistence-form-progress li.active { background: var(--ui-primary-soft); color: var(--ui-primary); }
+.coexistence-form-progress li.active b,
+.coexistence-form-progress li.complete b { background: var(--ui-primary); color: var(--ui-text-inverse); }
+.coexistence-form-grid { min-height: 280px; align-content: start; gap: var(--space-4); padding: var(--space-5); }
+.coexistence-form-grid label { color: var(--ui-text-secondary); font-size: var(--font-size-xs); }
+.coexistence-form-grid input,
+.coexistence-form-grid select,
+.coexistence-form-grid textarea { min-height: 44px; border-color: var(--ui-border); border-radius: var(--radius-md); background-color: var(--ui-surface); color: var(--ui-text); padding: 10px 13px; font-size: var(--font-size-sm); }
+.coexistence-form-grid select { appearance: none; padding-right: 40px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2386A1B8' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E"); background-position: right 13px center; background-repeat: no-repeat; background-size: 16px; }
+.coexistence-form-grid input:focus,
+.coexistence-form-grid select:focus,
+.coexistence-form-grid textarea:focus { border-color: var(--ui-focus); box-shadow: var(--shadow-focus); }
+.coexistence-wide-field,
+.coexistence-stage-note,
+.coexistence-review { grid-column: 1 / -1; }
+.coexistence-rule { border-color: var(--ui-info-border); border-left-color: var(--ui-info); border-radius: var(--radius-md); background: var(--ui-info-soft); }
+.coexistence-rule--tipo-ii { border-left-color: var(--ui-warning); background: var(--ui-warning-soft); }
+.coexistence-rule--tipo-iii { border-left-color: var(--ui-danger); background: var(--ui-danger-soft); }
+.coexistence-stage-note { border: 1px solid var(--ui-border); border-radius: var(--radius-md); background: var(--ui-surface-soft); padding: var(--space-4); }
+.coexistence-stage-note strong { color: var(--ui-text); font-size: var(--font-size-sm); }
+.coexistence-stage-note p { margin: var(--space-1) 0 0; color: var(--ui-text-muted); font-size: var(--font-size-xs); line-height: var(--line-height-body); }
+.coexistence-review { overflow: hidden; border: 1px solid var(--ui-border); border-radius: var(--radius-card); background: var(--ui-surface-soft); }
+.coexistence-review header { border-bottom: 1px solid var(--ui-border); padding: var(--space-4); }
+.coexistence-review header span { color: var(--ui-primary); font-size: var(--font-size-2xs); font-weight: var(--font-weight-extrabold); text-transform: uppercase; }
+.coexistence-review h4 { margin: var(--space-1) 0 0; color: var(--ui-text); }
+.coexistence-review dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; }
+.coexistence-review dl div { min-width: 0; border-right: 1px solid var(--ui-border); border-bottom: 1px solid var(--ui-border); padding: var(--space-3) var(--space-4); }
+.coexistence-review dt { color: var(--ui-text-subtle); font-size: .59rem; text-transform: uppercase; }
+.coexistence-review dd { margin: 4px 0 0; color: var(--ui-text); font-size: var(--font-size-xs); overflow-wrap: anywhere; }
+.coexistence-review > p { margin: 0; color: var(--ui-text-muted); padding: var(--space-4); font-size: var(--font-size-xs); line-height: var(--line-height-body); white-space: pre-wrap; }
+.coexistence-form-actions { min-height: 72px; border-color: var(--ui-border); padding: var(--space-4) var(--space-5); }
+.coexistence-form-actions > div { display: flex; gap: var(--space-2); }
+.coexistence-history { overflow: hidden; }
+.coexistence-history .module-filter-bar { border-color: var(--ui-border); background: var(--ui-surface-soft); }
+.coexistence-table-wrap table { min-width: 900px; color: var(--ui-text); }
+.coexistence-table-wrap th { height: 44px; border-color: var(--ui-border); background: var(--ui-surface-soft); color: var(--ui-text-muted); padding: 12px 14px; }
+.coexistence-table-wrap td { min-height: 58px; border-color: var(--ui-border); color: var(--ui-text-secondary); padding: 12px 14px; }
+.coexistence-table-wrap tbody tr { cursor: pointer; transition: background var(--motion-normal) ease; }
+.coexistence-table-wrap tbody tr:hover,
+.coexistence-table-wrap tbody tr:focus { outline: 0; background: var(--ui-surface-soft); }
+.coexistence-table-wrap td strong { color: var(--ui-text); }
+.coexistence-type { border: 1px solid var(--ui-info-border); background: var(--ui-info-soft); color: var(--ui-info); }
+.coexistence-type--tipo-ii { border-color: var(--ui-warning-border); background: var(--ui-warning-soft); color: var(--ui-warning); }
+.coexistence-type--tipo-iii { border-color: var(--ui-danger-border); background: var(--ui-danger-soft); color: var(--ui-danger); }
+.coexistence-modal-backdrop { position: fixed; z-index: 120; inset: 0; display: grid; place-items: center; overflow: hidden; background: var(--ui-overlay); padding: 20px; backdrop-filter: blur(7px); }
+.coexistence-detail-modal { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; width: min(720px, 100%); max-height: calc(100dvh - 40px); overflow: hidden; border: 1px solid var(--ui-border); border-radius: var(--radius-modal); background: var(--ui-surface-raised); box-shadow: var(--shadow-modal); }
+.coexistence-detail-modal > header { display: flex; min-height: 72px; align-items: center; justify-content: space-between; gap: var(--space-4); border-bottom: 1px solid var(--ui-border); padding: var(--space-4) var(--space-5); }
+.coexistence-detail-modal > header span { color: var(--ui-primary); font-size: var(--font-size-2xs); font-weight: var(--font-weight-extrabold); text-transform: uppercase; }
+.coexistence-detail-modal > header h3 { margin: var(--space-1) 0 0; color: var(--ui-text); font-size: var(--font-size-lg); }
+.coexistence-detail-modal > header p { margin: 3px 0 0; color: var(--ui-text-muted); font-size: var(--font-size-2xs); }
+.coexistence-detail-modal > header button { display: grid; width: 36px; height: 36px; flex: 0 0 36px; place-items: center; border: 1px solid var(--ui-border); border-radius: 50%; background: var(--ui-surface-soft); color: var(--ui-text-muted); cursor: pointer; font-size: 1.2rem; }
+.coexistence-detail-body { min-height: 0; overflow-y: auto; padding: var(--space-5); }
+.coexistence-detail-status { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.coexistence-detail-status em { border-radius: var(--radius-pill); background: var(--ui-warning-soft); color: var(--ui-warning); padding: 5px 9px; font-size: var(--font-size-2xs); font-style: normal; font-weight: var(--font-weight-bold); }
+.coexistence-detail-body dl { display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; margin: var(--space-4) 0; border: 1px solid var(--ui-border); border-radius: var(--radius-md); }
+.coexistence-detail-body dl div { min-width: 0; border-right: 1px solid var(--ui-border); border-bottom: 1px solid var(--ui-border); padding: var(--space-3); }
+.coexistence-detail-body dt { color: var(--ui-text-subtle); font-size: .59rem; text-transform: uppercase; }
+.coexistence-detail-body dd { margin: 4px 0 0; color: var(--ui-text); font-size: var(--font-size-xs); overflow-wrap: anywhere; }
+.coexistence-detail-body section { border: 1px solid var(--ui-border); border-radius: var(--radius-md); background: var(--ui-surface-soft); padding: var(--space-4); }
+.coexistence-detail-body section span { color: var(--ui-text); font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); }
+.coexistence-detail-body section p { margin: var(--space-2) 0 0; color: var(--ui-text-muted); font-size: var(--font-size-sm); line-height: var(--line-height-body); overflow-wrap: anywhere; white-space: pre-wrap; }
+.coexistence-detail-body > a { display: inline-flex; margin-top: var(--space-4); color: var(--ui-primary); font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); }
+.coexistence-detail-modal > footer { display: flex; min-height: 72px; align-items: center; justify-content: flex-end; border-top: 1px solid var(--ui-border); padding: var(--space-3) var(--space-5); }
+
+@media (max-width: 1023px) {
+  .coexistence-raice { grid-template-columns: 1fr; }
+  .coexistence-manual > div { grid-template-columns: 1fr; }
+  .coexistence-manual-card > p { min-height: 0; }
+  .coexistence-form-progress { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .coexistence-form-progress li:nth-child(3) { border-right: 0; }
+  .coexistence-form-progress li:nth-child(-n+3) { border-bottom: 1px solid var(--ui-border); }
+}
+
+@media (max-width: 767px) {
+  .coexistence-workspace > .ui-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .coexistence-workspace > .ui-kpi-grid > :last-child { grid-column: 1 / -1; }
+  .coexistence-raice ol { grid-template-columns: 1fr; gap: var(--space-2); }
+  .coexistence-raice li { grid-template-columns: 32px 1fr; justify-items: start; align-items: center; text-align: left; }
+  .coexistence-raice li:not(:last-child)::after { top: 32px; left: 15px; width: 1px; height: var(--space-2); }
+  .coexistence-manual > header { align-items: flex-start; flex-direction: column; }
+  .coexistence-manual > header > small { max-width: none; text-align: left; }
+  .coexistence-form-grid { grid-template-columns: 1fr; min-height: 340px; }
+  .coexistence-wide-field,
+  .coexistence-stage-note,
+  .coexistence-review { grid-column: auto; }
+  .coexistence-review dl { grid-template-columns: 1fr 1fr; }
+  .coexistence-form-actions { align-items: stretch; flex-direction: column; }
+  .coexistence-form-actions > div { display: grid; grid-template-columns: 1fr 1fr; }
+  .coexistence-form-actions > div > :only-child { grid-column: 1 / -1; }
+  .coexistence-modal-backdrop { align-items: end; padding: 0; }
+  .coexistence-detail-modal { width: 100%; max-height: 94dvh; border-radius: 20px 20px 0 0; }
+}
+
+@media (max-width: 470px) {
+  .coexistence-workspace > .ui-kpi-grid { grid-template-columns: 1fr; }
+  .coexistence-workspace > .ui-kpi-grid > :last-child { grid-column: auto; }
+  .coexistence-form-progress li { min-height: 48px; }
+  .coexistence-form-progress li span { display: none; }
+  .coexistence-review dl,
+  .coexistence-detail-body dl { grid-template-columns: 1fr; }
+  .coexistence-form-heading { align-items: flex-start; flex-direction: column; }
+  .coexistence-form-actions > div { grid-template-columns: 1fr; }
+  .coexistence-form-actions > div > :only-child { grid-column: auto; }
+}
+
 /* Superficies compartidas de los módulos en el tema oscuro. */
 .app-shell[data-theme='dark'] {
   --module-surface-raised: rgba(15, 40, 66, .94);
@@ -6315,6 +6472,44 @@ button {
 @media (max-width: 430px) {
   .reports-consultation .reports-toolbar { grid-template-columns: 1fr; }
   .reports-consultation .reports-search { grid-column: auto; }
+}
+
+/* Prioridad final de la etapa 8 sobre los estilos heredados del módulo. */
+.coexistence-workspace .coexistence-form { margin: 0 0 var(--space-5); border-color: var(--ui-border); border-radius: var(--radius-card); background: var(--ui-surface); box-shadow: var(--shadow-card); }
+.coexistence-workspace .coexistence-form-heading { border-color: var(--ui-border); background: linear-gradient(135deg, var(--ui-primary-soft), transparent); padding: var(--space-5); }
+.coexistence-workspace .coexistence-form-heading h3 { color: var(--ui-text); font-size: var(--font-size-lg); }
+.coexistence-workspace .coexistence-form-heading p { color: var(--ui-text-muted); font-size: var(--font-size-xs); }
+.coexistence-workspace .coexistence-form-grid { min-height: 280px; gap: var(--space-4); padding: var(--space-5); }
+.coexistence-workspace .coexistence-form-grid label { color: var(--ui-text-secondary); font-size: var(--font-size-xs); }
+.coexistence-workspace .coexistence-form-grid input,
+.coexistence-workspace .coexistence-form-grid select,
+.coexistence-workspace .coexistence-form-grid textarea { min-height: 44px; border-color: var(--ui-border); border-radius: var(--radius-md); background-color: var(--ui-surface); color: var(--ui-text); padding: 10px 13px; font-size: var(--font-size-sm); }
+.coexistence-workspace .coexistence-form-grid select { appearance: none; padding-right: 40px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2386A1B8' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E"); background-position: right 13px center; background-repeat: no-repeat; background-size: 16px; }
+.coexistence-workspace .coexistence-form-grid input:focus,
+.coexistence-workspace .coexistence-form-grid select:focus,
+.coexistence-workspace .coexistence-form-grid textarea:focus { border-color: var(--ui-focus); box-shadow: var(--shadow-focus); }
+.coexistence-workspace .coexistence-evidence-upload { grid-column: 1 / -1; }
+.coexistence-workspace .coexistence-evidence-upload > span { display: block; color: var(--ui-text-secondary); font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); }
+.coexistence-workspace .coexistence-evidence-upload > p { margin: var(--space-1) 0 var(--space-3); color: var(--ui-text-muted); font-size: var(--font-size-xs); }
+.coexistence-workspace .coexistence-evidence-upload .report-upload-zone { background: var(--ui-surface-soft); }
+.coexistence-workspace .coexistence-rule { border-color: var(--ui-info-border); border-left-color: var(--ui-info); border-radius: var(--radius-md); background: var(--ui-info-soft); }
+.coexistence-workspace .coexistence-rule--tipo-ii { border-left-color: var(--ui-warning); background: var(--ui-warning-soft); }
+.coexistence-workspace .coexistence-rule--tipo-iii { border-left-color: var(--ui-danger); background: var(--ui-danger-soft); }
+.coexistence-workspace .coexistence-form-actions { min-height: 72px; border-color: var(--ui-border); padding: var(--space-4) var(--space-5); }
+.coexistence-workspace .coexistence-history { border-color: var(--ui-border); border-radius: var(--radius-card); background: var(--ui-surface); box-shadow: var(--shadow-card); }
+.coexistence-workspace .coexistence-table-wrap th { height: 44px; border-color: var(--ui-border); background: var(--ui-surface-soft); color: var(--ui-text-muted); padding: 12px 14px; }
+.coexistence-workspace .coexistence-table-wrap td { border-color: var(--ui-border); color: var(--ui-text-secondary); padding: 12px 14px; }
+.coexistence-workspace .coexistence-table-wrap td strong { color: var(--ui-text); }
+.coexistence-open-case { display: grid; gap: 3px; max-width: 280px; border: 0; background: transparent; color: inherit; padding: 0; cursor: pointer; text-align: left; }
+.coexistence-open-case:hover strong { color: var(--ui-primary); }
+.coexistence-open-case:focus-visible { border-radius: var(--radius-sm); outline: 3px solid var(--ui-focus); outline-offset: 3px; }
+.coexistence-workspace .coexistence-type { border: 1px solid var(--ui-info-border); background: var(--ui-info-soft); color: var(--ui-info); }
+.coexistence-workspace .coexistence-type--tipo-ii { border-color: var(--ui-warning-border); background: var(--ui-warning-soft); color: var(--ui-warning); }
+.coexistence-workspace .coexistence-type--tipo-iii { border-color: var(--ui-danger-border); background: var(--ui-danger-soft); color: var(--ui-danger); }
+
+@media (max-width: 767px) {
+  .coexistence-workspace .coexistence-form-grid { grid-template-columns: 1fr; min-height: 340px; }
+  .coexistence-workspace .coexistence-form-actions { align-items: stretch; flex-direction: column; }
 }
 
 /* Etapa 7 · integración de Reportes al sistema visual compartido */

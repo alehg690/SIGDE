@@ -95,7 +95,7 @@ function EvidencePreview({ file, onRemove, disabled }: { file: File; onRemove: (
   </article>;
 }
 
-function EvidenceUpload({ files, onChange, disabled = false }: { files: File[]; onChange: (files: File[]) => void; disabled?: boolean }) {
+export function EvidenceUpload({ files, onChange, disabled = false, maxFiles = MAX_EVIDENCE_FILES }: { files: File[]; onChange: (files: File[]) => void; disabled?: boolean; maxFiles?: number }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState('');
@@ -118,8 +118,8 @@ function EvidenceUpload({ files, onChange, disabled = false }: { files: File[]; 
     for (const file of next) {
       if (!unique.some((current) => current.name === file.name && current.size === file.size && current.lastModified === file.lastModified)) unique.push(file);
     }
-    if (unique.length > MAX_EVIDENCE_FILES) {
-      setError(`Puedes adjuntar máximo ${MAX_EVIDENCE_FILES} archivos por carga.`);
+    if (unique.length > maxFiles) {
+      setError(`Puedes adjuntar máximo ${maxFiles} ${maxFiles === 1 ? 'archivo' : 'archivos'} por carga.`);
       if (inputRef.current) inputRef.current.value = '';
       return;
     }
@@ -144,7 +144,7 @@ function EvidenceUpload({ files, onChange, disabled = false }: { files: File[]; 
       <input ref={inputRef} type="file" accept={EVIDENCE_ACCEPT} multiple disabled={disabled} onChange={(event) => selectFiles(Array.from(event.target.files ?? []))} />
       <span className="report-upload-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6.5A2.5 2.5 0 0 1 5.5 4h4l2 2h7A2.5 2.5 0 0 1 21 8.5v9A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5z"/><path d="M12 16v-6m0 0-2.5 2.5M12 10l2.5 2.5"/></svg></span>
       <strong>{dragging ? 'Suelta los archivos aquí' : 'Arrastra tus archivos para adjuntarlos'}</strong>
-      <small>Hasta 5 archivos PDF, JPG, PNG, WebP o DOCX · máximo 4 MB cada uno</small>
+      <small>{maxFiles === 1 ? 'Un archivo' : `Hasta ${maxFiles} archivos`} PDF, JPG, PNG, WebP o DOCX · máximo 4 MB {maxFiles === 1 ? '' : 'cada uno'}</small>
       <button type="button" disabled={disabled} onClick={() => inputRef.current?.click()}>Seleccionar archivos</button>
     </div>
     {files.length > 0 && <div className="report-upload-previews">{files.map((file, index) => <EvidencePreview key={`${file.name}-${file.size}-${file.lastModified}`} file={file} disabled={disabled} onRemove={() => onChange(files.filter((_, current) => current !== index))} />)}</div>}

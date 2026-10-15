@@ -581,7 +581,44 @@ function validarConvivencia(input: ConvivenciaInput) {
 
 export async function listarConvivencia() {
   const result = await db.execute('SELECT * FROM ConvivenciaReporte ORDER BY creadoEn DESC');
-  return { data: result.rows };
+  return { data: result.rows.map((row) => {
+    if (!row.evidencia) return row;
+    try {
+      const archivo = JSON.parse(String(row.evidencia)) as { nombre?: string };
+      return { ...row, evidencia: `/api/convivencia/${row.id}/evidencia`, evidenciaNombre: archivo.nombre || 'Documento adjunto' };
+    } catch {
+      return row;
+    }
+  }) };
+}
+
+export async function adjuntarEvidenciaConvivencia(id: string, input: ArchivoEvidenciaInput, usuario: SesionUsuario) {
+  const caso = await db.execute({ sql: 'SELECT id FROM ConvivenciaReporte WHERE id = ? LIMIT 1', args: [id] });
+  if (!caso.rows[0]) return { error: 'Proceso de convivencia no encontrado', status: 404 } as const;
+  const nombre = nombreArchivoSeguro(input.nombre, 120);
+  if (!nombre) return { error: 'El nombre del archivo debe tener entre 1 y 120 caracteres', status: 400 } as const;
+  if (!['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(input.mimeType)) {
+    return { error: 'Adjunta un archivo PDF, imagen JPG, PNG o WebP, o documento DOCX', status: 400 } as const;
+  }
+  if (!input.contenido.length || input.contenido.length > 4 * 1024 * 1024) return { error: 'El archivo debe ocupar entre 1 byte y 4 MB', status: 400 } as const;
+  if (!firmaArchivoValida(input.contenido, input.mimeType)) return { error: 'El contenido del archivo no coincide con su tipo', status: 400 } as const;
+  const evidencia = JSON.stringify({ nombre, mimeType: input.mimeType, contenido: Buffer.from(input.contenido).toString('base64') });
+  await db.execute({ sql: 'UPDATE ConvivenciaReporte SET evidencia = ?, actualizadoEn = CURRENT_TIMESTAMP WHERE id = ?', args: [evidencia, id] });
+  await registrarAccion({ usuarioId: usuario.id, accion: 'adjuntar_evidencia_convivencia', entidad: 'ConvivenciaReporte', entidadId: id, detalle: { nombre, mimeType: input.mimeType } })
+    .catch((error) => reportarEfectoFallido('auditoría de evidencia de convivencia', error));
+  return { data: { nombre, url: `/api/convivencia/${id}/evidencia` }, status: 201 } as const;
+}
+
+export async function obtenerEvidenciaConvivencia(id: string) {
+  const result = await db.execute({ sql: 'SELECT evidencia FROM ConvivenciaReporte WHERE id = ? LIMIT 1', args: [id] });
+  if (!result.rows[0]) return { error: 'Proceso de convivencia no encontrado', status: 404 } as const;
+  try {
+    const archivo = JSON.parse(String(result.rows[0].evidencia || '')) as { nombre: string; mimeType: string; contenido: string };
+    if (!archivo.nombre || !archivo.mimeType || !archivo.contenido) throw new Error('Evidencia inválida');
+    return { data: { nombre: archivo.nombre, mimeType: archivo.mimeType, contenido: Uint8Array.from(Buffer.from(archivo.contenido, 'base64')) }, status: 200 } as const;
+  } catch {
+    return { error: 'El proceso no tiene un documento adjunto', status: 404 } as const;
+  }
 }
 
 export async function crearConvivencia(input: ConvivenciaInput, usuario: SesionUsuario) {
