@@ -377,7 +377,7 @@ export default function StudentsWorkspace({
           <span className="students-filter-label">Grado</span>
           <select value={filtroGrado} onChange={(event) => { setFiltroGrado(event.target.value); setFiltroGrupo("Todos"); setPagina(1); }}>
             <option value="Todos">Todos</option>
-            {["6", "7", "8", "9", "10", "11"].map((grado) => <option key={grado}>{grado}°</option>)}
+            {["6", "7", "8", "9", "10", "11"].map((grado) => <option key={grado} value={grado}>{grado}°</option>)}
           </select>
         </label>
         <label>
