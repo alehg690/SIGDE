@@ -5488,6 +5488,76 @@ button {
 .users-delete-dialog button { min-height: 38px; border: 1px solid rgba(125, 162, 195, .2); border-radius: 8px; background: transparent; color: #9fb3c4; padding: 0 14px; font-size: .72rem; font-weight: 700; cursor: pointer; }
 .users-delete-dialog button.danger { border-color: rgba(227, 75, 82, .3); background: rgba(181, 47, 54, .18); color: #ff898e; }
 
+/* Etapa 6 · Usuarios alineado al sistema visual de Reportes */
+.users-directory-workspace > .ui-kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.users-directory-section-heading { display: flex; align-items: end; justify-content: space-between; margin: 2px 0 14px; }
+.users-directory-section-heading span { color: var(--ui-primary); font-size: var(--font-size-2xs); font-weight: var(--font-weight-extrabold); letter-spacing: .1em; text-transform: uppercase; }
+.users-directory-section-heading h3 { margin: 4px 0 0; color: var(--ui-text); font-size: var(--font-size-lg); }
+.users-directory-section-heading p { margin: 4px 0 0; color: var(--ui-text-muted); font-size: var(--font-size-xs); }
+.users-directory-toolbar { padding: 14px; border: 1px solid var(--ui-border); border-radius: var(--radius-card) var(--radius-card) 0 0; background: var(--ui-surface-raised); margin-bottom: 0; }
+.users-table-card { border-radius: 0 0 var(--radius-card) var(--radius-card); border-top: 0; background: var(--ui-surface); box-shadow: var(--shadow-card); }
+.users-directory-table th { height: 46px; background: var(--ui-surface-soft); color: var(--ui-text-muted); font-weight: var(--font-weight-bold); text-transform: uppercase; letter-spacing: .06em; }
+.users-directory-table td { height: 64px; }
+.users-directory-table tbody tr { transition: background .16s ease; }
+.users-skeleton-row:hover { background: transparent !important; }
+.users-skeleton-avatar { border-radius: 50%; }
+.users-skeleton-pill { border-radius: 99px; }
+.users-modal--wide { width: min(680px, 100%); }
+.users-modal > header { min-height: 76px; }
+.users-modal > header > div { min-width: 0; padding: 14px 0; }
+.users-modal > header h3 { margin-top: 3px; font-size: 1.05rem; }
+.users-modal > header p { margin: 4px 0 0; color: #8097ab; font-size: .7rem; }
+.users-modal-kicker { color: #66b9f0; font-size: .6rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.users-form-section { display: grid; gap: 14px; padding: 16px; border: 1px solid rgba(125, 162, 195, .14); border-radius: 12px; background: rgba(17, 37, 60, .42); }
+.users-form-section__heading { display: flex; align-items: center; gap: 10px; }
+.users-form-section__heading > span { display: grid; width: 28px; height: 28px; place-items: center; flex: 0 0 28px; border-radius: 8px; background: rgba(50, 133, 201, .16); color: #70bdf0; font-size: .62rem; font-weight: 900; }
+.users-form-section__heading strong, .users-form-section__heading small { display: block; }
+.users-form-section__heading strong { color: #dceaf5; font-size: .76rem; }
+.users-form-section__heading small { margin-top: 2px; color: #748da2; font-size: .63rem; }
+.users-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+.users-form-grid > :last-child { grid-column: 1 / -1; }
+.users-password-strength { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.users-password-strength > div { display: grid; grid-template-columns: repeat(3, 1fr); flex: 1; gap: 5px; }
+.users-password-strength i { height: 3px; border-radius: 99px; background: #31465b; }
+.users-password-strength span { color: #71879b; font-size: .62rem; font-weight: 700; }
+.users-password-strength--1 i:first-child { background: #ef7077; }
+.users-password-strength--1 span { color: #ef8b90; }
+.users-password-strength--2 i:nth-child(-n+2) { background: #e5b44d; }
+.users-password-strength--2 span { color: #e8c575; }
+.users-password-strength--3 i { background: #45c998; }
+.users-password-strength--3 span { color: #6bdbb3; }
+.users-first-login-note { display: flex; gap: 11px; padding: 12px 13px; border: 1px solid rgba(69, 148, 209, .19); border-radius: 9px; background: rgba(40, 105, 159, .1); }
+.users-first-login-note > span { display: grid; width: 25px; height: 25px; flex: 0 0 25px; place-items: center; border-radius: 50%; background: rgba(65, 146, 211, .2); color: #8bcbf5; font-size: .72rem; font-weight: 900; }
+.users-first-login-note strong { color: #b9d9ef; font-size: .7rem; }
+.users-first-login-note p { margin: 3px 0 0; color: #7892a7; font-size: .65rem; line-height: 1.45; }
+.users-edit-summary { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 10px; background: rgba(31, 63, 94, .3); }
+.users-edit-summary strong, .users-edit-summary small { display: block; }
+.users-edit-summary strong { color: #e1edf6; font-size: .76rem; }
+.users-edit-summary small { margin-top: 3px; color: #7890a5; font-size: .65rem; }
+.users-modal > footer { justify-content: space-between; }
+.users-modal > footer > span { color: #6f879b; font-size: .63rem; }
+.users-modal > footer > div { display: flex; gap: 9px; }
+
+@media (max-width: 780px) {
+  .users-directory-workspace > .ui-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .users-directory-toolbar { align-items: stretch; flex-direction: column; }
+  .users-role-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .users-role-filters button { padding-inline: 8px; }
+  .users-form-grid { grid-template-columns: 1fr; }
+  .users-form-grid > :last-child { grid-column: auto; }
+  .users-modal > footer > span { display: none; }
+  .users-modal > footer > div { width: 100%; flex-direction: column-reverse; }
+  .users-modal > footer > div button { width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .users-directory-workspace > .ui-kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .users-role-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .users-modal-backdrop { padding: 8px; }
+  .users-modal { max-height: calc(100dvh - 16px); border-radius: 13px; }
+  .users-form-section { padding: 13px; }
+}
+
 /* Directorio de estudiantes */
 .students-directory-workspace { min-height: calc(100vh - 108px); }
 .students-directory-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 24px; }

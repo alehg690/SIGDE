@@ -5,6 +5,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { parseReportDate } from '@/lib/report-dates';
 import { useDialogFocus } from '@/hooks/useDialogFocus';
 import { coincideBusqueda } from '@/lib/search-normalization';
+import ModuleHeader from '@/components/ui/ModuleHeader';
+import KpiGrid from '@/components/ui/KpiGrid';
+import Skeleton from '@/components/ui/Skeleton';
 
 type RolUsuario = 'Admin' | 'Coordinador' | 'Docente' | 'Porteria';
 type Usuario = { id: number; nombre: string; correo: string; rol: RolUsuario; activo: boolean; creadoEn: string; ultimoAcceso: string | null };
@@ -60,6 +63,19 @@ function usuarioToForm(usuario: Usuario): UsuarioForm {
   return { nombre: usuario.nombre, correo: usuario.correo, rol: usuario.rol, contrasena: '', activo: usuario.activo };
 }
 
+function fortalezaContrasena(value: string) {
+  let puntos = 0;
+  if (value.length >= 8) puntos++;
+  if (value.length >= 12) puntos++;
+  if (/[a-z]/.test(value) && /[A-Z]/.test(value)) puntos++;
+  if (/\d/.test(value)) puntos++;
+  if (/[^A-Za-z0-9]/.test(value)) puntos++;
+  if (!value) return { nivel: 0, texto: 'Sin contraseña' };
+  if (puntos <= 2) return { nivel: 1, texto: 'Débil' };
+  if (puntos <= 4) return { nivel: 2, texto: 'Segura' };
+  return { nivel: 3, texto: 'Muy segura' };
+}
+
 export default function UsersWorkspace({ currentUserId, currentRole }: { currentUserId: number; currentRole: 'admin' | 'coordinador' | 'docente' | 'portero' }) {
   const { cerrarSesion } = useAuth();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -108,6 +124,11 @@ export default function UsersWorkspace({ currentUserId, currentRole }: { current
       return coincideRol && coincideTexto;
     });
   }, [busqueda, filtroRol, usuarios]);
+  const activos = usuarios.filter((usuario) => usuario.activo).length;
+  const administradores = usuarios.filter((usuario) => usuario.rol === 'Admin' || usuario.rol === 'Coordinador').length;
+  const sinAcceso = usuarios.filter((usuario) => !usuario.ultimoAcceso).length;
+  const fortalezaCrear = fortalezaContrasena(formCrear.contrasena);
+  const fortalezaEditar = fortalezaContrasena(formEditar.contrasena);
 
   function abrirCrear() {
     setFormCrear(EMPTY_FORM);
@@ -227,8 +248,15 @@ export default function UsersWorkspace({ currentUserId, currentRole }: { current
   }
 
   return <section className="workspace-panel users-directory-workspace" onClick={() => setMenuAbiertoId(null)}>
-    <header className="users-directory-heading"><div><h2>Usuarios</h2><p>{cargando ? 'Cargando usuarios...' : `${usuarios.length} usuarios registrados en el sistema`}</p></div><button type="button" className="users-create-trigger" onClick={(event) => { event.stopPropagation(); abrirCrear(); }}><span aria-hidden="true">＋</span> Crear usuario</button></header>
+    <ModuleHeader icon={<svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>} kicker="Administración" title="Usuarios" description="Gestiona cuentas, roles y acceso al sistema desde un solo lugar." action={<button type="button" className="users-create-trigger" onClick={(event) => { event.stopPropagation(); abrirCrear(); }}><span aria-hidden="true">＋</span> Crear usuario</button>} />
+    <KpiGrid label="Resumen de usuarios" items={[
+      { label: 'Usuarios', value: cargando ? '—' : usuarios.length, detail: 'Cuentas registradas', icon: '01' },
+      { label: 'Activos', value: cargando ? '—' : activos, detail: 'Con acceso habilitado', icon: '02' },
+      { label: 'Gestores', value: cargando ? '—' : administradores, detail: 'Admin. y coordinadores', icon: '03' },
+      { label: 'Primer ingreso', value: cargando ? '—' : sinAcceso, detail: 'Aún no han ingresado', icon: '04' },
+    ]} />
     {feedback && !modal && <p className={`feedback ${feedback.tipo}`} role="status">{feedback.texto}</p>}
+    <div className="users-directory-section-heading"><div><span>Directorio</span><h3>Equipo institucional</h3><p>{cargando ? 'Cargando cuentas…' : `${usuariosFiltrados.length} de ${usuarios.length} usuarios visibles`}</p></div></div>
     <div className="users-directory-toolbar">
       <label><span className="users-search-icon" aria-hidden="true">⌕</span><span className="sr-only">Buscar usuario</span><input type="search" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} placeholder="Buscar usuario..." /></label>
       <div className="users-role-filters" aria-label="Filtrar por rol"><button type="button" className={filtroRol === 'Todos' ? 'active' : ''} onClick={() => setFiltroRol('Todos')}>Todos</button>{ROLES.map((rol) => <button type="button" key={rol} className={filtroRol === rol ? 'active' : ''} onClick={() => setFiltroRol(rol)}>{etiquetaRol(rol)}</button>)}</div>
@@ -237,7 +265,7 @@ export default function UsersWorkspace({ currentUserId, currentRole }: { current
       <div className="users-table-scroll" tabIndex={0} role="region" aria-label="Directorio de usuarios">
         <table className="users-directory-table">
           <thead><tr><th>Usuario</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Último acceso</th><th><span className="sr-only">Acciones</span></th></tr></thead>
-          <tbody>{usuariosFiltrados.map((usuario) => <tr key={usuario.id}>
+          <tbody>{cargando ? Array.from({ length: 6 }, (_, index) => <tr key={`skeleton-${index}`} className="users-skeleton-row"><td><div className="users-name-cell"><Skeleton width="34px" height="34px" className="users-skeleton-avatar"/><Skeleton width="130px" height="12px"/></div></td><td><Skeleton width="180px" height="12px"/></td><td><Skeleton width="82px" height="24px" className="users-skeleton-pill"/></td><td><Skeleton width="86px" height="30px"/></td><td><Skeleton width="110px" height="12px"/></td><td /></tr>) : usuariosFiltrados.map((usuario) => <tr key={usuario.id}>
             <td><div className="users-name-cell"><span className={`users-avatar users-avatar--${colorRol(usuario.rol)}`}>{iniciales(usuario.nombre)}</span><strong>{usuario.nombre}</strong></div></td>
             <td>{usuario.correo}</td>
             <td><span className={`users-role-badge users-role-badge--${colorRol(usuario.rol)}`}>{etiquetaRol(usuario.rol)}</span></td>
@@ -250,22 +278,26 @@ export default function UsersWorkspace({ currentUserId, currentRole }: { current
       </div>
     </div>
 
-    {modal === 'crear' && <div className="users-modal-backdrop" role="presentation" onMouseDown={cerrarModal}><form className="users-modal" role="dialog" aria-modal="true" aria-labelledby="create-user-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={crearUsuario}><header><h3 id="create-user-title">Crear usuario</h3><button type="button" aria-label="Cerrar" onClick={cerrarModal}>×</button></header><div className="users-modal-body">{feedback && <p className={`feedback ${feedback.tipo}`} role="alert">{feedback.texto}</p>}<UserField label="Nombre completo" value={formCrear.nombre} placeholder="Nombre y apellido" onChange={(nombre) => { setFormCrear({ ...formCrear, nombre }); setContrasenaCopiada(false); }} required /><UserField label="Correo electrónico" type="email" value={formCrear.correo} placeholder="correo@institucion.edu.co" onChange={(correo) => setFormCrear({ ...formCrear, correo })} required /><RoleField roles={rolesDisponibles} value={formCrear.rol} onChange={(rol) => setFormCrear({ ...formCrear, rol })} /><label className="users-modal-field"><span>Contraseña temporal</span><div className="users-password-field"><input type={mostrarContrasena ? 'text' : 'password'} value={formCrear.contrasena} minLength={8} maxLength={128} onChange={(event) => { setFormCrear({ ...formCrear, contrasena: event.target.value }); setContrasenaCopiada(false); }} placeholder="Genera o escribe una contraseña" required /><button type="button" onClick={() => setMostrarContrasena((actual) => !actual)}>{mostrarContrasena ? 'Ocultar' : 'Ver'}</button></div><div className="users-password-actions"><button type="button" onClick={generarTemporal}>Generar contraseña segura</button><button type="button" disabled={!formCrear.contrasena} onClick={() => void copiarContrasena()}>{contrasenaCopiada ? 'Copiada' : 'Copiar'}</button></div><small>Clave aleatoria de 18 caracteres. Compártela de forma privada; se cambiará en el primer ingreso.</small></label></div><footer><button type="button" onClick={cerrarModal}>Cancelar</button><button type="submit" className="primary" disabled={guardando || !formCrear.contrasena}>{guardando ? 'Creando...' : '✓  Crear usuario'}</button></footer></form></div>}
+    {modal === 'crear' && <div className="users-modal-backdrop" role="presentation" onMouseDown={cerrarModal}><form className="users-modal users-modal--wide" role="dialog" aria-modal="true" aria-labelledby="create-user-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={crearUsuario}><header><div><span className="users-modal-kicker">Nueva cuenta</span><h3 id="create-user-title">Crear usuario</h3><p>Define la identidad, el rol y el acceso inicial.</p></div><button type="button" aria-label="Cerrar" onClick={cerrarModal}>×</button></header><div className="users-modal-body">{feedback && <p className={`feedback ${feedback.tipo}`} role="alert">{feedback.texto}</p>}<section className="users-form-section"><div className="users-form-section__heading"><span>01</span><div><strong>Datos del usuario</strong><small>Información visible en el directorio.</small></div></div><div className="users-form-grid"><UserField label="Nombre completo" value={formCrear.nombre} placeholder="Nombre y apellido" onChange={(nombre) => { setFormCrear({ ...formCrear, nombre }); setContrasenaCopiada(false); }} required /><UserField label="Correo electrónico" type="email" value={formCrear.correo} placeholder="correo@institucion.edu.co" onChange={(correo) => setFormCrear({ ...formCrear, correo })} required /><RoleField roles={rolesDisponibles} value={formCrear.rol} onChange={(rol) => setFormCrear({ ...formCrear, rol })} /></div></section><section className="users-form-section"><div className="users-form-section__heading"><span>02</span><div><strong>Acceso temporal</strong><small>Credenciales seguras para el primer ingreso.</small></div></div><label className="users-modal-field"><span>Contraseña temporal</span><div className="users-password-field"><input type={mostrarContrasena ? 'text' : 'password'} value={formCrear.contrasena} minLength={8} maxLength={128} onChange={(event) => { setFormCrear({ ...formCrear, contrasena: event.target.value }); setContrasenaCopiada(false); }} placeholder="Genera o escribe una contraseña" required /><button type="button" onClick={() => setMostrarContrasena((actual) => !actual)}>{mostrarContrasena ? 'Ocultar' : 'Ver'}</button></div><PasswordStrength {...fortalezaCrear}/><div className="users-password-actions"><button type="button" onClick={generarTemporal}>↻ Generar contraseña</button><button type="button" disabled={!formCrear.contrasena} onClick={() => void copiarContrasena()}>{contrasenaCopiada ? '✓ Copiada' : '□ Copiar'}</button></div></label><div className="users-first-login-note"><span aria-hidden="true">i</span><div><strong>Primer ingreso protegido</strong><p>La persona deberá cambiar esta contraseña al iniciar sesión. Compártela únicamente por un canal privado.</p></div></div></section></div><footer><span>Los campos marcados son obligatorios.</span><div><button type="button" onClick={cerrarModal}>Cancelar</button><button type="submit" className="primary" disabled={guardando || !formCrear.contrasena}>{guardando ? 'Creando...' : 'Crear usuario'}</button></div></footer></form></div>}
 
     {modal === 'editar' && usuarioEditar && <div className="users-modal-backdrop" role="presentation" onMouseDown={cerrarModal}>
       <form className="users-modal" role="dialog" aria-modal="true" aria-labelledby="edit-user-title" onMouseDown={(event) => event.stopPropagation()} onSubmit={actualizarUsuario}>
-        <header><h3 id="edit-user-title">Editar usuario</h3><button type="button" aria-label="Cerrar" onClick={cerrarModal}>×</button></header>
+        <header><div><span className="users-modal-kicker">Cuenta existente</span><h3 id="edit-user-title">Editar usuario</h3><p>Actualiza sus datos, rol o credenciales.</p></div><button type="button" aria-label="Cerrar" onClick={cerrarModal}>×</button></header>
         <div className="users-modal-body">
           {feedback && <p className={`feedback ${feedback.tipo}`} role="alert">{feedback.texto}</p>}
+          <div className="users-edit-summary"><span className={`users-avatar users-avatar--${colorRol(usuarioEditar.rol)}`}>{iniciales(usuarioEditar.nombre)}</span><div><strong>{usuarioEditar.nombre}</strong><small>{usuarioEditar.correo} · {etiquetaRol(usuarioEditar.rol)}</small></div></div>
+          <div className="users-form-section__heading"><span>01</span><div><strong>Datos y permisos</strong><small>Información actual de la cuenta.</small></div></div>
           <UserField label="Nombre completo" value={formEditar.nombre} onChange={(nombre) => setFormEditar({ ...formEditar, nombre })} required />
           <UserField label="Correo electrónico" type="email" value={formEditar.correo} onChange={(correo) => setFormEditar({ ...formEditar, correo })} required />
           <RoleField roles={rolesDisponibles.includes(formEditar.rol) ? rolesDisponibles : [formEditar.rol, ...rolesDisponibles]} value={formEditar.rol} disabled={usuarioEditar.id === currentUserId || (usuarioEditar.rol === 'Admin' && currentRole !== 'admin')} onChange={(rol) => setFormEditar({ ...formEditar, rol })} />
           {usuarioEditar.id === currentUserId && <p className="users-current-account-note">No puedes cambiar tu rol. Al guardar tendrás que iniciar sesión nuevamente.</p>}
+          <div className="users-form-section__heading"><span>02</span><div><strong>Restablecer contraseña</strong><small>Opcional; revocará las sesiones anteriores.</small></div></div>
           <label className="users-modal-field" htmlFor="edit-user-password"><span>Nueva contraseña (opcional)</span></label>
           <div className="users-password-field">
             <input id="edit-user-password" type={mostrarContrasena ? 'text' : 'password'} autoComplete="new-password" value={formEditar.contrasena} minLength={8} maxLength={128} disabled={guardando} aria-describedby="edit-password-help" onChange={(event) => setFormEditar({ ...formEditar, contrasena: event.target.value })} />
             <button type="button" aria-label={mostrarContrasena ? 'Ocultar nueva contraseña' : 'Mostrar nueva contraseña'} aria-pressed={mostrarContrasena} onClick={() => setMostrarContrasena((actual) => !actual)}>{mostrarContrasena ? 'Ocultar' : 'Ver'}</button>
           </div>
+          {formEditar.contrasena && <PasswordStrength {...fortalezaEditar}/>}
           <p className="users-current-account-note" id="edit-password-help">Déjala vacía para conservar la actual. Usa entre 8 y 128 caracteres, con letras y números. El cambio cierra las sesiones anteriores del usuario y exige crear una contraseña propia al ingresar.</p>
           <label className="users-modal-field" htmlFor="edit-user-password-confirm"><span>Confirmar nueva contraseña</span></label>
           <div className="users-password-field">
@@ -273,7 +305,7 @@ export default function UsersWorkspace({ currentUserId, currentRole }: { current
             <button type="button" aria-label={mostrarConfirmacion ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'} aria-pressed={mostrarConfirmacion} onClick={() => setMostrarConfirmacion((actual) => !actual)}>{mostrarConfirmacion ? 'Ocultar' : 'Ver'}</button>
           </div>
         </div>
-        <footer><button type="button" onClick={cerrarModal}>Cancelar</button><button type="submit" className="primary" disabled={guardando}>{guardando ? 'Guardando...' : '✓  Guardar cambios'}</button></footer>
+        <footer><span>Los cambios de acceso se aplican de inmediato.</span><div><button type="button" onClick={cerrarModal}>Cancelar</button><button type="submit" className="primary" disabled={guardando}>{guardando ? 'Guardando...' : 'Guardar cambios'}</button></div></footer>
       </form>
     </div>}
 
@@ -287,4 +319,8 @@ function UserField({ label, value, onChange, type = 'text', placeholder, require
 
 function RoleField({ roles, value, onChange, disabled = false }: { roles: RolUsuario[]; value: RolUsuario; onChange: (value: RolUsuario) => void; disabled?: boolean }) {
   return <label className="users-modal-field"><span>Rol</span><select value={value} disabled={disabled} onChange={(event) => onChange(event.target.value as RolUsuario)}>{roles.map((rol) => <option key={rol} value={rol}>{etiquetaRol(rol)}</option>)}</select></label>;
+}
+
+function PasswordStrength({ nivel, texto }: { nivel: number; texto: string }) {
+  return <div className={`users-password-strength users-password-strength--${nivel}`}><div aria-hidden="true"><i/><i/><i/></div><span>{texto}</span></div>;
 }
