@@ -6317,6 +6317,135 @@ button {
   .reports-consultation .reports-search { grid-column: auto; }
 }
 
+/* Etapa 7 · integración de Reportes al sistema visual compartido */
+.reports-workspace > .ui-module-header { margin-bottom: var(--space-5); }
+.reports-workspace > .ui-kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.reports-view-switch { min-height: 44px; border-color: var(--ui-border); border-radius: var(--radius-md); background: var(--ui-surface-soft); padding: var(--space-1); }
+.reports-view-switch button { min-height: 36px; border-radius: var(--radius-sm); color: var(--ui-text-muted); padding-inline: var(--space-4); font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); }
+.reports-view-switch button:hover { color: var(--ui-text); }
+.reports-view-switch button.active { background: var(--ui-surface); box-shadow: var(--shadow-xs); color: var(--ui-primary); }
+.reports-list-panel,
+.report-create-form { border-color: var(--ui-border); border-radius: var(--radius-card); background: var(--ui-surface); box-shadow: var(--shadow-card); }
+.reports-consultation { --report-consult-bg: var(--ui-surface); --report-consult-soft: var(--ui-surface-soft); --report-consult-text: var(--ui-text); --report-consult-muted: var(--ui-text-muted); --report-consult-border: var(--ui-border); }
+.reports-consultation-header { min-height: 72px; border-color: var(--ui-border); background: linear-gradient(135deg, var(--ui-primary-soft), transparent); padding: var(--space-4) var(--space-5); }
+.reports-consultation-header span { color: var(--ui-primary); font-size: var(--font-size-2xs); }
+.reports-consultation-header h3 { color: var(--ui-text); font-size: var(--font-size-md); }
+.reports-consultation-header small { color: var(--ui-text-muted); font-size: var(--font-size-2xs); }
+.reports-consultation .reports-toolbar { border-color: var(--ui-border); background: var(--ui-surface-soft); padding: var(--space-4); }
+.reports-consultation .reports-toolbar label > span { color: var(--ui-text-muted); font-size: var(--font-size-2xs); }
+.reports-consultation .reports-toolbar input,
+.reports-consultation .reports-toolbar select,
+.report-form-grid input,
+.report-form-grid select,
+.report-form-grid textarea,
+.report-agenda-fields textarea,
+.report-detail-editor input,
+.report-detail-editor textarea,
+.report-status-editor select,
+.report-status-editor textarea { min-height: 44px; border-color: var(--ui-border); border-radius: var(--radius-md); background-color: var(--ui-surface); color: var(--ui-text); font-size: var(--font-size-sm); }
+.reports-consultation .reports-toolbar select,
+.report-form-grid select,
+.report-status-editor select { appearance: none; padding-right: 40px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2386A1B8' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E"); background-position: right 13px center; background-repeat: no-repeat; background-size: 16px; }
+.reports-consultation .reports-toolbar input:focus,
+.reports-consultation .reports-toolbar select:focus,
+.report-form-grid input:focus,
+.report-form-grid select:focus,
+.report-form-grid textarea:focus,
+.report-agenda-fields textarea:focus,
+.report-detail-editor input:focus,
+.report-detail-editor textarea:focus,
+.report-status-editor select:focus,
+.report-status-editor textarea:focus { border-color: var(--ui-focus); box-shadow: var(--shadow-focus); }
+.reports-consultation .report-row { min-height: 58px; border-color: var(--ui-border); border-radius: var(--radius-md); background: var(--ui-surface); color: var(--ui-text); }
+.reports-consultation .report-row:hover { border-color: var(--ui-border-strong); background: var(--ui-surface-soft); }
+.reports-consultation .report-row--active { border-color: var(--ui-primary); background: var(--ui-primary-soft); box-shadow: inset 3px 0 var(--ui-primary); }
+.report-type,
+.report-status,
+.report-private-badge { min-height: 26px; border: 1px solid transparent; border-radius: var(--radius-pill); padding: 4px 9px; font-size: var(--font-size-2xs); font-weight: var(--font-weight-bold); }
+.report-type--tipo_i,
+.report-status--cerrado { border-color: var(--ui-success-border); background: var(--ui-success-soft); color: var(--ui-success); }
+.report-type--tipo_ii,
+.report-status--pending { border-color: var(--ui-warning-border); background: var(--ui-warning-soft); color: var(--ui-warning); }
+.report-type--tipo_iii { border-color: var(--ui-danger-border); background: var(--ui-danger-soft); color: var(--ui-danger); }
+.report-status--managed,
+.report-status--revision { border-color: var(--ui-info-border); background: var(--ui-info-soft); color: var(--ui-info); }
+.report-status--anulado { border-color: var(--ui-border); background: var(--ui-surface-soft); color: var(--ui-text-muted); }
+.report-private-badge,
+.report-row-person em { border-color: var(--ui-reserved-border); background: var(--ui-reserved-soft); color: var(--ui-reserved); }
+.report-create-form { width: min(100%, 1000px); padding: var(--space-5); }
+.report-form-intro,
+.report-form-section,
+.report-form-actions { border-color: var(--ui-border); background: var(--ui-surface-soft); box-shadow: var(--shadow-sm); }
+.report-form-section { border-radius: var(--radius-card); }
+.report-form-intro h3,
+.report-form-section legend,
+.report-agenda-fields label > span,
+.report-evidence-field > span,
+.report-form-actions > div strong { color: var(--ui-text); }
+.report-form-intro p,
+.report-form-grid label > small,
+.report-evidence-field > p,
+.report-form-actions > div span { color: var(--ui-text-muted); }
+.report-upload-zone { border-color: var(--ui-primary-border); border-radius: var(--radius-card); background: var(--ui-primary-soft); }
+.report-upload-zone > button,
+.report-upload-preview > button,
+.report-edit-button,
+.report-detail-editor button { min-height: 40px; border-color: var(--ui-primary-border); border-radius: var(--radius-md); background: var(--ui-primary-soft); color: var(--ui-primary); }
+.report-upload-preview { min-width: 0; border-color: var(--ui-border); border-radius: var(--radius-md); background: var(--ui-surface); }
+.report-upload-preview > div,
+.report-evidence-list > a div { min-width: 0; }
+.report-upload-preview strong,
+.report-upload-preview small,
+.report-evidence-list > a strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.report-form-actions button { min-height: 44px; border-color: var(--ui-border); border-radius: var(--radius-md); background: var(--ui-surface); color: var(--ui-text-secondary); }
+.report-form-actions .primary-button { border-color: var(--ui-primary); background: var(--ui-primary); color: var(--ui-text-inverse); }
+.report-modal-backdrop { background: var(--ui-overlay); padding: 20px; backdrop-filter: blur(7px); }
+.report-modal { width: min(1000px, 100%); height: min(860px, calc(100dvh - 40px)); border-color: var(--ui-border); border-radius: var(--radius-modal); background: var(--ui-surface-raised); box-shadow: var(--shadow-modal); }
+.report-modal-close { top: 18px; right: 18px; border-color: var(--ui-border); background: var(--ui-surface-raised); color: var(--ui-text-muted); box-shadow: var(--shadow-xs); }
+.reports-consultation .report-modal .report-detail-panel { color: var(--ui-text); padding: 24px 28px 34px; }
+.reports-consultation .report-modal .report-detail-heading,
+.reports-consultation .report-modal .report-trace-section { border-color: var(--ui-border); }
+.reports-consultation .report-modal .report-metadata,
+.reports-consultation .report-modal .report-evidence-list > a,
+.reports-consultation .report-modal .report-notification-list li,
+.reports-consultation .report-modal .report-detail-editor,
+.reports-consultation .report-modal .report-status-editor { border-color: var(--ui-border); background: var(--ui-surface-soft); }
+.report-detail-copy p,
+.report-observer-block p,
+.report-observer-reference p,
+.report-observer-agenda li p,
+.report-timeline p { overflow-wrap: anywhere; word-break: break-word; }
+.report-detail-error,
+.report-upload-error { border-color: var(--ui-danger-border); background: var(--ui-danger-soft); color: var(--ui-danger); }
+
+@media (max-width: 1280px) {
+  .reports-consultation .reports-toolbar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .reports-consultation .reports-search { grid-column: span 2; }
+}
+
+@media (max-width: 767px) {
+  .reports-workspace > .ui-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .reports-view-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .report-create-form { padding: var(--space-3); }
+  .report-modal-backdrop { align-items: end; padding: 0; }
+  .report-modal { width: 100%; height: 94dvh; border-radius: 20px 20px 0 0; }
+  .reports-consultation .report-modal .report-detail-panel { padding: 22px 17px 32px; }
+  .report-modal-close { top: 12px; right: 12px; }
+  .report-upload-preview { grid-template-columns: 46px minmax(0, 1fr); }
+  .report-upload-preview > button { grid-column: 1 / -1; width: 100%; }
+}
+
+@media (max-width: 470px) {
+  .reports-workspace > .ui-kpi-grid { grid-template-columns: 1fr; }
+  .reports-consultation .reports-toolbar { grid-template-columns: 1fr; }
+  .reports-consultation .reports-search { grid-column: auto; }
+  .report-form-progress li span { display: none; }
+  .report-form-progress b { width: 26px; height: 26px; }
+  .report-detail-heading { flex-direction: column; padding-right: 42px; }
+  .report-detail-badges { align-items: flex-start; flex-direction: row; flex-wrap: wrap; }
+  .report-metadata { grid-template-columns: 1fr; }
+}
+
 /* Sistema visual compartido permanente en modo oscuro. */
 .ui-module-header { display: flex; min-height: 104px; align-items: center; justify-content: space-between; gap: var(--space-5); margin-bottom: var(--space-5); border: 1px solid var(--ui-border); border-radius: var(--radius-header); background: linear-gradient(135deg, var(--ui-surface-raised), var(--ui-surface-soft)); box-shadow: var(--shadow-card); padding: 22px 24px; }
 .ui-workspace { width: min(100%, var(--workspace-max-width)); margin-inline: auto; }

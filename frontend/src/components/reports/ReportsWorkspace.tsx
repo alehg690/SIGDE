@@ -14,6 +14,8 @@ import type {
   ReporteFormData,
   TipoFalta,
 } from '@/types/reports';
+import ModuleHeader from '@/components/ui/ModuleHeader';
+import KpiGrid from '@/components/ui/KpiGrid';
 
 const TIPO_LABELS: Record<TipoFalta, string> = {
   ACADEMICA: 'Académica',
@@ -364,23 +366,17 @@ export default function ReportsWorkspace({
   const hayFiltros = Boolean(busqueda || tipo !== 'Todos' || estado !== 'Todos' || docente !== 'Todos' || curso !== 'Todos' || periodo !== 'Todos');
 
   return <section className="workspace-panel reports-workspace">
-    <header className="reports-heading">
-      <div className="reports-heading-copy">
-        <span className="reports-heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4M10 12h5m-5 3h5"/></svg></span>
-        <div className="module-title"><span className="reports-heading-kicker">Seguimiento institucional</span><h2>{estudianteId === undefined ? 'Reportes disciplinarios' : 'Historial de reportes del estudiante'}</h2><p>Documenta los hechos, conserva evidencias y acompaña el seguimiento institucional.</p></div>
-      </div>
-      {estudianteId === undefined && <div className="reports-view-switch" aria-label="Vista del módulo">
+    <ModuleHeader icon={<svg viewBox="0 0 24 24"><path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4M10 12h5m-5 3h5"/></svg>} kicker="Seguimiento institucional" title={estudianteId === undefined ? 'Reportes disciplinarios' : 'Historial de reportes del estudiante'} description="Documenta los hechos, conserva evidencias y acompaña el seguimiento institucional." action={estudianteId === undefined ? <div className="reports-view-switch" aria-label="Vista del módulo">
         <button type="button" className={vista === 'consulta' ? 'active' : ''} onClick={() => setVista('consulta')}>Consultar</button>
         <button type="button" className={vista === 'registro' ? 'active' : ''} onClick={() => setVista('registro')}>Nuevo reporte</button>
-      </div>}
-    </header>
+      </div> : undefined} />
     {mensaje && <p className={`feedback ${mensaje.tipo}`} role={mensaje.tipo === 'error' ? 'alert' : 'status'}>{mensaje.texto}</p>}
-    <div className="reports-summary" aria-label="Resumen de reportes">
-      <article className="reports-summary--total"><i aria-hidden="true">01</i><span>Total visible</span><strong>{reportes.length}</strong><small>Según tus permisos</small></article>
-      <article className="reports-summary--pending"><i aria-hidden="true">02</i><span>Pendientes</span><strong>{pendientes}</strong><small>Esperan revisión</small></article>
-      <article className="reports-summary--review"><i aria-hidden="true">03</i><span>En revisión</span><strong>{enRevision}</strong><small>Con seguimiento activo</small></article>
-      <article className="reports-summary--month"><i aria-hidden="true">04</i><span>Este mes</span><strong>{esteMes}</strong><small>Nuevos registros</small></article>
-    </div>
+    <KpiGrid label="Resumen de reportes" items={[
+      { label: 'Total visible', value: cargando ? '—' : reportes.length, detail: 'Según tus permisos', icon: '01' },
+      { label: 'Pendientes', value: cargando ? '—' : pendientes, detail: 'Esperan revisión', icon: '02' },
+      { label: 'En revisión', value: cargando ? '—' : enRevision, detail: 'Con seguimiento activo', icon: '03' },
+      { label: 'Este mes', value: cargando ? '—' : esteMes, detail: 'Nuevos registros', icon: '04' },
+    ]} />
     {vista === 'registro'
       ? <ReportCreateForm form={form} setForm={setForm} archivos={archivos} setArchivos={setArchivos} estudiantes={estudiantes} guardando={guardando} onSubmit={registrar} onCancel={() => { setVista('consulta'); setMensaje(null); }} />
       : <div className="reports-consultation">
