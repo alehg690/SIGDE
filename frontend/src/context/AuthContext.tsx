@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [router]);
 
-  const cerrarSesion = useCallback(async (message = 'Sesion cerrada correctamente.') => {
+  const cerrarSesion = useCallback(async (message = 'Sesión cerrada correctamente.') => {
     if (cerrandoSesionRef.current) return;
     cerrandoSesionRef.current = true;
 
@@ -68,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setUsuario(null);
     setExpiraEn(null);
+    setAvisoSesion('');
     sessionStorage.setItem(SESSION_MESSAGE_KEY, message);
     router.replace('/');
 
@@ -76,6 +77,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cerrandoSesionRef.current = false;
     }, 0);
   }, [router]);
+
+  const continuarSesion = useCallback(async () => {
+    try {
+      const session = await renovarSesion();
+      setExpiraEn(session.expiraEn ?? null);
+      setAvisoSesion('');
+      ultimaRenovacionRef.current = Date.now();
+    } catch {
+      await cerrarSesion('Tu sesión expiró. Inicia sesión nuevamente.');
+    }
+  }, [cerrarSesion]);
 
   useEffect(() => {
     void Promise.resolve().then(() => refrescarSesion());
@@ -97,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (inactivityTimer) window.clearTimeout(inactivityTimer);
       inactivityTimer = window.setTimeout(() => {
-        void cerrarSesion('Sesion cerrada por inactividad.');
+        void cerrarSesion('Sesión cerrada por inactividad.');
       }, INACTIVITY_LIMIT_MS);
 
       if (Date.now() - ultimaRenovacionRef.current < ACTIVITY_REFRESH_INTERVAL_MS) return;
@@ -110,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (!cerrandoSesionRef.current) setExpiraEn(session.expiraEn ?? null);
         })
         .catch(() => {
-          if (!cerrandoSesionRef.current) void cerrarSesion('Sesion cerrada por inactividad.');
+          if (!cerrandoSesionRef.current) void cerrarSesion('Sesión cerrada por inactividad.');
         })
         .finally(() => {
           if (renovacionEnCursoRef.current === renovacion) {
@@ -138,11 +150,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const logoutDelay = Math.max(0, expiresAtMs - Date.now());
 
     const warningTimer = window.setTimeout(() => {
-      setAvisoSesion('Tu sesion esta por expirar. Guarda tu trabajo y vuelve a iniciar sesion si es necesario.');
+      setAvisoSesion('Tu sesión está por expirar. Guarda tu trabajo o continúa para mantenerla activa.');
     }, warningDelay);
 
     const logoutTimer = window.setTimeout(() => {
-      void cerrarSesion('Tu sesion expiro. Inicia sesion nuevamente.');
+      void cerrarSesion('Tu sesión expiró. Inicia sesión nuevamente.');
     }, logoutDelay);
 
     return () => {
@@ -164,9 +176,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={value}>
       {children}
       {avisoSesion && (
-        <div className="session-toast" role="status">
-          <span>{avisoSesion}</span>
-          <button type="button" onClick={() => setAvisoSesion('')}>Entendido</button>
+        <div className="session-toast" role="alert" aria-live="assertive">
+          <span className="session-toast__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+          <div className="session-toast__copy"><strong>La sesión está por finalizar</strong><span>{avisoSesion}</span></div>
+          <button type="button" onClick={() => void continuarSesion()}>Continuar sesión</button>
         </div>
       )}
     </AuthContext.Provider>

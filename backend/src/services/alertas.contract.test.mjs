@@ -52,7 +52,7 @@ test('el panel existente conserva En vivo, Ver todo, detalle y acciones humanas'
   assert.match(dashboard, /Ver todo/);
   assert.match(dashboard, /15_000/);
   for (const label of ['Marcar como revisada', 'Confirmar', 'Corregir', 'Descartar', 'Cerrar alerta']) assert.match(followUp, new RegExp(label));
-  assert.match(followUp, /agente local de SIGDE, sin servicios externos ni costos por uso/);
+  assert.match(followUp, /Análisis orientativo generado por SIGDE\. Requiere revisión humana\./);
 });
 
 test('la migración elimina solo demos identificados y aplica unicidad activa', async () => {
