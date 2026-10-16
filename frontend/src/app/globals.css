@@ -6089,6 +6089,132 @@ button {
 .institutional-comms-modal footer button:not(.institutional-comms-primary) { padding: 11px 14px; border: 1px solid #35425a; border-radius: 8px; background: transparent; color: #b9c4d8; font-weight: 700; }
 .institutional-comms-modal footer button:disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 650px) { .institutional-comms-header, .institutional-comms-card { flex-direction: column; }.institutional-comms-card-side { display: flex; text-align: left; }.institutional-comms-form-row { grid-template-columns: 1fr; }.institutional-comms-modal footer { flex-wrap: wrap; }.institutional-comms-header h2 { font-size: 24px; } }
+
+/* Etapa 12 · Comunicaciones: catálogo y diálogos adaptables con el sistema visual compartido. */
+.institutional-comms-workspace { display: grid; gap: 20px; color: var(--ui-text); }
+.institutional-comms-workspace > .ui-module-header { margin: 0; }
+.institutional-comms-workspace > .ui-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.institutional-comms-workspace button { cursor: pointer; }
+.institutional-comms-workspace button:disabled { cursor: not-allowed; }
+.institutional-comms-catalog { min-width: 0; overflow: hidden; border: 1px solid var(--ui-border); border-radius: var(--radius-card); background: var(--ui-surface); box-shadow: var(--shadow-xs); }
+.institutional-comms-catalog__heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 24px; border-bottom: 1px solid var(--ui-border); background: var(--ui-surface-soft); }
+.institutional-comms-catalog__heading h3 { margin: 4px 0; color: var(--ui-text); font-size: 21px; }
+.institutional-comms-catalog__heading p { margin: 0; color: var(--ui-text-muted); }
+.institutional-comms-catalog__heading > span { flex: 0 0 auto; color: var(--ui-text-muted); font-size: 14px; }
+.institutional-comms-controls { display: grid; grid-template-columns: minmax(220px, 1fr) auto; align-items: center; gap: 18px; padding: 18px 24px; border-bottom: 1px solid var(--ui-border); }
+.institutional-comms-search { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0 13px; border: 1px solid var(--ui-border); border-radius: var(--radius-md); background: var(--ui-input); color: var(--ui-text-muted); }
+.institutional-comms-search > span:not(.sr-only) { font-size: 23px; line-height: 1; }
+.institutional-comms-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ui-text); }
+.institutional-comms-search input::placeholder { color: var(--ui-text-muted); }
+.institutional-comms-filters { display: flex; flex-wrap: wrap; gap: 7px; }
+.institutional-comms-filters button { min-height: 36px; padding: 0 12px; border: 1px solid var(--ui-border); border-radius: 999px; background: var(--ui-surface); color: var(--ui-text-secondary); font-size: 13px; font-weight: 650; transition: background .16s ease, border-color .16s ease, color .16s ease; }
+.institutional-comms-filters button:hover { border-color: var(--ui-primary-border); color: var(--ui-primary); }
+.institutional-comms-filters button.active { border-color: var(--ui-primary-border); background: var(--ui-primary-soft); color: var(--ui-primary); }
+.institutional-comms-list { display: grid; gap: 0; }
+.institutional-comms-card { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 112px; gap: 20px; padding: 18px 24px; border: 0; border-bottom: 1px solid var(--ui-border); background: transparent; color: var(--ui-text); text-align: left; transition: background .16s ease; }
+.institutional-comms-card:last-child { border-bottom: 0; }
+.institutional-comms-card:hover { background: var(--ui-surface-soft); }
+.institutional-comms-card:focus-visible, .institutional-comms-filters button:focus-visible { outline: 3px solid var(--ui-focus); outline-offset: -3px; }
+.institutional-comms-card__main { display: grid; min-width: 0; gap: 7px; }
+.institutional-comms-card__main > strong { overflow: hidden; color: var(--ui-text); font-size: 17px; text-overflow: ellipsis; }
+.institutional-comms-card__summary { display: -webkit-box; overflow: hidden; color: var(--ui-text-muted); line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.institutional-comms-card__meta { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--ui-text-muted); font-size: 12px; }
+.institutional-comms-card__meta > span + span::before { content: '·'; margin-right: 14px; color: var(--ui-border-strong); }
+.institutional-comms-card__side { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border: 1px solid transparent; border-radius: 50%; color: var(--ui-text-muted); font-size: 24px; line-height: 1; transition: border-color .16s ease, background .16s ease, color .16s ease; }
+.institutional-comms-card:hover .institutional-comms-card__side { border-color: var(--ui-primary-border); background: var(--ui-primary-soft); color: var(--ui-primary); }
+.institutional-comms-card__views { display: inline-flex; align-items: center; gap: 5px; color: var(--ui-text-muted); font-size: 12px; }
+.institutional-comms-card__views svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.institutional-comms-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: var(--ui-text-muted); font-size: 12px; }
+.institutional-comms-tag { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 9px; border-radius: 999px; background: var(--ui-primary-soft); color: var(--ui-primary); font-size: 11px; font-weight: 700; }
+.institutional-comms-tag--publicado { background: var(--ui-success-soft); color: var(--ui-success); }
+.institutional-comms-tag--borrador { background: var(--ui-warning-soft); color: var(--ui-warning); }
+.institutional-comms-empty { display: grid; justify-items: center; gap: 8px; padding: 40px 24px; color: var(--ui-text-muted); text-align: center; }
+.institutional-comms-empty > span { color: var(--ui-primary); font-size: 30px; }
+.institutional-comms-empty strong { color: var(--ui-text); font-size: 17px; }
+.institutional-comms-empty p { margin: 0; max-width: 460px; }
+.institutional-comms-overlay { position: fixed; z-index: 1100; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(2, 9, 20, .78); backdrop-filter: blur(5px); }
+.institutional-comms-modal { display: flex; flex-direction: column; width: min(100%, 820px); max-height: min(900px, calc(100dvh - 48px)); overflow: hidden; border: 1px solid var(--ui-border-strong); border-radius: var(--radius-modal); background: var(--ui-surface); color: var(--ui-text); box-shadow: var(--shadow-modal); outline: none; }
+.institutional-comms-modal--compose { width: min(100%, 760px); }
+.institutional-comms-modal form { display: flex; min-height: 0; flex: 1; flex-direction: column; }
+.institutional-comms-modal > header, .institutional-comms-modal form > header { display: flex; flex: 0 0 auto; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 22px 26px; border-bottom: 1px solid var(--ui-border); background: var(--ui-surface-soft); }
+.institutional-comms-modal header h2 { margin: 4px 0; color: var(--ui-text); font-size: 22px; }
+.institutional-comms-modal header p { margin: 0; color: var(--ui-text-muted); }
+.institutional-comms-modal header > button { display: grid; width: 40px; height: 40px; flex: 0 0 auto; place-items: center; border: 1px solid var(--ui-border); border-radius: var(--radius-md); background: var(--ui-surface); color: var(--ui-text-secondary); font-size: 25px; line-height: 1; }
+.institutional-comms-modal header > button:disabled { opacity: .55; }
+.institutional-comms-form-body { display: grid; min-height: 0; gap: 18px; overflow-y: auto; padding: 22px 26px; }
+.institutional-comms-form-body label:not(.institutional-comms-dropzone) { display: grid; gap: 7px; color: var(--ui-text-secondary); font-size: 13px; font-weight: 700; }
+.institutional-comms-form-body label > span { display: inline; }
+.institutional-comms-form-body input:not([type=file]), .institutional-comms-form-body select, .institutional-comms-form-body textarea { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--ui-border); border-radius: var(--radius-md); background: var(--ui-input); color: var(--ui-text); outline: none; }
+.institutional-comms-form-body input::placeholder, .institutional-comms-form-body textarea::placeholder { color: var(--ui-text-muted); }
+.institutional-comms-form-body :is(input, select, textarea):focus { border-color: var(--ui-focus); box-shadow: var(--shadow-focus); }
+.institutional-comms-form-body textarea { min-height: 140px; resize: vertical; line-height: 1.5; }
+.institutional-comms-form-body label > small, .institutional-comms-form-body > div > small { color: var(--ui-text-muted); font-size: 12px; font-weight: 500; }
+.institutional-comms-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.institutional-comms-field-label { display: flex; align-items: baseline; gap: 5px; margin-bottom: 8px; color: var(--ui-text-secondary); font-size: 13px; font-weight: 700; }
+.institutional-comms-field-label small { color: var(--ui-text-muted); font-weight: 500; }
+.institutional-comms-dropzone { position: relative; display: grid; min-height: 160px; justify-items: center; align-content: center; gap: 6px; overflow: hidden; padding: 20px; border: 1px dashed var(--ui-border-strong); border-radius: 10px; background: var(--ui-surface-soft); color: var(--ui-text-muted); text-align: center; cursor: pointer; }
+.institutional-comms-dropzone:hover, .institutional-comms-dropzone.dragging { border-color: var(--ui-primary); background: var(--ui-primary-soft); }
+.institutional-comms-dropzone input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.institutional-comms-dropzone__icon { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 10px; background: var(--ui-primary-soft); color: var(--ui-primary); font-size: 22px; }
+.institutional-comms-dropzone strong { color: var(--ui-text); }
+.institutional-comms-dropzone u { color: var(--ui-primary); }
+.institutional-comms-dropzone small { margin-top: 4px; font-size: 11px; }
+.institutional-comms-local-files { display: grid; gap: 8px; margin: 10px 0 0; padding: 0; list-style: none; }
+.institutional-comms-local-files li { display: flex; min-width: 0; align-items: center; gap: 11px; min-height: 52px; padding: 8px 10px; border: 1px solid var(--ui-border); border-radius: 10px; background: var(--ui-surface); }
+.institutional-comms-local-files__icon { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border-radius: 8px; background: var(--ui-primary-soft); color: var(--ui-primary); font-size: 9px; font-weight: 800; }
+.institutional-comms-local-files li > span:nth-child(2) { display: grid; min-width: 0; gap: 2px; }
+.institutional-comms-local-files li strong { overflow: hidden; color: var(--ui-text); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.institutional-comms-local-files li small { color: var(--ui-text-muted); font-size: 11px; }
+.institutional-comms-local-files li button { margin-left: auto; border: 0; background: transparent; color: var(--ui-danger); font-weight: 700; }
+.institutional-comms-form-error { margin: 0; padding: 10px 12px; border: 1px solid var(--ui-danger-border); border-radius: var(--radius-md); background: var(--ui-danger-soft); color: var(--ui-danger); font-size: 13px; }
+.institutional-comms-modal footer { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 26px; border-top: 1px solid var(--ui-border); background: var(--ui-surface); }
+.institutional-comms-modal footer > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 9px; }
+.institutional-comms-modal footer > span { color: var(--ui-text-muted); font-size: 12px; }
+.institutional-comms-modal footer button:disabled { opacity: .55; }
+.institutional-comms-detail-content { min-height: 0; overflow-y: auto; }
+.institutional-comms-detail-content > h2 { margin: 24px 26px 12px; overflow-wrap: anywhere; font-size: 25px; line-height: 1.25; }
+.institutional-comms-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 0 26px; color: var(--ui-text-muted); font-size: 12px; }
+.institutional-comms-meta strong { color: var(--ui-text-secondary); }
+.institutional-comms-body { margin: 22px 26px; color: var(--ui-text-secondary); line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.institutional-comms-files { display: grid; gap: 8px; margin: 0 26px 24px; }
+.institutional-comms-files h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 3px; color: var(--ui-text); font-size: 15px; }
+.institutional-comms-files h3 span { display: grid; min-width: 23px; height: 23px; place-items: center; border-radius: 50%; background: var(--ui-primary-soft); color: var(--ui-primary); font-size: 11px; }
+.institutional-comms-files a { display: flex; min-width: 0; align-items: center; gap: 10px; min-height: 52px; padding: 8px 11px; border: 1px solid var(--ui-border); border-radius: 10px; color: var(--ui-primary); text-decoration: none; }
+.institutional-comms-files a:hover { background: var(--ui-surface-soft); }
+.institutional-comms-files a > span:nth-child(2) { display: grid; min-width: 0; gap: 2px; }
+.institutional-comms-files a strong { overflow: hidden; color: var(--ui-text); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.institutional-comms-files a small { color: var(--ui-text-muted); font-size: 11px; }
+.institutional-comms-files a > span:last-child { margin-left: auto; flex: 0 0 auto; font-size: 12px; font-weight: 700; }
+.institutional-comms-detail-loading { display: grid; min-height: 240px; place-items: center; padding: 24px; color: var(--ui-text-muted); }
+@media (max-width: 900px) { .institutional-comms-controls { grid-template-columns: 1fr; }.institutional-comms-filters { overflow-x: auto; flex-wrap: nowrap; padding: 2px 0 5px; scrollbar-width: thin; }.institutional-comms-filters button { flex: 0 0 auto; } }
+@media (max-width: 650px) {
+  .institutional-comms-workspace { gap: 15px; }
+  .institutional-comms-workspace > .ui-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .institutional-comms-catalog__heading { align-items: flex-start; padding: 18px 16px; }
+  .institutional-comms-catalog__heading h3 { font-size: 18px; }
+  .institutional-comms-catalog__heading p { font-size: 13px; }
+  .institutional-comms-controls { gap: 12px; padding: 14px 16px; }
+  .institutional-comms-card { align-items: flex-start; gap: 10px; min-height: 112px; padding: 16px; }
+  .institutional-comms-card__side { width: 25px; height: 25px; flex-basis: 25px; }
+  .institutional-comms-card__meta { gap: 3px 8px; }
+  .institutional-comms-card__meta > span + span::before { margin-right: 8px; }
+  .institutional-comms-overlay { align-items: end; padding: 0; }
+  .institutional-comms-modal, .institutional-comms-modal--compose { width: 100%; max-height: 94dvh; border-radius: 20px 20px 0 0; }
+  .institutional-comms-modal form > header, .institutional-comms-modal > header { padding: 18px 17px; }
+  .institutional-comms-form-body { gap: 15px; padding: 17px; }
+  .institutional-comms-form-row { grid-template-columns: 1fr; gap: 14px; }
+  .institutional-comms-modal footer { align-items: stretch; padding: 13px 17px calc(13px + env(safe-area-inset-bottom)); }
+  .institutional-comms-modal--compose footer { flex-direction: column-reverse; }
+  .institutional-comms-modal footer > div { display: grid; grid-template-columns: 1fr 1fr; }
+  .institutional-comms-modal footer > button, .institutional-comms-modal footer > div button { min-height: 42px; }
+  .institutional-comms-detail-content > h2 { margin: 20px 17px 10px; font-size: 21px; }
+  .institutional-comms-meta { gap: 7px 12px; margin: 0 17px; }
+  .institutional-comms-body { margin: 18px 17px; }
+  .institutional-comms-files { margin: 0 17px 18px; }
+  .institutional-comms-modal--detail footer { flex-direction: column; align-items: stretch; }
+  .institutional-comms-modal--detail footer button { min-height: 42px; }
+}
+@media (max-width: 390px) { .institutional-comms-workspace > .ui-kpi-grid { grid-template-columns: 1fr; }.institutional-comms-catalog__heading > span { font-size: 12px; } }
 /* Cambio obligatorio sobre el fondo ilustrado de SIGDE. */
 .first-password-screen {
   min-height: 100dvh;
