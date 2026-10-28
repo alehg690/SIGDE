@@ -1,43 +1,58 @@
-type ProfileUser = { nombre: string; correo: string; rol: string };
+import ModuleHeader from '@/components/ui/ModuleHeader';
+import KpiGrid from '@/components/ui/KpiGrid';
+
+type ProfileUser = { id: number; nombre: string; correo: string; rol: string };
+
+function nombreRol(rol: string) {
+  if (rol === 'Admin') return 'Administrador';
+  if (rol === 'Porteria') return 'Portería';
+  return rol;
+}
 
 export default function ProfileWorkspace({ usuario }: { usuario: ProfileUser }) {
-  const rol = usuario.rol === 'Porteria' ? 'Portería' : usuario.rol;
-  const mostrarAvisoCuenta = !['Admin', 'Coordinador'].includes(usuario.rol);
+  const rol = nombreRol(usuario.rol);
+  const inicial = usuario.nombre.trim().slice(0, 1).toUpperCase() || 'U';
 
-  return <section className="workspace-panel settings-workspace profile-workspace">
-    <header className="module-page-heading">
-      <div className="module-title">
-        <h2>Mi perfil</h2>
-        <p>Consulta los datos asociados a tu cuenta institucional.</p>
-      </div>
-      <span className="profile-status"><i aria-hidden="true" /> Cuenta activa</span>
-    </header>
+  return <section className="profile-workspace ui-workspace" aria-label="Perfil de usuario">
+    <ModuleHeader
+      icon={<span className="profile-header-initial">{inicial}</span>}
+      kicker="Mi perfil"
+      title={usuario.nombre}
+      description={usuario.correo}
+      action={<div className="profile-header-meta"><span className="profile-role-badge">{rol}</span><span className="profile-status"><i aria-hidden="true" /> Cuenta activa</span></div>}
+    />
 
-    <div className="profile-summary" aria-label="Resumen de la cuenta">
-      <span className="profile-summary-avatar" aria-hidden="true">{usuario.nombre.slice(0, 1).toUpperCase()}</span>
-      <div><strong>{usuario.nombre}</strong><span>{usuario.correo}</span></div>
-      <span className="profile-role-badge">{rol}</span>
-    </div>
+    <KpiGrid
+      label="Resumen de la cuenta"
+      items={[
+        { label: 'Identificador', value: `#${usuario.id}`, detail: 'Código único de la cuenta' },
+        { label: 'Rol asignado', value: rol, detail: 'Nivel de acceso institucional' },
+        { label: 'Estado', value: 'Activa', detail: 'Cuenta habilitada para ingresar' },
+      ]}
+    />
 
-    <section className="settings-form profile-section-form" aria-labelledby="profile-information-title">
-      <div className="settings-card">
-        <div className="settings-card-heading">
-          <span>01</span>
-          <div>
-            <h3 id="profile-information-title">Información de la cuenta</h3>
-            <p>Estos datos identifican tus registros y acciones dentro de SIGDE.</p>
-          </div>
+    <section className="profile-account-card" aria-labelledby="profile-information-title">
+      <header className="settings-card-heading">
+        <span>01</span>
+        <div>
+          <small>Información de cuenta</small>
+          <h3 id="profile-information-title">Datos institucionales</h3>
+          <p>Estos datos identifican tus registros y acciones dentro de SIGDE.</p>
         </div>
-        <div className="profile-card-content">
-          <dl className="profile-list">
-            <div><dt>Nombre completo</dt><dd>{usuario.nombre}</dd></div>
-            <div><dt>Correo institucional</dt><dd>{usuario.correo}</dd></div>
-            <div><dt>Rol asignado</dt><dd>{rol}</dd></div>
-            <div><dt>Estado</dt><dd>Activa</dd></div>
-          </dl>
-          {mostrarAvisoCuenta && <p className="profile-help">El correo y el rol solo pueden ser modificados desde una cuenta autorizada.</p>}
-        </div>
-      </div>
+        <em>Solo lectura</em>
+      </header>
+
+      <dl className="profile-readonly-fields">
+        <div><dt>Nombre completo</dt><dd>{usuario.nombre}</dd></div>
+        <div><dt>Correo institucional</dt><dd>{usuario.correo}</dd></div>
+        <div><dt>Rol asignado</dt><dd>{rol}</dd></div>
+        <div><dt>Estado de la cuenta</dt><dd><span className="profile-inline-status"><i aria-hidden="true" /> Activa</span></dd></div>
+      </dl>
+
+      <aside className="profile-account-help">
+        <span aria-hidden="true">i</span>
+        <div><strong>¿Necesitas corregir un dato?</strong><p>Solicita la actualización a un administrador autorizado. Desde este perfil la información institucional no puede modificarse.</p></div>
+      </aside>
     </section>
   </section>;
 }

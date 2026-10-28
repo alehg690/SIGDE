@@ -6823,6 +6823,38 @@ button {
 }
 @media (max-width: 430px) { .settings-action-buttons { grid-template-columns: 1fr; }.settings-switch-row { align-items: flex-start; }.settings-human-review { padding: 12px; } }
 
+/* Etapa 15 · Perfil */
+.profile-workspace { display: grid; width: min(100%, var(--workspace-max-width)); gap: var(--space-5); }
+.profile-workspace > .ui-module-header { margin: 0; }
+.profile-workspace .ui-module-header__icon { width: 64px; height: 64px; flex-basis: 64px; border-radius: 18px; }
+.profile-header-initial { color: #fff; font-size: 24px; font-weight: var(--font-weight-extrabold); }
+.profile-header-meta { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-2); }
+.profile-workspace .profile-role-badge { margin: 0; border: 1px solid var(--ui-primary-border); border-radius: var(--radius-pill); background: var(--ui-primary-soft); color: var(--ui-primary); padding: 7px 10px; font-size: var(--font-size-2xs); font-weight: var(--font-weight-extrabold); }
+.profile-workspace .profile-status { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--ui-success-border); border-radius: var(--radius-pill); background: var(--ui-success-soft); color: var(--ui-success); padding: 7px 10px; font-size: var(--font-size-2xs); font-weight: var(--font-weight-extrabold); }
+.profile-workspace .profile-status i, .profile-inline-status i { width: 7px; height: 7px; border-radius: 50%; background: var(--ui-success); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ui-success) 12%, transparent); }
+.profile-workspace > .ui-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; margin: 0; }
+.profile-workspace .ui-kpi-card__value { overflow: hidden; font-size: 22px; text-overflow: ellipsis; white-space: nowrap; }
+.profile-account-card { display: grid; width: 100%; gap: var(--space-5); border: 1px solid var(--ui-border); border-radius: var(--radius-card); background: var(--ui-surface); box-shadow: var(--shadow-card); padding: 24px; }
+.profile-readonly-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin: 0; }
+.profile-readonly-fields > div { display: grid; min-width: 0; gap: 7px; }
+.profile-readonly-fields dt { color: var(--ui-text-secondary); font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); }
+.profile-readonly-fields dd { min-height: 44px; overflow: hidden; margin: 0; border: 1px solid transparent; border-radius: var(--radius-md); background: var(--ui-surface-soft); color: var(--ui-text-muted); padding: 12px; font-size: var(--font-size-xs); line-height: 1.45; overflow-wrap: anywhere; }
+.profile-inline-status { display: inline-flex; align-items: center; gap: 8px; color: var(--ui-success); font-weight: var(--font-weight-bold); }
+.profile-account-help { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border: 1px solid var(--ui-info-border); border-radius: var(--radius-md); background: var(--ui-info-soft); }
+.profile-account-help > span { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border-radius: 9px; background: var(--ui-info); color: #09263a; font-weight: var(--font-weight-extrabold); }
+.profile-account-help strong { color: var(--ui-info); font-size: var(--font-size-xs); }
+.profile-account-help p { margin: 4px 0 0; color: var(--ui-text-secondary); font-size: var(--font-size-2xs); line-height: 1.5; }
+@media (max-width: 760px) {
+  .profile-workspace { gap: var(--space-4); }
+  .profile-workspace .ui-module-header { align-items: stretch; }
+  .profile-workspace .ui-module-header__action { width: 100%; }
+  .profile-header-meta { justify-content: flex-start; }
+  .profile-workspace > .ui-kpi-grid { grid-template-columns: 1fr; }
+  .profile-account-card { gap: var(--space-4); padding: 18px 16px; }
+  .profile-readonly-fields { grid-template-columns: 1fr; }
+}
+@media (max-width: 430px) { .profile-header-meta { align-items: stretch; flex-direction: column; }.profile-workspace .profile-role-badge, .profile-workspace .profile-status { justify-content: center; } }
+
 /* Etapa 9: control de salidas. */
 .exit-control-workspace { display: grid; width: min(100%, var(--workspace-max-width)); gap: 20px; }
 .exit-control-workspace .module-page-heading,
