@@ -6908,6 +6908,37 @@ button {
 }
 @media (max-width: 480px) { .audit-workspace > .ui-kpi-grid, .audit-filters { grid-template-columns: 1fr; }.audit-filters > :first-child { grid-column: auto; }.audit-pagination > div { display: grid; grid-template-columns: 1fr 1fr; }.audit-pagination span { grid-column: 1 / -1; grid-row: 1; } }
 
+/* Etapa 17 · Autenticación */
+.login-card :is(input, button):disabled, .first-password-dialog :is(input, button):disabled { cursor: not-allowed; opacity: .58; }
+.login-card .icon-button:disabled, .first-password-dialog .icon-button:disabled { background: transparent; }
+.first-password-screen { background: linear-gradient(rgba(3, 16, 34, .34), rgba(3, 16, 34, .58)), #06152f url('/sigde-space-background.png') center / cover fixed no-repeat; }
+.first-password-dialog { width: min(100%, 420px); border: 1px solid rgba(142, 208, 255, .16); border-radius: 22px; background: linear-gradient(155deg, rgba(16, 42, 68, .98), rgba(8, 26, 46, .97)); box-shadow: 0 28px 70px rgba(0, 0, 0, .38); color: #eef7ff; padding: 28px 32px 24px; }
+.first-password-logo { display: flex; justify-content: center; margin-bottom: 12px; }
+.first-password-logo img { width: 92px; height: auto; object-fit: contain; filter: brightness(1.12) saturate(1.08) drop-shadow(0 10px 20px rgba(0, 0, 0, .28)); }
+.first-password-badge { margin-bottom: 14px; border: 1px solid rgba(142, 208, 255, .2); background: rgba(55, 138, 201, .12); color: #8ed0ff; }
+.first-password-dialog .form-header { margin-bottom: 20px; text-align: center; }
+.first-password-dialog .form-header h1 { color: #f1f7fc; font-size: 1.4rem; }
+.first-password-dialog .form-header p { color: #91a7bb; }
+.first-password-dialog .field-group label { color: #c3d2df; }
+.first-password-dialog .password-field input { border-color: rgba(142, 208, 255, .18); background: rgba(8, 25, 44, .82); color: #eef7ff; caret-color: #74c4f2; }
+.first-password-dialog .password-field input:focus { border-color: #3b93d4; background: rgba(9, 29, 50, .96); box-shadow: 0 0 0 4px rgba(55, 138, 201, .15); }
+.first-password-dialog .password-field input:-webkit-autofill { -webkit-text-fill-color: #eef7ff; box-shadow: 0 0 0 1000px #0d2844 inset; caret-color: #eef7ff; }
+.first-password-dialog .icon-button { color: #7693ad; }.first-password-dialog .icon-button:hover, .first-password-dialog .icon-button:focus-visible { background: rgba(55, 138, 201, .14); color: #8ed0ff; }
+.first-password-dialog .strength-bars span { background: rgba(255, 255, 255, .14); }
+.first-password-help { color: #7d93a9; font-size: .76rem; }
+.first-password-form .feedback.error { background: rgba(174, 49, 62, .18); color: #ff9ba4; }
+.first-password-dialog .primary-button { background: linear-gradient(135deg, #2f8bd3, #205fa5); box-shadow: 0 12px 26px rgba(22, 105, 171, .26); }
+.first-password-logout { min-height: 38px; color: #69b9ec; font-weight: var(--font-weight-bold); }.first-password-logout:hover, .first-password-logout:focus-visible { color: #a9dcfb; text-decoration: underline; }
+@media (min-width: 769px) and (max-width: 900px) { .login-shell { grid-template-columns: 1fr; }.login-panel-desktop { display: none; }.login-form-panel { align-items: center; padding: 28px; } }
+@media (max-width: 520px) {
+  .first-password-screen { padding: 0; }
+  .first-password-dialog { width: 100%; max-height: 100dvh; min-height: 100dvh; border: 0; border-radius: 0; padding: max(20px, env(safe-area-inset-top)) 20px max(18px, env(safe-area-inset-bottom)); }
+  .first-password-logo { margin-bottom: 8px; }.first-password-logo img { width: 76px; }
+  .first-password-badge { justify-self: start; margin-bottom: 10px; }
+  .first-password-dialog .form-header { margin-bottom: 14px; }.first-password-dialog .form-header h1 { font-size: 1.25rem; }
+  .first-password-form { gap: 10px; }.first-password-dialog .field-group { gap: 6px; }.first-password-dialog .password-field input { min-height: 44px; }
+}
+
 /* Etapa 9: control de salidas. */
 .exit-control-workspace { display: grid; width: min(100%, var(--workspace-max-width)); gap: 20px; }
 .exit-control-workspace .module-page-heading,

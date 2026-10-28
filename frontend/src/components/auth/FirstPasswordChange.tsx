@@ -1,6 +1,7 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import Image from 'next/image';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { calcularFortaleza } from '@/lib/password-strength';
@@ -35,6 +36,14 @@ export default function FirstPasswordChange({ nombre }: { nombre: string }) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
   const fortaleza = useMemo(() => nueva ? calcularFortaleza(nueva) : null, [nueva]);
+  const tieneCambios = Boolean(actual || nueva || confirmacion);
+
+  useEffect(() => {
+    if (!tieneCambios || guardando) return;
+    const advertir = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener('beforeunload', advertir);
+    return () => window.removeEventListener('beforeunload', advertir);
+  }, [guardando, tieneCambios]);
 
   async function guardar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -68,12 +77,13 @@ export default function FirstPasswordChange({ nombre }: { nombre: string }) {
 
   return <main className="first-password-screen">
       <section className="first-password-dialog" aria-labelledby="first-password-title">
+        <div className="first-password-logo" aria-hidden="true"><Image src="/Logo-login.png" alt="" width={128} height={136} priority /></div>
         <div className="first-password-badge">Primer ingreso</div>
         <header className="form-header">
           <h1 id="first-password-title">Protege tu cuenta, {nombre.split(' ')[0]}</h1>
           <p>La contraseña que recibiste es temporal. Crea una propia para usar SIGDE.</p>
         </header>
-        <form className="auth-form first-password-form" onSubmit={guardar}>
+        <form className="auth-form first-password-form" onSubmit={guardar} aria-busy={guardando}>
           <PasswordField id="temporal" label="Contraseña temporal" value={actual} onChange={setActual} autocomplete="current-password" disabled={guardando} />
           <PasswordField id="nueva" label="Nueva contraseña" value={nueva} onChange={setNueva} autocomplete="new-password" disabled={guardando} />
           {fortaleza && <div className="password-strength" aria-label={`Fortaleza de contraseña: ${fortaleza.texto}`}><div className="strength-bars" aria-hidden="true">{[1, 2, 3, 4, 5].map((nivel) => <span key={nivel} style={{ backgroundColor: nivel <= fortaleza.nivel ? fortaleza.color : undefined }} />)}</div><p style={{ color: fortaleza.color }}>{fortaleza.texto}</p></div>}

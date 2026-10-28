@@ -394,7 +394,7 @@ export default function LoginExperience() {
           )}
 
           {!sesionIniciada && vista === 'login' && (
-            <form className="auth-form" onSubmit={handleLogin}>
+            <form className="auth-form" onSubmit={handleLogin} aria-busy={cargando}>
               <Header title="Iniciar sesión" subtitle="Ingresa tus credenciales para continuar" />
 
               <Field
@@ -409,6 +409,7 @@ export default function LoginExperience() {
                   setCorreoManual(value);
                 }}
                 maxLength={254}
+                disabled={cargando}
               />
 
               <div className="field-group">
@@ -421,6 +422,7 @@ export default function LoginExperience() {
                     placeholder="Tu contraseña"
                     value={contrasena}
                     maxLength={128}
+                    disabled={cargando}
                     onChange={(event) => {
                       resetearMensajes();
                       setContrasena(event.target.value);
@@ -432,6 +434,8 @@ export default function LoginExperience() {
                     onClick={alternarVisibilidadContrasena}
                     onTouchEnd={alternarVisibilidadContrasena}
                     aria-label={mostrarContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    aria-pressed={mostrarContrasena}
+                    disabled={cargando}
                   >
                     {mostrarContrasena ? <EyeOffIcon /> : <EyeIcon />}
                   </button>
@@ -443,6 +447,7 @@ export default function LoginExperience() {
                   id="recordar"
                   type="checkbox"
                   checked={recordarUsuario}
+                  disabled={cargando}
                   onChange={(event) => setRecordarManual(event.target.checked)}
                 />
                 <span>Recordar usuario</span>
@@ -457,6 +462,7 @@ export default function LoginExperience() {
               <button
                 className="link-button"
                 type="button"
+                disabled={cargando}
                 onClick={abrirRecuperacion}
                 onTouchEnd={abrirRecuperacion}
               >
@@ -469,7 +475,7 @@ export default function LoginExperience() {
           )}
 
           {!sesionIniciada && vista === 'recuperar' && (
-            <form className="auth-form" onSubmit={handleRecuperar}>
+            <form className="auth-form" onSubmit={handleRecuperar} aria-busy={cargando}>
               <Header
                 title="Recuperar contraseña"
                 subtitle="Te enviaremos un código de verificación a tu correo institucional."
@@ -483,19 +489,20 @@ export default function LoginExperience() {
                 value={correoRecuperar}
                 onChange={setCorreoRecuperar}
                 maxLength={254}
+                disabled={cargando}
               />
               <Feedback error={error} mensaje={mensaje} />
               <button className="primary-button" type="submit" disabled={cargando}>
                 {cargando ? 'Enviando...' : 'Enviar código'}
               </button>
-              <button className="secondary-button" type="button" onClick={() => cambiarVista('login')}>
+              <button className="secondary-button" type="button" disabled={cargando} onClick={() => cambiarVista('login')}>
                 Regresar
               </button>
             </form>
           )}
 
           {!sesionIniciada && vista === 'codigo' && (
-            <form className="auth-form" onSubmit={handleVerificarCodigo}>
+            <form className="auth-form" onSubmit={handleVerificarCodigo} aria-busy={cargando}>
               <Header title="Verificar código" subtitle="Ingresa los 6 dígitos que enviamos a tu correo." />
               <div className="field-group">
                 <label htmlFor="codigo">Código</label>
@@ -508,6 +515,7 @@ export default function LoginExperience() {
                   placeholder="000000"
                   value={codigo}
                   maxLength={6}
+                  disabled={cargando}
                   onChange={(event) => setCodigo(event.target.value.replace(/\D/g, ''))}
                 />
               </div>
@@ -525,14 +533,14 @@ export default function LoginExperience() {
                   ? `Reenviar código en ${formatearTiempo(segundosReenvio)}`
                   : 'Reenviar código'}
               </button>
-              <button className="secondary-button" type="button" onClick={() => cambiarVista('recuperar')}>
+              <button className="secondary-button" type="button" disabled={cargando} onClick={() => cambiarVista('recuperar')}>
                 Regresar
               </button>
             </form>
           )}
 
           {!sesionIniciada && vista === 'nueva-contrasena' && (
-            <form className="auth-form" onSubmit={handleCambiarContrasena}>
+            <form className="auth-form" onSubmit={handleCambiarContrasena} aria-busy={cargando}>
               <Header title="Nueva contraseña" subtitle="Crea una contraseña segura para tu cuenta." />
               <Field
                 id="nueva-contrasena"
@@ -543,6 +551,7 @@ export default function LoginExperience() {
                 value={nuevaContrasena}
                 onChange={setNuevaContrasena}
                 maxLength={128}
+                disabled={cargando}
               />
               {fortaleza && <PasswordStrength fortaleza={fortaleza} />}
               <Field
@@ -554,6 +563,7 @@ export default function LoginExperience() {
                 value={confirmarContrasena}
                 onChange={setConfirmarContrasena}
                 maxLength={128}
+                disabled={cargando}
               />
               <Feedback error={error} mensaje={mensaje} />
               <button
@@ -563,7 +573,7 @@ export default function LoginExperience() {
               >
                 {cargando ? 'Guardando...' : 'Guardar contraseña'}
               </button>
-              <button className="secondary-button" type="button" onClick={() => cambiarVista('codigo')}>
+              <button className="secondary-button" type="button" disabled={cargando} onClick={() => cambiarVista('codigo')}>
                 Regresar
               </button>
             </form>
@@ -592,6 +602,7 @@ function Field({
   value,
   onChange,
   maxLength,
+  disabled = false,
 }: {
   id: string;
   label: string;
@@ -601,6 +612,7 @@ function Field({
   value: string;
   onChange: (value: string) => void;
   maxLength?: number;
+  disabled?: boolean;
 }) {
   const [visible, setVisible] = useState(false);
   const esContrasena = type === 'password';
@@ -615,9 +627,10 @@ function Field({
         placeholder={placeholder}
         value={value}
         maxLength={maxLength}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
       />
-      {esContrasena && <button type="button" className="icon-button" onClick={() => setVisible((actual) => !actual)} aria-label={`${visible ? 'Ocultar' : 'Mostrar'} ${label.toLocaleLowerCase('es')}`} aria-controls={id} aria-pressed={visible}>{visible ? <EyeOffIcon /> : <EyeIcon />}</button>}
+      {esContrasena && <button type="button" className="icon-button" disabled={disabled} onClick={() => setVisible((actual) => !actual)} aria-label={`${visible ? 'Ocultar' : 'Mostrar'} ${label.toLocaleLowerCase('es')}`} aria-controls={id} aria-pressed={visible}>{visible ? <EyeOffIcon /> : <EyeIcon />}</button>}
       </div>
     </div>
   );
