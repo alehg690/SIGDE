@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect } from 'react';
 
 export default function GlobalError({
@@ -26,6 +27,7 @@ export default function GlobalError({
   return (
     <main className="not-found-page not-found-page--runtime-error">
       <section className="not-found-shell">
+        <Image className="not-found-logo" src="/Logo-login.png" alt="SIGDE" width={76} height={88} priority />
         <p className="not-found-kicker">ERROR DEL SISTEMA</p>
         <div className="not-found-code" aria-hidden="true">500</div>
         <h1>No pudimos cargar esta vista</h1>

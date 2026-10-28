@@ -6,7 +6,7 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: #0c1c26;
+  background: #06152f;
   color: #edf7ff;
   opacity: 0;
   pointer-events: none;
@@ -24,8 +24,8 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 50% 45%, rgba(99, 179, 237, 0.16), transparent 24%),
-    radial-gradient(circle at 50% 55%, rgba(37, 122, 79, 0.08), transparent 26%);
+    radial-gradient(circle at 50% 42%, rgba(55, 138, 201, 0.18), transparent 25%),
+    radial-gradient(circle at 50% 58%, rgba(66, 184, 213, 0.07), transparent 28%);
 }
 
 .sigde-loading__card,
@@ -34,9 +34,13 @@
   z-index: 1;
   display: grid;
   justify-items: center;
-  gap: 10px;
-  padding: 18px 20px;
-  min-width: 180px;
+  gap: 11px;
+  min-width: 230px;
+  padding: 30px 34px 28px;
+  border: 1px solid #294b66;
+  border-radius: 22px;
+  background: linear-gradient(155deg, rgba(20, 49, 76, .96), rgba(8, 27, 48, .98));
+  box-shadow: 0 28px 70px rgba(0, 0, 0, .34);
 }
 
 .sigde-loading__spinner,
@@ -52,8 +56,8 @@
   inset: 0;
   border-radius: 50%;
   border: 2px solid transparent;
-  border-top-color: rgba(99, 179, 237, 0.95);
-  border-right-color: rgba(99, 179, 237, 0.42);
+  border-top-color: #49a1e3;
+  border-right-color: rgba(73, 161, 227, .32);
   animation: sigde-spin 1.15s linear infinite;
 }
 
@@ -81,7 +85,7 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: rgba(12, 28, 38, 0.98);
+  background: #0d253d;
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.06),
     0 10px 30px rgba(0, 0, 0, 0.25);
@@ -90,7 +94,7 @@
 .sigde-loading__label,
 .route-loading__label {
   margin: 0;
-  color: #8ed0ff;
+  color: #82c9fa;
   font-size: 0.72rem;
   letter-spacing: 0.3em;
   text-transform: uppercase;
@@ -99,8 +103,13 @@
 .sigde-loading__text,
 .route-loading__text {
   margin: 0;
-  color: rgba(237, 247, 255, 0.74);
+  color: #8ea6b9;
   font-size: 0.92rem;
+}
+
+@media (max-width: 480px) {
+  .sigde-loading__card { min-width: min(230px, calc(100vw - 40px)); padding: 26px 24px 24px; }
+  .sigde-loading__spinner { width: 82px; height: 82px; }
 }
 
 @keyframes sigde-spin {

@@ -2429,30 +2429,35 @@ button {
 
 .not-found-page {
   position: relative;
-  min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: #061c34 url('/not-found-space.png') center / cover no-repeat;
-  padding: 0;
+  background:
+    radial-gradient(circle at 12% 16%, rgba(55, 138, 201, .13), transparent 24%),
+    radial-gradient(circle at 88% 82%, rgba(66, 184, 213, .08), transparent 28%),
+    #06152f;
+  padding: 24px;
 }
 
 .not-found-shell {
   position: relative;
   z-index: 2;
-  width: 100%;
-  min-height: 100vh;
+  width: min(100%, 620px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border: 0;
-  border-radius: 0;
-  background: radial-gradient(ellipse at center, rgba(2, 29, 61, 0.18), rgba(2, 19, 42, 0.6) 66%, rgba(2, 19, 42, 0.8));
-  padding: 42px 32px 30px;
+  border: 1px solid #294b66;
+  border-radius: 24px;
+  background: linear-gradient(155deg, rgba(20, 49, 76, .96), rgba(8, 27, 48, .98));
+  box-shadow: 0 32px 80px rgba(0, 0, 0, .38);
+  padding: 46px 40px 38px;
   text-align: center;
 }
+
+.not-found-logo { width: 64px; height: auto; margin-bottom: 18px; object-fit: contain; }
 
 .not-found-brand {
   display: flex;
@@ -2468,14 +2473,13 @@ button {
 }
 
 .not-found-code {
-  margin: 6px 0 2px;
-  color: #ffffff;
-  font-size: clamp(8rem, 20vw, 15rem);
+  margin: 0 0 10px;
+  color: #82c9fa;
+  font-size: clamp(4.5rem, 15vw, 7rem);
   font-weight: 800;
-  letter-spacing: -0.12em;
-  line-height: 0.95;
-  opacity: 1;
-  text-shadow: 0 8px 0 rgba(0, 30, 68, 0.65), 0 0 36px rgba(66, 199, 244, 0.18);
+  letter-spacing: -.08em;
+  line-height: .9;
+  text-shadow: 0 0 34px rgba(66, 184, 213, .16);
 }
 
 .not-found-kicker {
@@ -2488,9 +2492,10 @@ button {
 }
 
 .not-found-shell h1 {
+  margin: 0;
   color: #ffffff;
-  font-size: clamp(2.2rem, 4vw, 3.35rem);
-  letter-spacing: -0.04em;
+  font-size: clamp(1.55rem, 4vw, 2.15rem);
+  letter-spacing: -.035em;
 }
 
 .not-found-actions {
@@ -2509,8 +2514,11 @@ button {
 
 .not-found-footer {
   display: block;
-  margin-top: 24px;
-  color: #9aa9ba;
+  width: 100%;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #294b66;
+  color: #7f98ac;
   font-size: 0.74rem;
 }
 
@@ -2520,9 +2528,11 @@ button {
 }
 
 .not-found-description {
-  max-width: 600px;
-  color: #b9d3e8 !important;
-  font-size: 1.05rem;
+  max-width: 480px;
+  margin: 12px 0 0;
+  color: #a8bdcd !important;
+  font-size: .95rem;
+  line-height: 1.65;
 }
 
 .not-found-actions a {
@@ -2547,9 +2557,7 @@ button {
 }
 
 .not-found-home-button::before {
-  content: '←';
-  margin-right: 9px;
-  font-size: 1.1rem;
+  content: none;
 }
 
 .not-found-home-button:hover {
@@ -2563,51 +2571,17 @@ button {
   outline-offset: 4px;
 }
 
-.not-found-brand span {
-  color: #ffffff;
-  font-size: 1.2rem;
-  font-weight: 800;
-}
-
-.not-found-orb,
-.not-found-star {
-  position: absolute;
-  z-index: 1;
-  pointer-events: none;
-}
-
-.not-found-orb {
-  border-radius: 50%;
-  background: linear-gradient(145deg, #20b7ff, #1168cf);
-  box-shadow: 0 0 32px rgba(32, 183, 255, 0.34);
-}
-
-.not-found-orb--one { width: 86px; height: 86px; left: 8%; top: 16%; }
-.not-found-orb--two { width: 54px; height: 54px; right: 12%; top: 24%; background: linear-gradient(145deg, #ffd34d, #f28a00); }
-.not-found-orb--three { width: 32px; height: 32px; right: 22%; bottom: 15%; }
-.not-found-star { color: #76d5ff; font-size: 1.4rem; opacity: 0.75; }
-.not-found-star--one { left: 22%; top: 30%; }
-.not-found-star--two { right: 18%; top: 14%; font-size: 2rem; }
-
-.not-found-orb,
-.not-found-star {
-  opacity: 0.2;
-}
-
 @media (max-width: 600px) {
-  .not-found-page {
-    padding: 0;
-  }
+  .not-found-page { padding: 14px; }
 
   .not-found-shell {
-    min-height: 100vh;
-    padding: 38px 24px 32px;
+    padding: 32px 22px 26px;
+    border-radius: 20px;
   }
 
-  .not-found-brand {
-    width: 130px;
-    height: 90px;
-  }
+  .not-found-logo { width: 56px; }
+  .not-found-actions { width: 100%; }
+  .not-found-home-button { width: 100%; }
 }
 
 .system-state-page span {
@@ -3238,32 +3212,54 @@ button {
 .login-card .feedback.success { background: rgba(25, 145, 105, .16); color: #6de0b7; }
 
 .legal-page {
-  min-height: 100vh;
-  padding: 48px 20px;
-  background: #f4f7fb;
-  color: #243247;
+  min-height: 100dvh;
+  padding: 28px clamp(18px, 4vw, 56px) 64px;
+  background: radial-gradient(circle at 14% 0%, rgba(55, 138, 201, .12), transparent 24%), #06152f;
+  color: #eaf3fa;
 }
 
+.legal-header { display: flex; width: min(100%, 1240px); min-height: 64px; align-items: center; justify-content: space-between; gap: 24px; margin: 0 auto 24px; padding-bottom: 20px; border-bottom: 1px solid #294b66; }
+.legal-brand { display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
+.legal-brand img { width: 42px; height: auto; object-fit: contain; }
+.legal-brand span { display: grid; gap: 2px; }
+.legal-brand strong { color: #f2f7fb; font-size: 1rem; letter-spacing: .08em; }
+.legal-brand small { color: #7f98ac; font-size: .68rem; }
+.legal-layout { display: grid; width: min(100%, 1240px); grid-template-columns: 250px minmax(0, 1fr); align-items: start; gap: 24px; margin: 0 auto; }
+.legal-index { position: sticky; top: 24px; max-height: calc(100dvh - 48px); overflow: auto; padding: 20px; border: 1px solid #294b66; border-radius: 18px; background: rgba(13, 37, 61, .92); }
+.legal-index > p { margin: 0 0 13px; color: #eaf3fa; font-size: .75rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.legal-index nav { display: grid; gap: 3px; }
+.legal-index a { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; min-height: 38px; align-items: center; border-radius: 9px; color: #8ea6b9; font-size: .72rem; line-height: 1.35; text-decoration: none; }
+.legal-index a span { color: #49a1e3; font-size: .62rem; font-weight: 800; }
+.legal-index a:hover, .legal-index a:focus-visible { background: #14314c; color: #d8e6f0; outline: none; }
+
 .legal-card {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 42px 52px;
-  border: 1px solid #e3eaf3;
-  border-radius: 20px;
-  background: #fff;
-  box-shadow: 0 18px 50px rgba(10, 22, 40, 0.08);
+  min-width: 0;
+  padding: clamp(30px, 5vw, 58px);
+  border: 1px solid #294b66;
+  border-radius: 22px;
+  background: linear-gradient(155deg, rgba(15, 40, 64, .98), rgba(9, 29, 50, .98));
+  box-shadow: 0 28px 70px rgba(0, 0, 0, .28);
 }
 
 .legal-back {
-  color: #1f6fb8;
-  font-size: 0.86rem;
-  font-weight: 600;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #356d94;
+  border-radius: 11px;
+  color: #82c9fa;
+  font-size: .78rem;
+  font-weight: 700;
+  padding: 0 14px;
   text-decoration: none;
 }
+.legal-back svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.legal-back:hover, .legal-back:focus-visible { background: #173f62; color: #c8e9ff; outline: 3px solid rgba(120, 199, 255, .2); }
 
 .legal-eyebrow {
-  margin: 42px 0 8px;
-  color: #1f6fb8;
+  margin: 0 0 8px;
+  color: #49a1e3;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -3272,27 +3268,36 @@ button {
 
 .legal-card h1 {
   margin: 0;
-  color: #0a1628;
+  color: #f2f7fb;
   font-size: clamp(2rem, 5vw, 3.2rem);
   letter-spacing: -0.04em;
 }
 
 .legal-date {
-  margin: 10px 0 40px;
-  color: #718096;
-  font-size: 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 38px;
+  color: #7f98ac;
+  font-size: .76rem;
 }
+.legal-date span { width: 4px; height: 4px; border-radius: 50%; background: #3b6483; }
 
 .legal-content {
-  color: #4a5568;
-  font-size: 0.98rem;
-  line-height: 1.75;
+  max-width: 780px;
+  color: #b3c5d3;
+  font-size: .91rem;
+  line-height: 1.82;
 }
 
 .legal-content h2 {
-  margin: 30px 0 8px;
-  color: #0a1628;
-  font-size: 1.15rem;
+  scroll-margin-top: 24px;
+  margin: 38px 0 10px;
+  padding-top: 24px;
+  border-top: 1px solid #294b66;
+  color: #eaf3fa;
+  font-size: 1.08rem;
 }
 
 .legal-content p {
@@ -3300,9 +3305,9 @@ button {
 }
 
 .legal-content .legal-lead {
-  margin-bottom: 26px;
-  color: #334e68;
-  font-size: 1.05rem;
+  margin-bottom: 28px;
+  color: #c8d7e2;
+  font-size: .98rem;
 }
 
 .legal-content ul,
@@ -3315,6 +3320,9 @@ button {
   margin: 7px 0;
   padding-left: 4px;
 }
+.legal-content li::marker { color: #49a1e3; }
+.legal-content strong { color: #dce8f1; }
+.legal-content > a { display: inline-flex; min-height: 44px; align-items: center; margin-top: 28px; color: #82c9fa; }
 
 .legal-note {
   margin-top: 34px !important;
@@ -3326,9 +3334,26 @@ button {
 }
 
 @media (max-width: 600px) {
-  .legal-page { padding: 18px 12px; }
-  .legal-card { padding: 28px 22px; border-radius: 14px; }
-  .legal-eyebrow { margin-top: 32px; }
+  .legal-page { padding: 16px 12px 36px; }
+  .legal-header { align-items: flex-start; margin-bottom: 14px; padding-bottom: 14px; }
+  .legal-brand small { display: none; }
+  .legal-back { width: 44px; justify-content: center; padding: 0; font-size: 0; }
+  .legal-layout { display: block; }
+  .legal-index { position: relative; top: auto; max-height: none; margin-bottom: 14px; padding: 14px; }
+  .legal-index nav { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 4px; scroll-snap-type: x proximity; }
+  .legal-index a { flex: 0 0 auto; min-height: 40px; grid-template-columns: auto; border: 1px solid #294b66; padding: 0 12px; scroll-snap-align: start; }
+  .legal-index a span { display: none; }
+  .legal-card { padding: 28px 21px; border-radius: 17px; }
+  .legal-card h1 { font-size: 1.75rem; }
+  .legal-date { margin-bottom: 28px; }
+  .legal-content { font-size: .86rem; line-height: 1.75; }
+  .legal-content h2 { margin-top: 30px; padding-top: 20px; }
+}
+
+@media (min-width: 601px) and (max-width: 920px) {
+  .legal-layout { grid-template-columns: 210px minmax(0, 1fr); gap: 16px; }
+  .legal-index { padding: 16px; }
+  .legal-card { padding: 38px 34px; }
 }
 
 /* Directorio de estudiantes y acudientes */
