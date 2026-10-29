@@ -6723,6 +6723,27 @@ button {
 .calendar-modal form textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
 .calendar-modal form > label > small { justify-self: end; color: var(--ui-text-muted); font-size: 10px; font-weight: 500; }
 .calendar-modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+.calendar-duration-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); margin: 0; padding: 0; border: 0; }
+.calendar-duration-options legend { grid-column: 1 / -1; margin-bottom: 2px; color: var(--ui-text-secondary); font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); }
+.calendar-modal form .calendar-duration-options label { display: flex; min-height: 44px; align-items: center; gap: 10px; border: 1px solid var(--ui-border); border-radius: var(--radius-md); background: var(--ui-surface-soft); padding: 10px 12px; cursor: pointer; }
+.calendar-modal form .calendar-duration-options input { width: 18px; min-height: 18px; flex: 0 0 18px; accent-color: var(--ui-primary); }
+.calendar-event-actions { display: flex; gap: 8px; margin-top: 10px; }
+.calendar-event-actions button { min-height: 36px; border: 1px solid var(--ui-border); border-radius: var(--radius-sm); background: var(--ui-surface); color: var(--ui-info); padding: 0 12px; font-weight: var(--font-weight-bold); cursor: pointer; }
+.calendar-event-actions button.danger { border-color: var(--ui-danger-border); color: var(--ui-danger); }
+.calendar-upcoming-list > button { display: grid; width: 100%; min-height: 64px; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 10px; border: 0; border-bottom: 1px solid var(--ui-border); background: transparent; color: inherit; padding: 13px 16px; text-align: left; cursor: pointer; }
+.calendar-upcoming-list > button:hover { background: var(--ui-surface-hover); }
+.calendar-upcoming-list > button:last-child { border-bottom: 0; }
+.calendar-upcoming-list > button > span { display: grid; min-width: 0; gap: 3px; margin: 0; color: inherit; font-size: inherit; }
+.calendar-upcoming-list > button strong { overflow: hidden; color: var(--ui-text); text-overflow: ellipsis; white-space: nowrap; }
+.calendar-upcoming-list > button small { color: var(--ui-text-muted); font-size: var(--font-size-xs); }
+.calendar-upcoming-list > button > b { color: var(--ui-primary); font-size: 21px; }
+.calendar-delete-dialog { width: min(100%, 430px); border: 1px solid var(--ui-border-strong); border-radius: var(--radius-modal); background: var(--ui-surface); color: var(--ui-text); padding: 28px; text-align: center; box-shadow: var(--shadow-modal); outline: none; }
+.calendar-delete-dialog > span { display: grid; width: 48px; height: 48px; margin: 0 auto 15px; place-items: center; border-radius: 50%; background: var(--ui-danger-soft); color: var(--ui-danger); font-size: 22px; font-weight: var(--font-weight-extrabold); }
+.calendar-delete-dialog h3 { margin: 0 0 8px; font-size: var(--font-size-xl); }
+.calendar-delete-dialog p { margin: 0; color: var(--ui-text-muted); line-height: 1.55; }
+.calendar-delete-dialog > div { display: flex; justify-content: center; gap: 10px; margin-top: 22px; }
+.calendar-delete-dialog button { min-height: 44px; border: 1px solid var(--ui-border); border-radius: var(--radius-md); background: var(--ui-surface-soft); color: var(--ui-text-secondary); padding: 0 17px; font-weight: var(--font-weight-bold); cursor: pointer; }
+.calendar-delete-dialog button.danger { border-color: var(--ui-danger-border); background: var(--ui-danger-soft); color: var(--ui-danger); }
 .calendar-color-options { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 11px; margin: 0; padding: 0; border: 0; }
 .calendar-color-options legend { width: 100%; margin-bottom: 1px; color: var(--ui-text-secondary); font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); }
 .calendar-color-choice { position: relative; display: inline-grid !important; width: 30px; height: 30px; place-items: center; cursor: pointer; }
@@ -6759,7 +6780,7 @@ button {
   .calendar-modal > header { padding: 18px 17px; }
   .calendar-modal footer { margin: 4px -17px -18px; padding: 13px 17px calc(13px + env(safe-area-inset-bottom)); }
 }
-@media (max-width: 520px) { .calendar-heading-actions { align-items: stretch; flex-direction: column; }.calendar-view-switch button { flex: 1; }.calendar-new-button { width: 100%; }.calendar-modal-row { grid-template-columns: 1fr; }.calendar-period { grid-template-columns: 90px minmax(0, 1fr) 70px; }.calendar-period h3 { font-size: var(--font-size-md); } }
+@media (max-width: 520px) { .calendar-heading-actions { align-items: stretch; flex-direction: column; }.calendar-view-switch button { flex: 1; }.calendar-new-button { width: 100%; }.calendar-modal-row, .calendar-duration-options { grid-template-columns: 1fr; }.calendar-period { grid-template-columns: 90px minmax(0, 1fr) 70px; }.calendar-period h3 { font-size: var(--font-size-md); } }
 
 /* Etapa 14 · Configuración */
 .settings-workspace { display: grid; width: min(100%, var(--workspace-max-width)); gap: var(--space-5); }
@@ -7432,9 +7453,25 @@ button {
 .ui-button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: var(--space-2); border: 1px solid var(--ui-border); border-radius: 9px; background: var(--ui-surface); color: var(--ui-text-secondary); cursor: pointer; padding: 0 16px; font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); transition: background var(--motion-normal) ease, border-color var(--motion-normal) ease, color var(--motion-normal) ease, transform var(--motion-normal) ease; }
 .ui-button:hover { background: var(--ui-surface-soft); border-color: var(--ui-border-strong); }
 .ui-button:active { transform: translateY(1px); }
-.ui-button--primary { border-color: var(--ui-primary); background: var(--ui-primary); color: #fff; padding-inline: 20px; }
-.ui-button--primary:hover { border-color: var(--ui-primary-hover); background: var(--ui-primary-hover); }
+.ui-button--primary { border-color: var(--ui-primary-pressed); background: var(--ui-primary-pressed); color: #fff; padding-inline: 20px; }
+.ui-button--primary:hover { border-color: #286fa8; background: #286fa8; }
 .ui-button--primary:active { border-color: var(--ui-primary-pressed); background: var(--ui-primary-pressed); }
+
+/* Etapa 20 · contraste accesible para texto y acciones sobre superficies oscuras. */
+.admin-avatar { color: #fff !important; }
+.ui-module-header__kicker,
+.ui-kpi-card__marker,
+.statistics-card > header > div:first-child > span,
+.follow-up-explorer > header > div > span,
+.calendar-side-card > header > span,
+.settings-card-heading > span,
+.profile-workspace .profile-role-badge,
+.institutional-comms-filters button.active {
+  color: var(--ui-info);
+}
+.calendar-day--today .calendar-day-number {
+  background: var(--ui-primary-pressed);
+}
 .ui-button--secondary { border-color: var(--ui-primary-border); background: var(--ui-primary-soft); color: var(--ui-primary); }
 .ui-button--secondary:hover { border-color: var(--ui-primary); background: var(--ui-surface-selected); }
 .ui-button--neutral { border-color: var(--ui-border); background: transparent; color: var(--ui-text-secondary); }

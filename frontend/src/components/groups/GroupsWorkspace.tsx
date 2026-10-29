@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDialogFocus } from '@/hooks/useDialogFocus';
+import { useAutoDismiss } from '@/hooks/useAutoDismiss';
 import { coincideBusqueda } from '@/lib/search-normalization';
 import ModuleHeader from '@/components/ui/ModuleHeader';
 import KpiGrid from '@/components/ui/KpiGrid';
@@ -39,6 +40,7 @@ export default function GroupsWorkspace({ canManage }: { canManage: boolean }) {
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  useAutoDismiss(Boolean(feedback), () => setFeedback(null));
   useDialogFocus<HTMLElement>(Boolean(seleccionado), () => setSeleccionado(null), !guardando);
 
   const cargar = useCallback(async () => {
@@ -123,6 +125,7 @@ export default function GroupsWorkspace({ canManage }: { canManage: boolean }) {
       <label><span className="groups-filter-label">Director</span><select aria-label="Filtrar por director" value={filtroDirector} onChange={(event) => setFiltroDirector(event.target.value)}><option>Todos</option><option value="Asignado">Asignado</option><option value="Sin asignar">Sin asignar</option></select></label>
     </div>
 
+    <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{cargando ? 'Cargando grupos.' : `${gruposVisibles.length} ${gruposVisibles.length === 1 ? 'grupo encontrado' : 'grupos encontrados'}.`}</p>
     {cargando ? <div className="groups-grid groups-grid--loading" role="status" aria-label="Cargando grupos">{Array.from({ length: 8 }, (_, index) => <article className="group-card-skeleton" key={index}><span/><strong/><i/><i/></article>)}</div> : gruposVisibles.length ? <div className="groups-grid">
       {gruposVisibles.map((grupo) => <button type="button" className="group-card" key={`${grupo.grado}-${grupo.grupo}`} onClick={() => abrirGrupo(grupo)} aria-label={`Abrir grupo ${grupo.grado}-${grupo.grupo}`}>
         <span className={`group-card-shift group-card-shift--${grupo.jornada.toLocaleLowerCase('es')}`}>{grupo.jornada}</span>

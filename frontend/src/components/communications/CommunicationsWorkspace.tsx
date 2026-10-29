@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } fro
 import ModuleHeader from '@/components/ui/ModuleHeader';
 import KpiGrid from '@/components/ui/KpiGrid';
 import { useDialogFocus } from '@/hooks/useDialogFocus';
+import { useAutoDismiss } from '@/hooks/useAutoDismiss';
 import { parseReportDate } from '@/lib/report-dates';
 import { coincideBusqueda } from '@/lib/search-normalization';
 import { GRUPOS_ACADEMICOS } from '@/lib/academic-groups';
@@ -60,6 +61,7 @@ export default function CommunicationsWorkspace({ canManage }: { canManage: bool
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  useAutoDismiss(Boolean(feedback), () => setFeedback(null));
   const [componer, setComponer] = useState(false);
   const [detalleId, setDetalleId] = useState<number | null>(null);
   const [detalle, setDetalle] = useState<Detalle | null>(null);
@@ -180,7 +182,7 @@ export default function CommunicationsWorkspace({ canManage }: { canManage: bool
     ]} />
     {feedback && <p className={`feedback ${feedback.tipo}`} role={feedback.tipo === 'error' ? 'alert' : 'status'}>{feedback.texto}</p>}
     <section className="institutional-comms-catalog" aria-label="Listado de comunicaciones">
-      <div className="institutional-comms-catalog__heading"><div><span className="ui-module-header__kicker">Comunicaciones institucionales</span><h3>Mensajes y circulares</h3><p>Consulta la información por tipo o busca por título, contenido y destinatario.</p></div><span>{cargando ? 'Cargando…' : `${visibles.length} ${visibles.length === 1 ? 'comunicación' : 'comunicaciones'}`}</span></div>
+      <div className="institutional-comms-catalog__heading"><div><span className="ui-module-header__kicker">Comunicaciones institucionales</span><h3>Mensajes y circulares</h3><p>Consulta la información por tipo o busca por título, contenido y destinatario.</p></div><span role="status" aria-live="polite" aria-atomic="true">{cargando ? 'Cargando…' : `${visibles.length} ${visibles.length === 1 ? 'comunicación' : 'comunicaciones'}`}</span></div>
       <div className="institutional-comms-controls">
         <label className="institutional-comms-search"><span aria-hidden="true">⌕</span><span className="sr-only">Buscar comunicaciones</span><input type="search" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} placeholder="Buscar comunicación…" /></label>
         <div className="institutional-comms-filters" role="group" aria-label="Filtrar por tipo">{TIPOS.map((item) => <button type="button" key={item} className={filtroTipo === item ? 'active' : ''} aria-pressed={filtroTipo === item} onClick={() => setFiltroTipo(item)}>{item}</button>)}</div>

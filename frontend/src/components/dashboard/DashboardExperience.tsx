@@ -13,6 +13,7 @@ import AuditWorkspace from '@/components/audit/AuditWorkspace';
 import UsersWorkspace from '@/components/users/UsersWorkspace';
 import CoexistenceWorkspace from '@/components/coexistence/CoexistenceWorkspace';
 import FollowUpWorkspace from '@/components/follow-up/FollowUpWorkspace';
+import { useAutoDismiss } from '@/hooks/useAutoDismiss';
 import StatisticsWorkspace from '@/components/statistics/StatisticsWorkspace';
 import CalendarWorkspace from '@/components/calendar/CalendarWorkspace';
 import ProfileWorkspace from '@/components/profile/ProfileWorkspace';
@@ -923,6 +924,7 @@ function ControlSalidasWorkspace({ role }: { role: DashboardRole }) {
   const envioEnCurso = useRef(false);
   const [busqueda, setBusqueda] = useState('');
   const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
+  useAutoDismiss(Boolean(mensaje), () => setMensaje(null));
   const [recoge, setRecoge] = useState({ nombre: '', apellido: '', tipoDocumento: 'CC', cedula: '', parentesco: '', correo: '' });
   useDialogFocus<HTMLElement>(mostrarFormulario, () => setMostrarFormulario(false), !guardando);
   const seleccionado = estudiantes.find((item) => item.id === Number(estudianteId));

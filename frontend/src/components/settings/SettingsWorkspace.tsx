@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { parseReportDate } from '@/lib/report-dates';
 import ModuleHeader from '@/components/ui/ModuleHeader';
+import { useAutoDismiss } from '@/hooks/useAutoDismiss';
 
 type ConfigRow = { clave: string; valor: string; actualizadoEn: string };
 type Feedback = { tipo: 'success' | 'error'; texto: string };
@@ -45,6 +46,7 @@ export default function SettingsWorkspace({ role }: { role: 'admin' | 'coordinad
   const [cargaCorrecta, setCargaCorrecta] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  useAutoDismiss(Boolean(feedback), () => setFeedback(null));
 
   const cargar = useCallback(async () => {
     const response = await fetch('/api/configuracion', { cache: 'no-store' });

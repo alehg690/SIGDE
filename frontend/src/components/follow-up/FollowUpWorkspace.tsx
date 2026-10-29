@@ -5,6 +5,7 @@ import { parseReportDate } from '@/lib/report-dates';
 import ModuleHeader from '@/components/ui/ModuleHeader';
 import KpiGrid from '@/components/ui/KpiGrid';
 import { useDialogFocus } from '@/hooks/useDialogFocus';
+import { useAutoDismiss } from '@/hooks/useAutoDismiss';
 
 type AlertStatus = 'new' | 'reviewed' | 'monitoring' | 'resolved' | 'dismissed';
 type AttentionLevel = 'informational' | 'low' | 'medium' | 'high';
@@ -112,6 +113,7 @@ export default function FollowUpWorkspace({ canManage, initialAlertId }: { canMa
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  useAutoDismiss(Boolean(feedback), () => setFeedback(null));
 
   const cargar = useCallback(async (preferidaId?: number) => {
     const params = new URLSearchParams({ historial: '1' });
@@ -189,7 +191,7 @@ export default function FollowUpWorkspace({ canManage, initialAlertId }: { canMa
     <ModuleHeader icon={<svg viewBox="0 0 24 24"><path d="M6 3.5h9l3 3v14H6z"/><path d="M15 3.5v3h3M9 11h6m-6 3h6m-6 3h4"/></svg>} kicker="Análisis institucional" title="Seguimiento de alertas" description="Revisa patrones objetivos, evidencia e historial antes de tomar decisiones institucionales." action={<div className="follow-up-export"><span className="module-live-badge"><i /> En vivo</span>{canManage && <button type="button" className="ui-button ui-button--primary" disabled={cargando || alertasVisibles.length === 0} onClick={() => exportarCsv(alertasVisibles)}>Exportar CSV</button>}<small>{canManage ? 'Descarga los resultados filtrados' : 'Vista de consulta'}</small></div>} />
     {feedback && <p className={`feedback ${feedback.tipo}`} role="status">{feedback.texto}</p>}
     <KpiGrid label="Resumen de alertas" items={[{ label: 'Total de alertas', value: cargando ? '—' : alertasVisibles.length, detail: 'Registros disponibles', icon: '01' }, { label: 'Nuevas', value: cargando ? '—' : unreadCount, detail: 'Pendientes de revisión', icon: '02' }, { label: 'En revisión', value: cargando ? '—' : reviewCount, detail: 'Con seguimiento activo', icon: '03' }, { label: 'Resueltas', value: cargando ? '—' : resolvedCount, detail: 'Procesos finalizados', icon: '04' }, { label: 'Prioridad alta', value: cargando ? '—' : highCount, detail: 'Requieren revisión humana', icon: '05' }]} />
-    <section className="follow-up-explorer" aria-labelledby="follow-up-explorer-title"><header><div><span>EXPLORADOR</span><h3 id="follow-up-explorer-title">Alertas institucionales</h3><p>Filtra los registros y selecciona una alerta para consultar su trazabilidad.</p></div><strong>{cargando ? 'Cargando…' : `${alertasVisibles.length} ${alertasVisibles.length === 1 ? 'registro' : 'registros'}`}</strong></header><div className="alert-filter-grid">
+    <section className="follow-up-explorer" aria-labelledby="follow-up-explorer-title"><header><div><span>EXPLORADOR</span><h3 id="follow-up-explorer-title">Alertas institucionales</h3><p>Filtra los registros y selecciona una alerta para consultar su trazabilidad.</p></div><strong role="status" aria-live="polite" aria-atomic="true">{cargando ? 'Cargando…' : `${alertasVisibles.length} ${alertasVisibles.length === 1 ? 'registro' : 'registros'}`}</strong></header><div className="alert-filter-grid">
       <label className="alert-search"><span>Buscar</span><input type="search" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} placeholder="Estudiante, curso o alerta" /></label>
       <label><span>Estado</span><select value={filtroEstado} onChange={(event) => setFiltroEstado(event.target.value)}><option>Todos</option>{Object.entries(STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       <label><span>Prioridad</span><select value={filtroNivel} onChange={(event) => setFiltroNivel(event.target.value)}><option>Todos</option>{Object.entries(LEVEL_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>

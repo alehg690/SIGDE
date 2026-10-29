@@ -181,10 +181,10 @@ export default function StudentsWorkspace({
   }, []);
 
   useEffect(() => {
-    if (mensaje?.tipo !== "success" || modal) return;
+    if (!mensaje || modal) return;
     const timer = window.setTimeout(() => {
-      setMensaje((actual) => actual?.tipo === "success" ? null : actual);
-    }, 5000);
+      setMensaje(null);
+    }, 7000);
     return () => window.clearTimeout(timer);
   }, [mensaje, modal]);
 
@@ -511,7 +511,7 @@ export default function StudentsWorkspace({
           )}
         </div>
         {!cargando && filtrados.length > 0 && <footer className="students-table-footer">
-          <span>Mostrando {(pagina - 1) * PAGE_SIZE + 1}–{Math.min(pagina * PAGE_SIZE, filtrados.length)} de {filtrados.length}</span>
+          <span role="status" aria-live="polite" aria-atomic="true">Mostrando {(pagina - 1) * PAGE_SIZE + 1}–{Math.min(pagina * PAGE_SIZE, filtrados.length)} de {filtrados.length}</span>
           <div>
             <button type="button" disabled={pagina === 1} onClick={() => setPagina((actual) => Math.max(1, actual - 1))}>← Anterior</button>
             <strong>{pagina} / {totalPaginas}</strong>

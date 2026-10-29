@@ -16,6 +16,7 @@ import type {
 } from '@/types/reports';
 import ModuleHeader from '@/components/ui/ModuleHeader';
 import KpiGrid from '@/components/ui/KpiGrid';
+import { useDialogFocus } from '@/hooks/useDialogFocus';
 
 const TIPO_LABELS: Record<TipoFalta, string> = {
   ACADEMICA: 'Académica',
@@ -196,7 +197,7 @@ export default function ReportsWorkspace({
 
   useEffect(() => {
     if (!mensaje) return;
-    const timer = window.setTimeout(() => setMensaje(null), 5_000);
+    const timer = window.setTimeout(() => setMensaje(null), 7_000);
     return () => window.clearTimeout(timer);
   }, [mensaje]);
 
@@ -266,17 +267,7 @@ export default function ReportsWorkspace({
     return () => { detalleSolicitud.current += 1; window.clearTimeout(timer); };
   }, [cargarDetalle, seleccionadoId]);
 
-  useEffect(() => {
-    if (!seleccionadoId) return;
-    const previousOverflow = document.body.style.overflow;
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setSeleccionadoId(null); };
-    document.body.style.overflow = 'hidden';
-    window.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [seleccionadoId]);
+  const detalleDialogoRef = useDialogFocus<HTMLDivElement>(Boolean(seleccionadoId), () => setSeleccionadoId(null));
 
   const estados = useMemo(() => [...new Set(reportes.map((item) => item.estado))].sort(), [reportes]);
   const docentes = useMemo(() => [...new Set(reportes.map((item) => item.docente))].sort((a, b) => a.localeCompare(b, 'es')), [reportes]);
@@ -402,7 +393,7 @@ export default function ReportsWorkspace({
             </div>
           </div>
           {seleccionadoId !== null && <div className="report-modal-backdrop" role="presentation" onMouseDown={() => setSeleccionadoId(null)}>
-            <div className="report-modal" role="dialog" aria-modal="true" aria-label="Detalle del reporte" onMouseDown={(event) => event.stopPropagation()}>
+            <div ref={detalleDialogoRef} tabIndex={-1} className="report-modal" role="dialog" aria-modal="true" aria-label="Detalle del reporte" onMouseDown={(event) => event.stopPropagation()}>
               <button type="button" className="report-modal-close" aria-label="Cerrar detalle" onClick={() => setSeleccionadoId(null)}>×</button>
               <ReportDetail key={seleccionadoId} reporte={detalle?.id === seleccionadoId ? detalle : null} loading={cargandoDetalle} currentUserId={currentUserId} onUpdated={refrescarReporte} />
             </div>

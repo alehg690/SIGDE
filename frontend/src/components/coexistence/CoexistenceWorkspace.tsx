@@ -7,6 +7,7 @@ import { coincideBusqueda } from '@/lib/search-normalization';
 import ModuleHeader from '@/components/ui/ModuleHeader';
 import KpiGrid from '@/components/ui/KpiGrid';
 import { useDialogFocus } from '@/hooks/useDialogFocus';
+import { useAutoDismiss } from '@/hooks/useAutoDismiss';
 import StudentSearch from '@/components/reports/StudentSearch';
 import { EvidenceUpload } from '@/components/reports/ReportsWorkspace';
 
@@ -48,6 +49,7 @@ export default function CoexistenceWorkspace() {
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  useAutoDismiss(Boolean(feedback), () => setFeedback(null));
   useDialogFocus<HTMLElement>(Boolean(casoSeleccionado), () => setCasoSeleccionado(null));
 
   const cargar = useCallback(async () => {

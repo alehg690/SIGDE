@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
   const result = await crearEvento({
     titulo: String(body.titulo || ''),
     iniciaEn: String(body.iniciaEn || ''),
+    finalizaEn: body.finalizaEn ? String(body.finalizaEn) : undefined,
     descripcion: body.descripcion ? String(body.descripcion) : undefined,
     ubicacion: body.ubicacion ? String(body.ubicacion) : undefined,
     tipo: body.tipo ? String(body.tipo) : undefined,

@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { parseReportDate } from '@/lib/report-dates';
 import { useDialogFocus } from '@/hooks/useDialogFocus';
+import { useAutoDismiss } from '@/hooks/useAutoDismiss';
 import { coincideBusqueda } from '@/lib/search-normalization';
 import ModuleHeader from '@/components/ui/ModuleHeader';
 import KpiGrid from '@/components/ui/KpiGrid';
@@ -95,6 +96,7 @@ export default function UsersWorkspace({ currentUserId, currentRole }: { current
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  useAutoDismiss(Boolean(feedback), () => setFeedback(null));
   useDialogFocus<HTMLElement>(Boolean(modal || usuarioEliminar), () => {
     if (modal) cerrarModal();
     else setUsuarioEliminar(null);
@@ -256,7 +258,7 @@ export default function UsersWorkspace({ currentUserId, currentRole }: { current
       { label: 'Primer ingreso', value: cargando ? '—' : sinAcceso, detail: 'Aún no han ingresado', icon: '04' },
     ]} />
     {feedback && !modal && <p className={`feedback ${feedback.tipo}`} role="status">{feedback.texto}</p>}
-    <div className="users-directory-section-heading"><div><span>Directorio</span><h3>Equipo institucional</h3><p>{cargando ? 'Cargando cuentas…' : `${usuariosFiltrados.length} de ${usuarios.length} usuarios visibles`}</p></div></div>
+    <div className="users-directory-section-heading"><div><span>Directorio</span><h3>Equipo institucional</h3><p role="status" aria-live="polite" aria-atomic="true">{cargando ? 'Cargando cuentas…' : `${usuariosFiltrados.length} de ${usuarios.length} usuarios visibles`}</p></div></div>
     <div className="users-directory-toolbar">
       <label><span className="users-search-icon" aria-hidden="true">⌕</span><span className="sr-only">Buscar usuario</span><input type="search" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} placeholder="Buscar usuario..." /></label>
       <div className="users-role-filters" aria-label="Filtrar por rol"><button type="button" className={filtroRol === 'Todos' ? 'active' : ''} onClick={() => setFiltroRol('Todos')}>Todos</button>{ROLES.map((rol) => <button type="button" key={rol} className={filtroRol === rol ? 'active' : ''} onClick={() => setFiltroRol(rol)}>{etiquetaRol(rol)}</button>)}</div>

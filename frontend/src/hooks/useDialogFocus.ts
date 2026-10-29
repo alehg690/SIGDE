@@ -28,8 +28,10 @@ export function useDialogFocus<T extends HTMLElement>(
   useEffect(() => {
     if (!abierto) return;
     const anterior = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const overflowAnterior = document.body.style.overflow;
     const dialogo = dialogRef.current
       || document.querySelector<T>('[role="dialog"][aria-modal="true"], [role="alertdialog"][aria-modal="true"]');
+    document.body.style.overflow = 'hidden';
     const frame = window.requestAnimationFrame(() => {
       const primero = dialogo?.querySelector<HTMLElement>('[autofocus], [data-dialog-initial-focus]')
         || dialogo?.querySelector<HTMLElement>('input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])')
@@ -66,6 +68,7 @@ export function useDialogFocus<T extends HTMLElement>(
     return () => {
       window.cancelAnimationFrame(frame);
       document.removeEventListener('keydown', manejarTeclado);
+      document.body.style.overflow = overflowAnterior;
       if (anterior?.isConnected) anterior.focus();
     };
   }, [abierto]);
