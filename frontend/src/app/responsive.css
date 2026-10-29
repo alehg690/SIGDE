@@ -84,7 +84,7 @@
 @media (max-width: 1280px) {
   .dashboard-recent-grid, .dashboard-analytics-grid, .reports-consultation,
   .module-split-layout, .communications-layout, .porteria-dashboard-grid,
-  .settings-card { grid-template-columns: minmax(0, 1fr); }
+  .settings-card, .calendar-layout { grid-template-columns: minmax(0, 1fr); }
   .dashboard-activity-card, .dashboard-distribution-card, .upcoming-events-card {
     grid-column: 1;
     grid-row: auto;
@@ -95,6 +95,10 @@
   }
   .dashboard-metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .users-directory-toolbar, .students-directory-toolbar { flex-wrap: wrap; }
+  .students-directory-toolbar {
+    grid-template-columns: minmax(240px, 2fr) repeat(2, minmax(140px, 1fr));
+  }
+  .students-search-field { grid-column: span 1; }
   .users-directory-toolbar > label, .students-directory-toolbar > label:first-child {
     flex: 1 1 240px;
     width: auto;
@@ -111,6 +115,7 @@
   .statistics-grid, .distribution-chart-body, .settings-fields,
   .coexistence-form-grid, .report-form-grid, .reports-toolbar,
   .exit-form-grid { grid-template-columns: minmax(0, 1fr); }
+  .calendar-sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .statistics-card--wide, .coexistence-description, .coexistence-rule { grid-column: auto; }
   .module-page-heading, .users-directory-heading, .students-directory-heading,
   .module-filter-bar, .settings-actions { flex-direction: column; align-items: stretch; }
@@ -255,6 +260,57 @@
   .students-directory-toolbar { grid-template-columns: minmax(0, 1fr); padding: 14px; }
   .students-search-field { grid-column: auto; }
   .students-directory-toolbar select { min-width: 0; }
+  .institutional-comms-filters {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    padding-bottom: 0;
+  }
+  .institutional-comms-filters button { flex: 1 1 auto; }
+  .calendar-board { overflow-x: hidden; }
+  .calendar-sidebar { grid-template-columns: minmax(0, 1fr); }
+  .calendar-period {
+    grid-template-columns: 84px minmax(0, 1fr) auto;
+    min-width: 0;
+    gap: 6px;
+    padding-inline: 10px;
+  }
+  .calendar-period h3 { min-width: 0; font-size: .9rem; }
+  .calendar-today-button { min-width: 50px; padding-inline: 8px; }
+  .calendar-weekdays,
+  .calendar-days--mes { min-width: 0; }
+  .calendar-weekdays span { padding-inline: 1px; font-size: .64rem; }
+  .calendar-days--mes .calendar-day {
+    min-height: 58px;
+    padding: 6px 3px;
+  }
+  .calendar-days--mes .calendar-day-number {
+    align-self: center;
+    margin: 0;
+  }
+  .calendar-days--mes .calendar-day-events { display: none; }
+  .calendar-days--mes .calendar-day:has(.calendar-event-chip)::after {
+    content: '';
+    width: 5px;
+    height: 5px;
+    align-self: center;
+    margin-top: 5px;
+    border-radius: 50%;
+    background: var(--ui-primary);
+  }
+  .calendar-weekdays:has(+ .calendar-days--semana) { display: none; }
+  .calendar-days--semana {
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .calendar-days--semana .calendar-day {
+    min-height: 76px;
+    border-right: 0;
+    padding: 10px 12px;
+  }
+  .calendar-days--semana .calendar-day-number {
+    align-self: flex-start;
+    margin-bottom: 6px;
+  }
   .users-table-footer, .students-table-footer { flex-wrap: wrap; gap: 12px; }
   .report-row { grid-template-columns: 48px minmax(0, 1fr); }
   .report-row > :nth-child(n + 3) { grid-column: 2; justify-self: start; text-align: left; }
@@ -299,6 +355,8 @@
   .recent-report-row > :nth-child(n + 3) { grid-column: 2; }
   .dashboard-chart-card { padding: 14px 10px; }
   .profile-menu-name { max-width: 85px; }
+  .calendar-period { grid-template-columns: 84px minmax(0, 1fr); }
+  .calendar-today-button { display: none; }
 }
 
 /* Respuesta del sistema visual compartido. */
