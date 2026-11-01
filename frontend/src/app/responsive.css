@@ -48,7 +48,7 @@
 /* Las tablas conservan todas sus columnas dentro de una región desplazable. */
 :where(.users-table-scroll, .students-table-scroll, .exit-table-wrap,
   .coexistence-table-wrap, .audit-table-wrap, .directory-table-wrap,
-  .students-table-wrap, .module-wireframe-table-wrap) {
+  .students-table-wrap) {
   position: relative;
   min-width: 0;
   max-width: 100%;
