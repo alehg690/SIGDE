@@ -416,7 +416,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
       <aside className="app-sidebar" aria-label="Navegación principal">
         <div className="app-sidebar-head">
           <div className="app-brand">
-            <span className="app-brand-logo" aria-hidden="true"><Image src="/Logo-login.png" alt="" width={32} height={36} /></span>
+            <span className="app-brand-logo" aria-hidden="true"><Image src="/Logo-login.png" alt="" width={32} height={34} /></span>
             <span className="app-brand-copy"><strong>SIGDE</strong><small>{ROLE_LABELS[role]}</small></span>
           </div>
           <button
