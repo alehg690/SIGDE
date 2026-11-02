@@ -25,6 +25,10 @@ function lines(value: string) {
   return escapeHtml(value).replace(/\n/g, '<br>');
 }
 
+function agendaItem(value: string) {
+  return value.replace(/^\s*\d+\s*[.)]\s*/, '').trim();
+}
+
 function formatDate(value: string) {
   const date = new Date(`${value}T12:00:00-05:00`);
   return new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Bogota' }).format(date);
@@ -48,7 +52,7 @@ export function crearCorreoObservador(input: ObserverEmailInput) {
   const schedule = observador.horaFinal
     ? `${formatTime(observador.horaInicio)} – ${formatTime(observador.horaFinal)}`
     : formatTime(observador.horaInicio);
-  const agenda = observador.ordenDia.split('\n').filter(Boolean).map(item => `<li style="margin:0 0 7px;">${lines(item)}</li>`).join('');
+  const agenda = observador.ordenDia.split('\n').map(agendaItem).filter(Boolean).map(item => `<li style="margin:0 0 7px;">${lines(item)}</li>`).join('');
   const academicHtml = observador.tipoSituacion === '0' && observador.situacionAcademica
     ? section('SITUACIÓN ACADÉMICA', lines(observador.situacionAcademica))
     : '';
