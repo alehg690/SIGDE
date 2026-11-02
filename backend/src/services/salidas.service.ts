@@ -5,6 +5,7 @@ import { isEmailEnabled } from '@backend/config/env';
 import { reportServerError } from '@backend/utils/logger';
 import { registrarAccion } from '@backend/services/auditoria.service';
 import { esRolCoordinador, type SesionUsuario } from '@backend/types/roles';
+import { crearCorreoSalida } from '@backend/templates/exit-email';
 
 export type SalidaInput = {
   estudianteId: string;
@@ -52,11 +53,17 @@ export async function listarSalidas(usuario: SesionUsuario) {
   return { data: result.rows };
 }
 
-async function enviarAvisoSalida(destinos: string[], estudiante: string, recoge: string) {
-  const correos = [...new Set(destinos.filter((correo) => EMAIL_PATTERN.test(correo)))];
+async function enviarAvisoSalida(destinos: string[], correo: ReturnType<typeof crearCorreoSalida>) {
+  const correos = [...new Set(destinos.map(destino => destino.trim().toLowerCase()).filter(destino => EMAIL_PATTERN.test(destino)))];
   if (!correos.length || !isEmailEnabled()) return false;
   try {
-    await getEmailTransporter().sendMail({ from: `"SIGDE" <${process.env.EMAIL_USER}>`, to: correos.join(', '), subject: `Aviso de salida registrada - ${estudiante}`, text: `Se registró la salida de ${estudiante}. La persona que recoge al estudiante es ${recoge}.` });
+    await Promise.all(correos.map(destino => getEmailTransporter().sendMail({
+      from: `"SIGDE" <${process.env.EMAIL_USER}>`,
+      to: destino,
+      subject: correo.subject,
+      text: correo.text,
+      html: correo.html,
+    })));
     return true;
   } catch (error) {
     await reportServerError('exit_notification_email_failed', error);
@@ -74,7 +81,20 @@ export async function crearSalida(input: SalidaInput, usuario: SesionUsuario) {
   const id = randomUUID();
   const result = await db.execute({ sql: `INSERT INTO Salida (id, estudianteId, acudienteId, motivo, tipo, urgencia, estado, registradoPorId, recogeNombre, recogeApellido, recogeTipoDocumento, recogeCedula, recogeParentesco, recogeCorreo) VALUES (?, ?, ?, ?, 'ordinaria', 0, 'completada', ?, ?, ?, ?, ?, ?, ?) RETURNING id, creadoEn`, args: [id, data.estudianteId, Number(estudiante.acudienteId), 'Salida registrada en portería', usuario.id, data.recogeNombre, data.recogeApellido, data.recogeTipoDocumento, data.recogeCedula, data.recogeParentesco, data.recogeCorreo] });
   await registrarAccion({ usuarioId: usuario.id, accion: 'registrar_salida', entidad: 'Salida', entidadId: id, detalle: { estudianteId: data.estudianteId } });
-  const correoEnviado = await enviarAvisoSalida([...(String(estudiante.acudientesCorreo || '').split('|')), data.recogeCorreo], String(estudiante.nombre), `${data.recogeNombre} ${data.recogeApellido}`);
+  const correo = crearCorreoSalida({
+    estudiante: String(estudiante.nombre),
+    grado: String(estudiante.grado),
+    grupo: String(estudiante.grupo),
+    jornada: String(estudiante.jornada),
+    recogeNombre: data.recogeNombre,
+    recogeApellido: data.recogeApellido,
+    recogeParentesco: data.recogeParentesco,
+    recogeTipoDocumento: data.recogeTipoDocumento,
+    recogeDocumento: data.recogeCedula,
+    registradoPor: usuario.nombre,
+    registradoEn: String(result.rows[0].creadoEn),
+  });
+  const correoEnviado = await enviarAvisoSalida([...(String(estudiante.acudientesCorreo || '').split('|')), data.recogeCorreo], correo);
   return { data: { ...result.rows[0], estudiante: estudiante.nombre, grado: estudiante.grado, grupo: estudiante.grupo, jornada: estudiante.jornada, acudiente: estudiante.acudiente, correoEnviado }, status: 201 };
 }
 
