@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { crearReporte, listarReportes } from '@backend/services/reportes.service';
 import { esErrorAuth, requerirSesion } from '@/app/api/_utils/session';
+import { LIMITES_API, limitarOperacion } from '@/app/api/_utils/rate-limit';
 
 export async function GET(req: NextRequest) {
   const auth = await requerirSesion(['Coordinador', 'Docente']);
@@ -19,6 +20,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await requerirSesion(['Coordinador', 'Docente']);
   if (esErrorAuth(auth)) return auth.response;
+  const limite = await limitarOperacion(req, auth.usuario, 'crear-reportes', LIMITES_API.reportes);
+  if (limite) return limite;
 
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: 'Solicitud inválida' }, { status: 400 });

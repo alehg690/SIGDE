@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { agregarArchivoEvidencia } from '@backend/services/reportes.service';
 import { esErrorAuth, requerirSesion } from '@/app/api/_utils/session';
+import { LIMITES_API, limitarOperacion } from '@/app/api/_utils/rate-limit';
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, { params }: Params) {
   const auth = await requerirSesion(['Coordinador', 'Docente']);
   if (esErrorAuth(auth)) return auth.response;
+  const limite = await limitarOperacion(req, auth.usuario, 'evidencias', LIMITES_API.evidencias);
+  if (limite) return limite;
   const reporteId = Number((await params).id);
   if (!Number.isSafeInteger(reporteId) || reporteId <= 0) return NextResponse.json({ error: 'Reporte no válido' }, { status: 400 });
   const contentLength = Number(req.headers.get('content-length'));

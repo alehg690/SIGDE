@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { actualizarUsuario, cambiarEstadoUsuario, eliminarUsuario } from '@backend/services/usuarios.service';
 import { esErrorAuth, requerirSesion } from '@/app/api/_utils/session';
+import { LIMITES_API, limitarOperacion } from '@/app/api/_utils/rate-limit';
 
 type Params = {
   params: Promise<{ id: string }>;
@@ -9,6 +10,8 @@ type Params = {
 export async function PUT(req: NextRequest, { params }: Params) {
   const auth = await requerirSesion(['Coordinador']);
   if (esErrorAuth(auth)) return auth.response;
+  const limite = await limitarOperacion(req, auth.usuario, 'usuarios', LIMITES_API.administracion);
+  if (limite) return limite;
 
   const { id } = await params;
   const usuarioId = Number(id);
@@ -37,6 +40,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
 export async function PATCH(req: NextRequest, { params }: Params) {
   const auth = await requerirSesion(['Coordinador']);
   if (esErrorAuth(auth)) return auth.response;
+  const limite = await limitarOperacion(req, auth.usuario, 'usuarios', LIMITES_API.administracion);
+  if (limite) return limite;
 
   const { id } = await params;
   const usuarioId = Number(id);
@@ -58,9 +63,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   return NextResponse.json(result.data);
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   const auth = await requerirSesion(['Coordinador']);
   if (esErrorAuth(auth)) return auth.response;
+  const limite = await limitarOperacion(req, auth.usuario, 'usuarios', LIMITES_API.administracion);
+  if (limite) return limite;
 
   const { id } = await params;
   const usuarioId = Number(id);

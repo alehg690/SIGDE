@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adjuntarEvidenciaConvivencia, obtenerEvidenciaConvivencia } from '@backend/services/reportes.service';
 import { esErrorAuth, requerirSesion } from '@/app/api/_utils/session';
+import { LIMITES_API, limitarOperacion } from '@/app/api/_utils/rate-limit';
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, { params }: Params) {
   const auth = await requerirSesion(['Coordinador', 'Docente']);
   if (esErrorAuth(auth)) return auth.response;
+  const limite = await limitarOperacion(req, auth.usuario, 'evidencias', LIMITES_API.evidencias);
+  if (limite) return limite;
   const id = (await params).id.trim();
   if (!id) return NextResponse.json({ error: 'Proceso de convivencia no válido' }, { status: 400 });
   const contentLength = Number(req.headers.get('content-length'));

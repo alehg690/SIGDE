@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exportarInforme } from '@backend/services/informe.service';
 import { esErrorAuth, requerirSesion } from '@/app/api/_utils/session';
+import { LIMITES_API, limitarOperacion } from '@/app/api/_utils/rate-limit';
 
 export async function GET(req: NextRequest) {
   const auth = await requerirSesion(['Coordinador']);
   if (esErrorAuth(auth)) return auth.response;
+  const limite = await limitarOperacion(req, auth.usuario, 'exportaciones', LIMITES_API.exportaciones);
+  if (limite) return limite;
 
   const searchParams = req.nextUrl.searchParams;
   const result = await exportarInforme(
