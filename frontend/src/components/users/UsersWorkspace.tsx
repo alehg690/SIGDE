@@ -25,6 +25,7 @@ async function leerError(response: Response, fallback: string) {
 
 function etiquetaRol(rol: RolUsuario) {
   if (rol === 'Admin') return 'Administrador';
+  if (rol === 'Coordinador') return 'Coordinación';
   return rol === 'Porteria' ? 'Portería' : rol;
 }
 
@@ -254,7 +255,7 @@ export default function UsersWorkspace({ currentUserId, currentRole }: { current
     <KpiGrid label="Resumen de usuarios" items={[
       { label: 'Usuarios', value: cargando ? '—' : usuarios.length, detail: 'Cuentas registradas', icon: '01' },
       { label: 'Activos', value: cargando ? '—' : activos, detail: 'Con acceso habilitado', icon: '02' },
-      { label: 'Gestores', value: cargando ? '—' : administradores, detail: 'Admin. y coordinadores', icon: '03' },
+      { label: 'Gestores', value: cargando ? '—' : administradores, detail: 'Admin. y coordinación', icon: '03' },
       { label: 'Primer ingreso', value: cargando ? '—' : sinAcceso, detail: 'Aún no han ingresado', icon: '04' },
     ]} />
     {feedback && !modal && <p className={`feedback ${feedback.tipo}`} role="status">{feedback.texto}</p>}

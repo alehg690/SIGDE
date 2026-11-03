@@ -182,7 +182,7 @@ const EMPTY_STATS: DashboardStats = {
 
 const ROLE_LABELS: Record<DashboardRole, string> = {
   admin: 'Administrador',
-  coordinador: 'Coordinador',
+  coordinador: 'Coordinación',
   docente: 'Docente',
   portero: 'Portero',
 };

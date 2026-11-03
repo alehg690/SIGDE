@@ -63,10 +63,10 @@ function TerminosContent() {
       <p>Los usuarios menores de edad no deben crear cuentas por su cuenta si la institución exige cuenta institucional o autorización del representante legal. La institución debe definir el mecanismo verificable de autorización y conservar la evidencia correspondiente.</p>
 
       <h2 id="seccion-4">4. Roles, permisos y principio de mínimo acceso</h2>
-      <p>SIGDE tiene cuatro roles con acceso al sistema: Administrador, Coordinador, Docente y Portería. Los permisos dependen del rol asignado por la institución y se aplican con el principio de mínimo acceso.</p>
+      <p>SIGDE tiene cuatro roles con acceso al sistema: Administrador, Coordinación, Docente y Portería. Los permisos dependen del rol asignado por la institución y se aplican con el principio de mínimo acceso.</p>
       <ul>
         <li><strong>Administrador:</strong> conserva el control de la identidad institucional y hereda los permisos operativos de coordinación.</li>
-        <li><strong>Coordinador:</strong> gestiona el calendario académico, usuarios, estudiantes, alertas y los módulos operativos, sin poder alterar la identidad institucional.</li>
+        <li><strong>Coordinación:</strong> gestiona el calendario académico, usuarios, estudiantes, alertas y los módulos operativos, sin poder alterar la identidad institucional.</li>
         <li><strong>Docente:</strong> puede crear reportes de convivencia, consultar reportes por estudiante, ver alertas y usar los módulos pedagógicos y de convivencia que le correspondan. Solo debe registrar hechos relevantes, verificables y pertinentes. La edición de un reporte corresponde al docente que lo creó, dentro de las reglas del sistema.</li>
         <li><strong>Portería:</strong> tiene acceso exclusivamente al módulo de salidas. Puede consultar las salidas necesarias para el control de su turno y crear nuevos registros de salida, pero no puede eliminar salidas ni acceder a reportes, alertas, estudiantes, usuarios, configuraciones o expedientes disciplinarios.</li>
         <li><strong>Acudiente:</strong> no tiene cuenta ni acceso al sistema. Hace parte de los registros institucionales como representante o contacto autorizado del estudiante y recibe las notificaciones relacionadas con su hijo o acudido por los canales registrados y autorizados.</li>
