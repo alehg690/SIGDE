@@ -38,7 +38,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  output: "standalone"
+  output: "standalone",
   agentRules: false,
   ...(process.env.NODE_ENV === 'development' ? { allowedDevOrigins: ['127.0.0.1', '192.168.1.17'] } : {}),
   async headers() {
