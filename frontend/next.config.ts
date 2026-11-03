@@ -25,6 +25,7 @@ const contentSecurityPolicy = [
 ].join('; ');
 
 const securityHeaders = [
+  { key: 'X-DNS-Prefetch-Control', value: 'off' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive, nosnippet' },
@@ -33,7 +34,7 @@ const securityHeaders = [
   { key: 'Content-Security-Policy', value: contentSecurityPolicy },
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
   { key: 'Cross-Origin-Resource-Policy', value: 'same-origin' },
-  ...(isProduction ? [{ key: 'Strict-Transport-Security', value: 'max-age=31536000' }] : []),
+  ...(isProduction ? [{ key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' }] : []),
 ];
 
 const nextConfig: NextConfig = {
