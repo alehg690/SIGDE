@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { loadEnvFile } from "node:process";
 
 // Next.js loads frontend/.env automatically; the shared backend uses the root .env.
-const sharedEnvPath = resolve(__dirname, "../.env");
+const sharedEnvPath = resolve(process.cwd(), "../.env");
 if (existsSync(sharedEnvPath)) loadEnvFile(sharedEnvPath);
 
 const isProduction = process.env.NODE_ENV === 'production';
