@@ -1,7 +1,6 @@
 'use client';
 
 import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ApiError } from '@/services/api';
 import { getSession, logout, renovarSesion, type SessionUser } from '@/services/auth.service';
 
@@ -22,7 +21,6 @@ type AuthContextValue = {
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const [usuario, setUsuario] = useState<SessionUser | null>(null);
   const [expiraEn, setExpiraEn] = useState<number | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -40,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         sessionStorage.setItem(SESSION_MESSAGE_KEY, 'Tu sesión expiró. Inicia sesión nuevamente.');
-        router.replace('/');
+        window.location.replace('/');
       } else {
         console.error(error);
       }
@@ -49,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setCargando(false);
     }
-  }, [router]);
+  }, []);
 
   const cerrarSesion = useCallback(async (message = 'Sesión cerrada correctamente.') => {
     if (cerrandoSesionRef.current) return;
@@ -70,13 +68,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setExpiraEn(null);
     setAvisoSesion('');
     sessionStorage.setItem(SESSION_MESSAGE_KEY, message);
-    router.replace('/');
-
-    // Para permitir un inicio y cierre posteriores sin desmontar el layout raíz.
-    window.setTimeout(() => {
-      cerrandoSesionRef.current = false;
-    }, 0);
-  }, [router]);
+    // Una navegación completa desmonta inmediatamente cualquier interfaz y
+    // estado protegido que Next.js pudiera conservar en la caché del cliente.
+    window.location.replace('/');
+  }, []);
 
   const continuarSesion = useCallback(async () => {
     try {
@@ -95,8 +90,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (cargando || usuario || window.location.pathname === '/') return;
-    router.replace('/');
-  }, [cargando, router, usuario]);
+    window.location.replace('/');
+  }, [cargando, usuario]);
 
   useEffect(() => {
     if (!usuario) return;

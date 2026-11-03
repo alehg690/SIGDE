@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import StudentsWorkspace from '@/components/students/StudentsWorkspace';
 import GroupsWorkspace from '@/components/groups/GroupsWorkspace';
@@ -257,7 +257,6 @@ function texto(valor: unknown) {
 }
 
 export default function DashboardExperience({ usuario }: { usuario: DashboardUser }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [section, setSection] = useState<DashboardSection>(() => sectionFromUrl(searchParams.get('seccion') || searchParams.get('dashboard')));
   const [studentsViewKey, setStudentsViewKey] = useState(0);
@@ -404,7 +403,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
       });
       if (!response.ok) throw new Error('No fue posible cerrar la sesión.');
       sessionStorage.setItem('sigde_logout_message', 'Sesión cerrada correctamente.');
-      router.push('/');
+      window.location.replace('/');
     } catch {
       setDashboardError('No fue posible cerrar la sesión. Revisa tu conexión e inténtalo de nuevo.');
       setClosing(false);
