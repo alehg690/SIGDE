@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { reportServerError } from '@backend/utils/logger';
+import { obtenerIdentificadorCliente } from '@/app/api/_utils/client-address';
 
 const WINDOW_MS = 5 * 60_000;
 const MAX_REPORTS = 10;
 const reportsByClient = new Map<string, { count: number; resetAt: number }>();
 
-function clientKey(request: NextRequest) {
-  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || request.headers.get('x-real-ip')
-    || 'unknown';
-}
-
 function acceptsReport(request: NextRequest) {
-  const key = clientKey(request);
+  const key = obtenerIdentificadorCliente(request);
   const now = Date.now();
   const current = reportsByClient.get(key);
   if (!current || current.resetAt <= now) {

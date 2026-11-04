@@ -4,8 +4,13 @@ import { resolve } from "node:path";
 import { loadEnvFile } from "node:process";
 
 // Next.js loads frontend/.env automatically; the shared backend uses the root .env.
-const sharedEnvPath = resolve(process.cwd(), "../.env");
-if (existsSync(sharedEnvPath)) loadEnvFile(sharedEnvPath);
+// Hostinger and local scripts can evaluate this config from different working directories.
+const sharedEnvPath = [
+  resolve(process.cwd(), ".env"),
+  resolve(process.cwd(), "../.env"),
+  resolve(__dirname, "../.env"),
+].find((candidate) => existsSync(candidate));
+if (sharedEnvPath) loadEnvFile(sharedEnvPath);
 
 const isProduction = process.env.NODE_ENV === 'production';
 const contentSecurityPolicy = [
@@ -33,7 +38,7 @@ const securityHeaders = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
   { key: 'Content-Security-Policy', value: contentSecurityPolicy },
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
-  { key: 'Cross-Origin-Resource-PolicSy', value: 'same-origin' },
+  { key: 'Cross-Origin-Resource-Policy', value: 'same-origin' },
   ...(isProduction ? [{ key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' }] : []),
 ];
 

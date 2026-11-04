@@ -5,6 +5,8 @@
 - Development: `APP_ENV=development`, `NODE_ENV=development`, base independiente y datos ficticios permitidos.
 - Production: `APP_ENV=production`, `NODE_ENV=production`, datos reales, backups, sin seeds, imports ni cambios automáticos de esquema.
 
+En Hostinger configurar además `HOSTING_PROVIDER=hostinger` y mantener habilitado Hostinger CDN. La aplicación usa `X-Real-IP` o la última dirección de `X-Forwarded-For` para identificar al cliente detrás del proxy.
+
 No compartir `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `JWT_SECRET` ni `EMAIL_PASS` entre entornos. `EMAIL_PASS` debe ser una contraseña de aplicación de Google cuando Gmail la requiera.
 
 El proveedor de hosting debe configurar `APP_ENV`, las credenciales Turso y los secretos fuera de Git. La ausencia de `APP_ENV` es un error fuera de desarrollo.

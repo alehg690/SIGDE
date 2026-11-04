@@ -10,7 +10,7 @@ No se deben reemplazar con datos inventados:
 - Correo institucional, correo de seguridad y correo para protección de datos.
 - Correo de seguridad y soporte.
 - Fecha de vigencia y versión aprobada.
-- Lista real de proveedores: Vercel, Turso, proveedor de correo y cualquier almacenamiento de archivos.
+- Lista real de proveedores: Hostinger, Turso, proveedor de correo y cualquier almacenamiento de archivos.
 - Países donde se almacenan o procesan los datos.
 - Tabla de retención aprobada por la institución.
 - Procedimiento institucional para autorizaciones de acudientes y estudiantes.

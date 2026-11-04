@@ -8,6 +8,7 @@ import {
 import { registrarAccion } from '@backend/services/auditoria.service';
 import { reportServerError } from '@backend/utils/logger';
 import type { SesionUsuario } from '@backend/types/roles';
+import { obtenerIdentificadorCliente } from '@/app/api/_utils/client-address';
 
 export const LIMITES_API = {
   administracion: { maxIntentos: 30, ventanaMs: 10 * 60_000, bloqueoMs: 10 * 60_000 },
@@ -15,15 +16,6 @@ export const LIMITES_API = {
   evidencias: { maxIntentos: 20, ventanaMs: 10 * 60_000, bloqueoMs: 10 * 60_000 },
   exportaciones: { maxIntentos: 10, ventanaMs: 10 * 60_000, bloqueoMs: 10 * 60_000 },
 } satisfies Record<string, PoliticaLimite>;
-
-function obtenerCliente(request: NextRequest) {
-  const forwarded = process.env.NODE_ENV === 'production'
-    ? request.headers.get('x-vercel-forwarded-for')
-    : request.headers.get('x-vercel-forwarded-for')
-      || request.headers.get('x-forwarded-for')
-      || request.headers.get('x-real-ip');
-  return forwarded?.split(',')[0]?.trim() || request.headers.get('user-agent') || 'desconocido';
-}
 
 function respuestaLimite(reintentarEnSegundos: number) {
   return NextResponse.json(
@@ -45,7 +37,7 @@ export async function limitarOperacion(
   politica: PoliticaLimite
 ) {
   const tipo = `api-${alcance}`;
-  const clave = crearClaveLimite(tipo, `usuario:${usuario.id}|cliente:${obtenerCliente(request)}`);
+  const clave = crearClaveLimite(tipo, `usuario:${usuario.id}|cliente:${obtenerIdentificadorCliente(request)}`);
   const limiteActual = await consultarLimite(clave);
   if (limiteActual.bloqueado) return respuestaLimite(limiteActual.reintentarEnSegundos);
 

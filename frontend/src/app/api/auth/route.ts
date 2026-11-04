@@ -11,6 +11,7 @@ import {
 import { crearToken, verificarToken } from '@backend/utils/jwt';
 import { autorizarRoles, esErrorAutorizacion } from '@backend/middleware/rol.middleware';
 import type { SesionUsuario } from '@backend/types/roles';
+import { obtenerIdentificadorCliente } from '@/app/api/_utils/client-address';
 import {
   getSessionCookieDeletionOptions,
   getSessionCookieName,
@@ -32,16 +33,6 @@ function crearPayloadSesion(usuario: Pick<SesionUsuario, 'id' | 'versionSesion'>
 
 function serializarEstadoSesion(usuario: Pick<SesionUsuario, 'requiereCambioContrasena'>) {
   return { requiereCambioContrasena: usuario.requiereCambioContrasena };
-}
-
-function obtenerClienteId(req: NextRequest) {
-  const forwarded = process.env.NODE_ENV === 'production'
-    ? req.headers.get('x-vercel-forwarded-for')
-    : req.headers.get('x-vercel-forwarded-for')
-      || req.headers.get('x-forwarded-for')
-      || req.headers.get('x-real-ip');
-  const ip = forwarded?.split(',')[0]?.trim();
-  return (ip || `sin-ip:${req.headers.get('user-agent') || 'desconocido'}`).slice(0, 256);
 }
 
 function limpiarCookiesSesion(cookieStore: Awaited<ReturnType<typeof cookies>>) {
@@ -132,7 +123,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const r = await login(correo, contrasena, obtenerClienteId(req));
+    const r = await login(correo, contrasena, obtenerIdentificadorCliente(req));
 
     if ('error' in r) {
       return NextResponse.json({ error: r.error }, { status: r.status });
@@ -219,7 +210,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const r = await enviarCodigoRecuperacion(correo, obtenerClienteId(req));
+    const r = await enviarCodigoRecuperacion(correo, obtenerIdentificadorCliente(req));
 
     if ('error' in r) {
       return NextResponse.json({ error: r.error }, { status: r.status });
@@ -246,7 +237,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const r = await verificarCodigo(correo, codigo, obtenerClienteId(req));
+    const r = await verificarCodigo(correo, codigo, obtenerIdentificadorCliente(req));
 
     if ('error' in r) {
       return NextResponse.json({ error: r.error }, { status: r.status });
@@ -280,7 +271,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: errorContrasena }, { status: 400 });
     }
 
-    const r = await cambiarContrasena(correo, codigo, nuevaContrasena, obtenerClienteId(req));
+    const r = await cambiarContrasena(correo, codigo, nuevaContrasena, obtenerIdentificadorCliente(req));
 
     if ('error' in r) {
       return NextResponse.json({ error: r.error }, { status: r.status });

@@ -72,12 +72,14 @@ npm run build
 
 ## Despliegue
 
-SIGDE es una aplicación web, no una APK. La entrega desplegada debe realizarse mediante un enlace web, por ejemplo en Vercel.
+SIGDE es una aplicación web, no una APK. La entrega desplegada debe realizarse mediante un enlace web, por ejemplo en Hostinger.
 
 1. Crea una base de datos Turso y configura `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`.
-2. Define `APP_ENV=production`, `JWT_SECRET` (mínimo 32 caracteres) y `EMAIL_ENABLED` en las variables de entorno del despliegue.
+2. Define `APP_ENV=production`, `HOSTING_PROVIDER=hostinger`, `JWT_SECRET` (mínimo 32 caracteres) y `EMAIL_ENABLED` en las variables de entorno del despliegue.
 3. Configura `EMAIL_USER` y `EMAIL_PASS` únicamente si `EMAIL_ENABLED=true`.
 4. Aplica, después de crear un backup, las migraciones de `database/libsql-migrations` que aún no estén registradas en la base de producción. No ejecutes automáticamente migraciones destructivas durante el despliegue.
-5. Importa el repositorio en Vercel y ejecuta la compilación con `npm run build`.
+5. Importa el repositorio desde GitHub en Hostinger, selecciona Node.js 22 y ejecuta la compilación con `npm run build`.
 
 No publiques archivos `.env`, tokens, contraseñas de aplicación ni datos reales de estudiantes en el repositorio.
+
+La configuración completa y las comprobaciones posteriores están en [`docs/hostinger-deployment.md`](docs/hostinger-deployment.md).

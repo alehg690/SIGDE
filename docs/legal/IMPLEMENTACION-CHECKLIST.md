@@ -20,7 +20,7 @@
 - [ ] Crear el registro persistente de autorizaciones con versión, fecha, titular, representante legal, IP y evidencia.
 - [ ] Integrar la autorización en cada formulario que capture datos, no únicamente en el login.
 - [ ] Aprobar los plazos de retención de la tabla institucional.
-- [ ] Verificar contratos/DPA, subencargados y ubicación de Vercel, Turso, correo y almacenamiento de evidencias.
+- [ ] Verificar contratos/DPA, subencargados y ubicación de Hostinger, Turso, correo y almacenamiento de evidencias.
 - [ ] Definir y probar el procedimiento interno de incidentes.
 - [ ] Definir responsables y tiempos legales de respuesta a consultas y reclamos.
 - [ ] Revisar jurídicamente la versión final y aprobarla mediante acta institucional.
