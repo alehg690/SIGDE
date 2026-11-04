@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { reportServerError } from '@backend/utils/logger';
 import { obtenerIdentificadorCliente } from '@/app/api/_utils/client-address';
+import { esMutacionSitioCruzado } from '@/app/api/_utils/request-origin';
 
 const WINDOW_MS = 5 * 60_000;
 const MAX_REPORTS = 10;
@@ -24,8 +25,7 @@ function cleanText(value: unknown, maximum: number) {
 }
 
 export async function POST(request: NextRequest) {
-  const origin = request.headers.get('origin');
-  if (origin && origin !== request.nextUrl.origin) {
+  if (esMutacionSitioCruzado(request)) {
     return NextResponse.json({ error: 'Origen no permitido' }, { status: 403 });
   }
   if (!acceptsReport(request)) {

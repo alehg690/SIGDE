@@ -5,19 +5,9 @@ import {
   getSessionCookieName,
   LEGACY_SESSION_COOKIE_NAME,
 } from '@backend/utils/session-cookie';
+import { esMutacionSitioCruzado } from '@/app/api/_utils/request-origin';
 
 const PROTECTED_PATHS = ['/dashboard'];
-const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-
-function isCrossSiteMutation(request: NextRequest) {
-  if (SAFE_METHODS.has(request.method)) return false;
-
-  const fetchSite = request.headers.get('sec-fetch-site');
-  if (fetchSite === 'cross-site') return true;
-
-  const origin = request.headers.get('origin');
-  return Boolean(origin && origin !== request.nextUrl.origin);
-}
 
 async function hasValidSession(request: NextRequest) {
   const token = request.cookies.get(getSessionCookieName())?.value;
@@ -34,7 +24,7 @@ async function hasValidSession(request: NextRequest) {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith('/api/') && isCrossSiteMutation(request)) {
+  if (pathname.startsWith('/api/') && esMutacionSitioCruzado(request)) {
     return NextResponse.json(
       { error: 'Origen no permitido' },
       { status: 403, headers: { 'Cache-Control': 'no-store' } }
