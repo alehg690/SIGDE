@@ -18,6 +18,7 @@
   "scripts": {
     "dev": "next dev frontend",
     "build": "next build frontend --webpack",
+    "postbuild": "node scripts/prepare-hostinger-standalone.mjs",
     "start": "next start frontend",
     "lint": "eslint frontend backend",
     "typecheck": "tsc --noEmit",

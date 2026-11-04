@@ -14,8 +14,8 @@ Configurar la aplicación como Next.js con estos valores:
 - Rama: `main`.
 - Directorio raíz: `./`.
 - Comando de build: `npm run build`.
-- Directorio de salida: `frontend/.next`.
-- El proyecto genera la salida autónoma en `frontend/.next/standalone` mediante `output: "standalone"`.
+- Directorio de salida: `frontend/.next/standalone`.
+- El proyecto genera y normaliza la salida autónoma en `frontend/.next/standalone` mediante `output: "standalone"` y el script `postbuild`.
 
 No subir `node_modules`, `.next`, el archivo `.env` ni una copia manual de `standalone`. Hostinger debe instalar las dependencias y generar el build desde el repositorio.
 
