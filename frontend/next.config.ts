@@ -8,7 +8,7 @@ import { loadEnvFile } from "node:process";
 const sharedEnvPath = [
   resolve(process.cwd(), ".env"),
   resolve(process.cwd(), "../.env"),
-  resolve(__dirname, "../.env"),
+  resolve(import.meta.dirname, "../.env"),
 ].find((candidate) => existsSync(candidate));
 if (sharedEnvPath) loadEnvFile(sharedEnvPath);
 
