@@ -2,6 +2,7 @@ import { apiRequest } from '@/services/api';
 
 export type SessionUser = {
   requiereCambioContrasena: boolean;
+  sinLimiteInactividad: boolean;
 };
 
 export type SessionResponse = {

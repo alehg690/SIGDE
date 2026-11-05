@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [cargando, usuario]);
 
   useEffect(() => {
-    if (!usuario) return;
+    if (!usuario || usuario.sinLimiteInactividad) return;
 
     let inactivityTimer: number | undefined;
     const activityEvents = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'];
@@ -138,7 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [usuario, cerrarSesion]);
 
   useEffect(() => {
-    if (!expiraEn) return;
+    if (!expiraEn || usuario?.sinLimiteInactividad) return;
 
     const expiresAtMs = expiraEn * 1000;
     const warningDelay = Math.max(0, expiresAtMs - Date.now() - EXPIRATION_WARNING_MS);
@@ -156,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.clearTimeout(warningTimer);
       window.clearTimeout(logoutTimer);
     };
-  }, [expiraEn, cerrarSesion]);
+  }, [expiraEn, usuario?.sinLimiteInactividad, cerrarSesion]);
 
   const value = useMemo<AuthContextValue>(() => ({
     usuario,

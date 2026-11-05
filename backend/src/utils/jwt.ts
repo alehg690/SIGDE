@@ -6,6 +6,10 @@ const JWT_ALGORITHM = 'HS256';
 const JWT_ISSUER = 'sigde';
 const JWT_AUDIENCE = 'sigde-web';
 
+type CrearTokenOptions = {
+  sinExpiracion?: boolean;
+};
+
 export type SessionTokenPayload = {
   id: number;
   versionSesion: number;
@@ -15,14 +19,16 @@ function obtenerJwtSecret() {
   return new TextEncoder().encode(getJwtSecret());
 }
 
-export async function crearToken(payload: SessionTokenPayload) {
-  return new SignJWT({ id: payload.id, versionSesion: payload.versionSesion })
+export async function crearToken(payload: SessionTokenPayload, options: CrearTokenOptions = {}) {
+  const token = new SignJWT({ id: payload.id, versionSesion: payload.versionSesion })
     .setProtectedHeader({ alg: JWT_ALGORITHM, typ: 'JWT' })
     .setIssuedAt()
     .setIssuer(JWT_ISSUER)
-    .setAudience(JWT_AUDIENCE)
-    .setExpirationTime(SESSION_DURATION)
-    .sign(obtenerJwtSecret());
+    .setAudience(JWT_AUDIENCE);
+
+  if (!options.sinExpiracion) token.setExpirationTime(SESSION_DURATION);
+
+  return token.sign(obtenerJwtSecret());
 }
 
 export async function verificarToken(token: string): Promise<JWTPayload & SessionTokenPayload> {

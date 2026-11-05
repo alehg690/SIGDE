@@ -18,6 +18,7 @@ import {
   getSessionCookieOptions,
   LEGACY_SESSION_COOKIE_NAME,
 } from '@backend/utils/session-cookie';
+import { sinLimiteInactividad } from '@backend/utils/session-policy';
 
 const EMAIL_MAX_LENGTH = 254;
 const PASSWORD_MAX_LENGTH = 128;
@@ -31,8 +32,11 @@ function crearPayloadSesion(usuario: Pick<SesionUsuario, 'id' | 'versionSesion'>
   };
 }
 
-function serializarEstadoSesion(usuario: Pick<SesionUsuario, 'requiereCambioContrasena'>) {
-  return { requiereCambioContrasena: usuario.requiereCambioContrasena };
+function serializarEstadoSesion(usuario: Pick<SesionUsuario, 'correo' | 'requiereCambioContrasena'>) {
+  return {
+    requiereCambioContrasena: usuario.requiereCambioContrasena,
+    sinLimiteInactividad: sinLimiteInactividad(usuario.correo),
+  };
 }
 
 function limpiarCookiesSesion(cookieStore: Awaited<ReturnType<typeof cookies>>) {
@@ -44,9 +48,10 @@ function limpiarCookiesSesion(cookieStore: Awaited<ReturnType<typeof cookies>>) 
 
 function establecerCookieSesion(
   cookieStore: Awaited<ReturnType<typeof cookies>>,
-  token: string
+  token: string,
+  sinExpiracion = false
 ) {
-  cookieStore.set(getSessionCookieName(), token, getSessionCookieOptions());
+  cookieStore.set(getSessionCookieName(), token, getSessionCookieOptions({ sinExpiracion }));
   cookieStore.delete(LEGACY_SESSION_COOKIE_NAME);
 }
 
@@ -130,10 +135,11 @@ export async function POST(req: NextRequest) {
     }
 
     const usuario = r.data;
-    const token = await crearToken(crearPayloadSesion(usuario));
+    const sesionSinExpiracion = sinLimiteInactividad(usuario.correo);
+    const token = await crearToken(crearPayloadSesion(usuario), { sinExpiracion: sesionSinExpiracion });
 
     const cookieStore = await cookies();
-    establecerCookieSesion(cookieStore, token);
+    establecerCookieSesion(cookieStore, token, sesionSinExpiracion);
 
     return NextResponse.json({
       mensaje: 'Inicio de sesión exitoso',
@@ -155,10 +161,11 @@ export async function POST(req: NextRequest) {
         limpiarCookiesSesion(cookieStore);
         return auth.response;
       }
-      const token = await crearToken(crearPayloadSesion(auth.usuario));
+      const sesionSinExpiracion = sinLimiteInactividad(auth.usuario.correo);
+      const token = await crearToken(crearPayloadSesion(auth.usuario), { sinExpiracion: sesionSinExpiracion });
       const sesion = await verificarToken(token);
 
-      establecerCookieSesion(cookieStore, token);
+      establecerCookieSesion(cookieStore, token, sesionSinExpiracion);
 
       return NextResponse.json({
         autenticado: true,
@@ -188,8 +195,12 @@ export async function POST(req: NextRequest) {
     }
     const r = await cambiarContrasenaTemporal(auth.usuario.id, auth.usuario.versionSesion, contrasenaActual, nuevaContrasena);
     if ('error' in r) return NextResponse.json({ error: r.error }, { status: r.status });
-    const token = await crearToken({ id: auth.usuario.id, versionSesion: r.data.versionSesion });
-    establecerCookieSesion(cookieStore, token);
+    const sesionSinExpiracion = sinLimiteInactividad(auth.usuario.correo);
+    const token = await crearToken(
+      { id: auth.usuario.id, versionSesion: r.data.versionSesion },
+      { sinExpiracion: sesionSinExpiracion }
+    );
+    establecerCookieSesion(cookieStore, token, sesionSinExpiracion);
     return NextResponse.json({ mensaje: r.data.mensaje });
   }
 

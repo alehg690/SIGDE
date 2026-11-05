@@ -7,12 +7,12 @@ export function getSessionCookieName() {
     : 'sigde-session';
 }
 
-export function getSessionCookieOptions() {
+export function getSessionCookieOptions(options: { sinExpiracion?: boolean } = {}) {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict' as const,
-    maxAge: SESSION_MAX_AGE_SECONDS,
+    ...(!options.sinExpiracion && { maxAge: SESSION_MAX_AGE_SECONDS }),
     path: '/',
     priority: 'high' as const,
   };
