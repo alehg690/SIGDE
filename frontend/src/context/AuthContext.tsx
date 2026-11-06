@@ -8,7 +8,7 @@ const INACTIVITY_LIMIT_MS = 30 * 60 * 1000;
 const ACTIVITY_REFRESH_INTERVAL_MS = 60 * 1000;
 const EXPIRATION_WARNING_MS = 5 * 60 * 1000;
 const SESSION_MESSAGE_KEY = 'sigde_logout_message';
-const PUBLIC_PATHS = new Set(['/', '/expo', '/feria', '/terminos', '/politica-datos']);
+const PUBLIC_PATHS = new Set(['/', '/expo', '/feria', '/exponavia', '/terminos', '/politica-datos']);
 
 function isPublicPath() {
   return PUBLIC_PATHS.has(window.location.pathname.replace(/\/$/, '') || '/');
