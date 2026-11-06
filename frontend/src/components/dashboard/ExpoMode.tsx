@@ -82,11 +82,18 @@ const STEPS: ExpoStep[] = [
   },
 ];
 
+const AUTO_DURATIONS = [9_000, 43_000, 10_000, 10_000, 10_000];
+
 export default function ExpoMode({ metrics, onClose, onNavigate }: { metrics: ExpoMetrics; onClose: () => void; onNavigate: (section: ExpoSection) => void }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [elapsed, setElapsed] = useState(0);
   const dialogRef = useRef<HTMLElement>(null);
   const step = STEPS[activeIndex];
   const progress = ((activeIndex + 1) / STEPS.length) * 100;
+  const duration = AUTO_DURATIONS[activeIndex];
+  const timerProgress = Math.min(100, (elapsed / duration) * 100);
+  const secondsLeft = Math.max(0, Math.ceil((duration - elapsed) / 1000));
   const metricCards = useMemo(() => [
     { value: metrics.estudiantes, label: 'estudiantes en el sistema' },
     { value: metrics.reportes, label: 'historias registradas' },
@@ -99,8 +106,8 @@ export default function ExpoMode({ metrics, onClose, onNavigate }: { metrics: Ex
     dialogRef.current?.focus();
     function handleKey(event: KeyboardEvent) {
       if (event.key === 'Escape') onClose();
-      if (event.key === 'ArrowRight') setActiveIndex((current) => Math.min(STEPS.length - 1, current + 1));
-      if (event.key === 'ArrowLeft') setActiveIndex((current) => Math.max(0, current - 1));
+      if (event.key === 'ArrowRight') { setIsPlaying(false); setElapsed(0); setActiveIndex((current) => Math.min(STEPS.length - 1, current + 1)); }
+      if (event.key === 'ArrowLeft') { setIsPlaying(false); setElapsed(0); setActiveIndex((current) => Math.max(0, current - 1)); }
     }
     document.addEventListener('keydown', handleKey);
     return () => {
@@ -109,16 +116,53 @@ export default function ExpoMode({ metrics, onClose, onNavigate }: { metrics: Ex
     };
   }, [onClose]);
 
+  useEffect(() => {
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const frame = window.requestAnimationFrame(() => setIsPlaying(false));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    const startedAt = performance.now() - elapsed;
+    const interval = window.setInterval(() => setElapsed(Math.min(duration, performance.now() - startedAt)), 100);
+    const timeout = window.setTimeout(() => {
+      setElapsed(0);
+      if (activeIndex === STEPS.length - 1) setIsPlaying(false);
+      else setActiveIndex((current) => current + 1);
+    }, Math.max(0, duration - elapsed));
+    return () => { window.clearInterval(interval); window.clearTimeout(timeout); };
+    // elapsed is intentionally captured when playback starts or resumes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex, duration, isPlaying]);
+
+  function selectStep(index: number, manual = true) {
+    setActiveIndex(index);
+    setElapsed(0);
+    if (manual) setIsPlaying(false);
+  }
+
+  function togglePlayback() {
+    if (!isPlaying && activeIndex === STEPS.length - 1 && elapsed === 0) {
+      setActiveIndex(0);
+      setElapsed(0);
+      setIsPlaying(true);
+      return;
+    }
+    setIsPlaying((current) => !current);
+  }
+
   function explore() {
     onNavigate(step.section);
     onClose();
   }
 
   return <div className="expo-mode-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <section ref={dialogRef} className="expo-mode" role="dialog" aria-modal="true" aria-labelledby="expo-mode-title" tabIndex={-1} style={{ '--expo-accent': step.accent, '--expo-progress': `${progress}%` } as CSSProperties}>
+    <section ref={dialogRef} className="expo-mode" role="dialog" aria-modal="true" aria-labelledby="expo-mode-title" tabIndex={-1} style={{ '--expo-accent': step.accent, '--expo-progress': `${progress}%`, '--expo-timer': `${timerProgress}%` } as CSSProperties}>
       <div className="expo-mode-aurora" aria-hidden="true" />
       <header className="expo-mode-header">
         <div className="expo-mode-brand"><span><i /> MODO EXPO</span><strong>SIGDE</strong></div>
+        <button className={`expo-autoplay${isPlaying ? ' expo-autoplay--playing' : ''}`} type="button" onClick={togglePlayback} aria-label={isPlaying ? 'Pausar presentación automática' : activeIndex === STEPS.length - 1 && elapsed === 0 ? 'Repetir presentación' : 'Continuar presentación automática'}><span aria-hidden="true">{isPlaying ? 'Ⅱ' : activeIndex === STEPS.length - 1 && elapsed === 0 ? '↻' : '▶'}</span><div><strong>{isPlaying ? 'Presentando' : activeIndex === STEPS.length - 1 && elapsed === 0 ? 'Repetir' : 'En pausa'}</strong><small>{isPlaying ? `${secondsLeft} s` : 'Control manual'}</small></div><i /></button>
         <div className="expo-mode-progress-copy"><span>MISIONES</span><strong>{String(activeIndex + 1).padStart(2, '0')} / {String(STEPS.length).padStart(2, '0')}</strong></div>
         <button type="button" aria-label="Cerrar Modo Expo" onClick={onClose}>×</button>
       </header>
@@ -127,10 +171,10 @@ export default function ExpoMode({ metrics, onClose, onNavigate }: { metrics: Ex
 
       <div className="expo-mode-body">
         <nav className="expo-mode-steps" aria-label="Misiones de la presentación">
-          {STEPS.map((item, index) => <button key={item.id} type="button" className={index === activeIndex ? 'active' : ''} aria-current={index === activeIndex ? 'step' : undefined} onClick={() => setActiveIndex(index)}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{item.proof}</strong><small>{item.kicker.split(' · ')[1]}</small></div></button>)}
+          {STEPS.map((item, index) => <button key={item.id} type="button" className={index === activeIndex ? 'active' : ''} aria-current={index === activeIndex ? 'step' : undefined} onClick={() => selectStep(index)}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{item.proof}</strong><small>{item.kicker.split(' · ')[1]}</small></div></button>)}
         </nav>
 
-        {step.id === 'evidencia' ? <InformationJourney onExplore={(section) => { onNavigate(section); onClose(); }} /> : <main className="expo-mode-story" key={step.id}>
+        {step.id === 'evidencia' ? <InformationJourney isPlaying={isPlaying} onInteraction={() => setIsPlaying(false)} onExplore={(section) => { onNavigate(section); onClose(); }} /> : <main className="expo-mode-story" key={step.id}>
           <span className="expo-mode-kicker">{step.kicker}</span>
           <div className="expo-mode-symbol" aria-hidden="true">{step.icon}</div>
           <h2 id="expo-mode-title">{step.title}</h2>
@@ -145,7 +189,7 @@ export default function ExpoMode({ metrics, onClose, onNavigate }: { metrics: Ex
 
           <footer className="expo-mode-actions">
             <button type="button" className="expo-mode-explore" onClick={explore}>Verlo en acción <span aria-hidden="true">↗</span></button>
-            <div><button type="button" disabled={activeIndex === 0} aria-label="Paso anterior" onClick={() => setActiveIndex((current) => Math.max(0, current - 1))}>←</button><button type="button" disabled={activeIndex === STEPS.length - 1} aria-label="Paso siguiente" onClick={() => setActiveIndex((current) => Math.min(STEPS.length - 1, current + 1))}>→</button></div>
+            <div><button type="button" disabled={activeIndex === 0} aria-label="Paso anterior" onClick={() => selectStep(Math.max(0, activeIndex - 1))}>←</button><button type="button" disabled={activeIndex === STEPS.length - 1} aria-label="Paso siguiente" onClick={() => selectStep(Math.min(STEPS.length - 1, activeIndex + 1))}>→</button></div>
           </footer>
         </main>}
       </div>
@@ -214,12 +258,30 @@ const JOURNEYS: Record<JourneyKey, {
   },
 };
 
-function InformationJourney({ onExplore }: { onExplore: (section: ExpoSection) => void }) {
+function InformationJourney({ isPlaying, onInteraction, onExplore }: { isPlaying: boolean; onInteraction: () => void; onExplore: (section: ExpoSection) => void }) {
   const [journeyKey, setJourneyKey] = useState<JourneyKey>('observer');
   const [journeyStep, setJourneyStep] = useState(0);
   const journey = JOURNEYS[journeyKey];
 
+  useEffect(() => {
+    if (!isPlaying) return;
+    const timer = window.setTimeout(() => {
+      if (journeyStep < JOURNEYS[journeyKey].steps.length - 1) {
+        setJourneyStep((current) => current + 1);
+        return;
+      }
+      const order: JourneyKey[] = ['observer', 'exit', 'analysis'];
+      const currentJourney = order.indexOf(journeyKey);
+      if (currentJourney < order.length - 1) {
+        setJourneyKey(order[currentJourney + 1]);
+        setJourneyStep(0);
+      }
+    }, 3_400);
+    return () => window.clearTimeout(timer);
+  }, [isPlaying, journeyKey, journeyStep]);
+
   function selectJourney(key: JourneyKey) {
+    onInteraction();
     setJourneyKey(key);
     setJourneyStep(0);
   }
@@ -232,11 +294,11 @@ function InformationJourney({ onExplore }: { onExplore: (section: ExpoSection) =
     <div className="journey-workspace">
       <section className="journey-map" aria-label={`Pasos de ${journey.label}`}>
         <div className="journey-map-heading"><span>{journey.label}</span><h3>{journey.title}</h3><p>{journey.intro}</p></div>
-        <ol>{journey.steps.map((item, index) => <li key={item.title} className={index === journeyStep ? 'active' : index < journeyStep ? 'done' : ''}><button type="button" onClick={() => setJourneyStep(index)}><span>{index < journeyStep ? '✓' : index + 1}</span><div><strong>{item.title}</strong>{index === journeyStep && <p>{item.text}</p>}</div></button></li>)}</ol>
+        <ol>{journey.steps.map((item, index) => <li key={item.title} className={index === journeyStep ? 'active' : index < journeyStep ? 'done' : ''}><button type="button" onClick={() => { onInteraction(); setJourneyStep(index); }}><span>{index < journeyStep ? '✓' : index + 1}</span><div><strong>{item.title}</strong>{index === journeyStep && <p>{item.text}</p>}</div></button></li>)}</ol>
       </section>
       <JourneyLivePreview journeyKey={journeyKey} step={journeyStep} reassurance={journey.reassurance} />
     </div>
-    <footer><button type="button" className="journey-open-module" onClick={() => onExplore(journeyKey === 'exit' ? 'salidas' : journeyKey === 'analysis' ? 'seguimiento' : 'reportes')}>Abrir módulo real ↗</button><span>Paso {journeyStep + 1} de {journey.steps.length}</span><div><button type="button" disabled={journeyStep === 0} onClick={() => setJourneyStep((current) => Math.max(0, current - 1))}>← Anterior</button><button type="button" disabled={journeyStep === journey.steps.length - 1} onClick={() => setJourneyStep((current) => Math.min(journey.steps.length - 1, current + 1))}>Siguiente →</button></div></footer>
+    <footer><button type="button" className="journey-open-module" onClick={() => onExplore(journeyKey === 'exit' ? 'salidas' : journeyKey === 'analysis' ? 'seguimiento' : 'reportes')}>Abrir módulo real ↗</button><span>{isPlaying ? 'Reproducción automática' : `Paso ${journeyStep + 1} de ${journey.steps.length}`}</span><div><button type="button" disabled={journeyStep === 0} onClick={() => { onInteraction(); setJourneyStep((current) => Math.max(0, current - 1)); }}>← Anterior</button><button type="button" disabled={journeyStep === journey.steps.length - 1} onClick={() => { onInteraction(); setJourneyStep((current) => Math.min(journey.steps.length - 1, current + 1)); }}>Siguiente →</button></div></footer>
   </main>;
 }
 
