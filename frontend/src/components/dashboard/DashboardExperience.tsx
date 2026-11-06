@@ -18,6 +18,7 @@ import StatisticsWorkspace from '@/components/statistics/StatisticsWorkspace';
 import CalendarWorkspace from '@/components/calendar/CalendarWorkspace';
 import ProfileWorkspace from '@/components/profile/ProfileWorkspace';
 import MobileNavigation from '@/components/dashboard/MobileNavigation';
+import ExpoMode from '@/components/dashboard/ExpoMode';
 import ModuleHeader from '@/components/ui/ModuleHeader';
 import KpiGrid from '@/components/ui/KpiGrid';
 import type { Estudiante } from '@/types/students';
@@ -262,6 +263,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
   const [studentsViewKey, setStudentsViewKey] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [expoModeOpen, setExpoModeOpen] = useState(false);
   const [closing, setClosing] = useState(false);
   const [dashboardSnapshot, setDashboardSnapshot] = useState<DashboardStats | null>(null);
   const [dashboardError, setDashboardError] = useState('');
@@ -444,6 +446,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
             <button type="submit" aria-label="Buscar">Buscar</button>
           </form>}
           <div className="app-topbar-tools">
+            {role !== 'portero' && <button className="expo-mode-trigger" type="button" onClick={() => setExpoModeOpen(true)}><SidebarIcon name="sparkles" /><span>Modo Expo</span><i aria-hidden="true">EXPO 2026</i></button>}
             <div className="profile-menu-wrap">
               <button className="profile-menu-trigger" type="button" onClick={() => setProfileOpen((actual) => !actual)} aria-expanded={profileOpen} aria-haspopup="menu"><span className="admin-avatar">{usuario.nombre.slice(0, 1).toUpperCase()}</span><span className="profile-menu-name">{usuario.nombre.split(' ')[0]}</span><span className="profile-menu-chevron"><SidebarIcon name="chevronDown" /></span></button>
               {profileOpen && <div className="profile-menu" role="menu"><strong>{usuario.nombre}</strong><span>{usuario.correo}</span><button type="button" role="menuitem" onClick={() => { seleccionarSeccion('perfil'); setProfileOpen(false); }}><SidebarIcon name="profile" /> Mi perfil</button><button className="profile-menu-logout" type="button" role="menuitem" disabled={closing} onClick={handleLogout}><SidebarIcon name="logout" /> {closing ? 'Cerrando...' : 'Cerrar sesión'}</button></div>}
@@ -488,6 +491,7 @@ export default function DashboardExperience({ usuario }: { usuario: DashboardUse
         </>)}
         </div>
       </section>
+      {expoModeOpen && <ExpoMode metrics={{ estudiantes: dashboardSnapshot?.metricas.estudiantes ?? 0, reportes: dashboardSnapshot?.metricas.reportes ?? 0, alertas: dashboardSnapshot?.metricas.alertasActivas ?? 0, pendientes: dashboardSnapshot?.metricas.reportesPendientes ?? 0 }} onClose={() => setExpoModeOpen(false)} onNavigate={seleccionarSeccion} />}
     </main>
   );
 }
