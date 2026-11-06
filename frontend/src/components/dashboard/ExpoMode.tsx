@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import Image from 'next/image';
+import { QRCodeSVG } from 'qrcode.react';
 
 type ExpoSection = 'dashboard' | 'reportes' | 'seguimiento' | 'estadisticas' | 'convivencia' | 'salidas';
 
@@ -83,11 +85,15 @@ const STEPS: ExpoStep[] = [
 ];
 
 const AUTO_DURATIONS = [9_000, 43_000, 10_000, 10_000, 10_000];
+const VOTE_URL = 'https://goo.su/4UMyig1';
 
-export default function ExpoMode({ metrics, onClose, onNavigate }: { metrics: ExpoMetrics; onClose: () => void; onNavigate: (section: ExpoSection) => void }) {
+export default function ExpoMode({ metrics, onClose, onNavigate }: { metrics: ExpoMetrics; onClose?: () => void; onNavigate?: (section: ExpoSection) => void }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [elapsed, setElapsed] = useState(0);
+  const [resetVersion, setResetVersion] = useState(0);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine);
   const dialogRef = useRef<HTMLElement>(null);
   const step = STEPS[activeIndex];
   const progress = ((activeIndex + 1) / STEPS.length) * 100;
@@ -102,10 +108,20 @@ export default function ExpoMode({ metrics, onClose, onNavigate }: { metrics: Ex
   ], [metrics]);
 
   useEffect(() => {
+    const updateConnection = () => setIsOnline(navigator.onLine);
+    window.addEventListener('online', updateConnection);
+    window.addEventListener('offline', updateConnection);
+    return () => {
+      window.removeEventListener('online', updateConnection);
+      window.removeEventListener('offline', updateConnection);
+    };
+  }, []);
+
+  useEffect(() => {
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     dialogRef.current?.focus();
     function handleKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') onClose?.();
       if (event.key === 'ArrowRight') { setIsPlaying(false); setElapsed(0); setActiveIndex((current) => Math.min(STEPS.length - 1, current + 1)); }
       if (event.key === 'ArrowLeft') { setIsPlaying(false); setElapsed(0); setActiveIndex((current) => Math.max(0, current - 1)); }
     }
@@ -152,19 +168,36 @@ export default function ExpoMode({ metrics, onClose, onNavigate }: { metrics: Ex
     setIsPlaying((current) => !current);
   }
 
-  function explore() {
-    onNavigate(step.section);
-    onClose();
+  function resetDemo() {
+    setActiveIndex(0);
+    setElapsed(0);
+    setIsPlaying(true);
+    setQrOpen(false);
+    setResetVersion((current) => current + 1);
   }
 
-  return <div className="expo-mode-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+  function explore() {
+    if (onNavigate) {
+      onNavigate(step.section);
+      onClose?.();
+      return;
+    }
+    resetDemo();
+  }
+
+  return <div className="expo-mode-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose?.(); }}>
     <section ref={dialogRef} className="expo-mode" role="dialog" aria-modal="true" aria-labelledby="expo-mode-title" tabIndex={-1} style={{ '--expo-accent': step.accent, '--expo-progress': `${progress}%`, '--expo-timer': `${timerProgress}%` } as CSSProperties}>
       <div className="expo-mode-aurora" aria-hidden="true" />
       <header className="expo-mode-header">
         <div className="expo-mode-brand"><span><i /> MODO EXPO</span><strong>SIGDE</strong></div>
+        <div className="expo-prep-tools">
+          <span className={isOnline ? 'expo-connection' : 'expo-connection expo-connection--offline'}><i />{isOnline ? 'Demo lista' : 'Sin conexión · demo activa'}</span>
+          <button type="button" onClick={() => { setIsPlaying(false); setQrOpen(true); }} aria-label="Mostrar código QR para votar"><span aria-hidden="true">☆</span> Votar</button>
+          <button type="button" onClick={resetDemo} aria-label="Reiniciar demostración"><span aria-hidden="true">↻</span> Reiniciar</button>
+        </div>
         <button className={`expo-autoplay${isPlaying ? ' expo-autoplay--playing' : ''}`} type="button" onClick={togglePlayback} aria-label={isPlaying ? 'Pausar presentación automática' : activeIndex === STEPS.length - 1 && elapsed === 0 ? 'Repetir presentación' : 'Continuar presentación automática'}><span aria-hidden="true">{isPlaying ? 'Ⅱ' : activeIndex === STEPS.length - 1 && elapsed === 0 ? '↻' : '▶'}</span><div><strong>{isPlaying ? 'Presentando' : activeIndex === STEPS.length - 1 && elapsed === 0 ? 'Repetir' : 'En pausa'}</strong><small>{isPlaying ? `${secondsLeft} s` : 'Control manual'}</small></div><i /></button>
         <div className="expo-mode-progress-copy"><span>MISIONES</span><strong>{String(activeIndex + 1).padStart(2, '0')} / {String(STEPS.length).padStart(2, '0')}</strong></div>
-        <button type="button" aria-label="Cerrar Modo Expo" onClick={onClose}>×</button>
+        {onClose && <button type="button" aria-label="Cerrar Modo Expo" onClick={onClose}>×</button>}
       </header>
 
       <div className="expo-mode-progress" aria-hidden="true"><i /></div>
@@ -174,7 +207,7 @@ export default function ExpoMode({ metrics, onClose, onNavigate }: { metrics: Ex
           {STEPS.map((item, index) => <button key={item.id} type="button" className={index === activeIndex ? 'active' : ''} aria-current={index === activeIndex ? 'step' : undefined} onClick={() => selectStep(index)}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{item.proof}</strong><small>{item.kicker.split(' · ')[1]}</small></div></button>)}
         </nav>
 
-        {step.id === 'evidencia' ? <InformationJourney isPlaying={isPlaying} onInteraction={() => setIsPlaying(false)} onExplore={(section) => { onNavigate(section); onClose(); }} /> : <main className="expo-mode-story" key={step.id}>
+        {step.id === 'evidencia' ? <InformationJourney key={resetVersion} isPlaying={isPlaying} onInteraction={() => setIsPlaying(false)} onExplore={onNavigate ? (section) => { onNavigate(section); onClose?.(); } : undefined} /> : <main className="expo-mode-story" key={step.id}>
           <span className="expo-mode-kicker">{step.kicker}</span>
           <div className="expo-mode-symbol" aria-hidden="true">{step.icon}</div>
           <h2 id="expo-mode-title">{step.title}</h2>
@@ -188,13 +221,21 @@ export default function ExpoMode({ metrics, onClose, onNavigate }: { metrics: Ex
           {activeIndex !== 0 && <div className="expo-mode-proof"><span aria-hidden="true">{step.icon}</span><div><small>EL SUPERPODER DE ESTA MISIÓN</small><strong>{step.proof}</strong></div></div>}
 
           <footer className="expo-mode-actions">
-            <button type="button" className="expo-mode-explore" onClick={explore}>Verlo en acción <span aria-hidden="true">↗</span></button>
+            <button type="button" className="expo-mode-explore" onClick={explore}>{onNavigate ? 'Verlo en acción' : 'Volver a comenzar'} <span aria-hidden="true">{onNavigate ? '↗' : '↻'}</span></button>
             <div><button type="button" disabled={activeIndex === 0} aria-label="Paso anterior" onClick={() => selectStep(Math.max(0, activeIndex - 1))}>←</button><button type="button" disabled={activeIndex === STEPS.length - 1} aria-label="Paso siguiente" onClick={() => selectStep(Math.min(STEPS.length - 1, activeIndex + 1))}>→</button></div>
           </footer>
         </main>}
       </div>
 
       <footer className="expo-mode-footer"><span><i /> Explora con tranquilidad: este recorrido no cambia ningún dato</span><p>Usa <kbd>←</kbd> <kbd>→</kbd> para avanzar · <kbd>Esc</kbd> para cerrar</p></footer>
+
+      {qrOpen && <div className="expo-qr-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setQrOpen(false); }}>
+        <section className="expo-qr-dialog expo-vote-card expo-vote-card--simple" role="dialog" aria-modal="true" aria-labelledby="expo-qr-title">
+          <button type="button" className="expo-qr-close" onClick={() => setQrOpen(false)} aria-label="Cerrar código QR">×</button>
+          <header className="expo-vote-brand"><div><span className="expo-vote-logo"><Image src="/Logo-login.png" alt="Logo de SIGDE" width={54} height={58} priority /></span><p><strong>SIGDE</strong><small>Sistema de Gestión Digital Escolar</small></p></div></header>
+          <div className="expo-vote-action"><div><span>¿TE GUSTÓ SIGDE?</span><h3 id="expo-qr-title">¡Califica mi proyecto!</h3><p>Si consideras que SIGDE es creativo, útil, claro y funcional, agradecería una calificación de <strong>5 en cada apartado</strong>.</p><small>Alejandro Hurtado · 11-2</small></div><div className="expo-vote-qr-wrap"><div className="expo-qr-code"><QRCodeSVG value={VOTE_URL} size={340} level="H" marginSize={2} bgColor="#ffffff" fgColor="#071522" /></div><b>ESCANEA PARA VOTAR</b></div></div>
+        </section>
+      </div>}
     </section>
   </div>;
 }
@@ -258,7 +299,7 @@ const JOURNEYS: Record<JourneyKey, {
   },
 };
 
-function InformationJourney({ isPlaying, onInteraction, onExplore }: { isPlaying: boolean; onInteraction: () => void; onExplore: (section: ExpoSection) => void }) {
+function InformationJourney({ isPlaying, onInteraction, onExplore }: { isPlaying: boolean; onInteraction: () => void; onExplore?: (section: ExpoSection) => void }) {
   const [journeyKey, setJourneyKey] = useState<JourneyKey>('observer');
   const [journeyStep, setJourneyStep] = useState(0);
   const journey = JOURNEYS[journeyKey];
@@ -298,7 +339,7 @@ function InformationJourney({ isPlaying, onInteraction, onExplore }: { isPlaying
       </section>
       <JourneyLivePreview journeyKey={journeyKey} step={journeyStep} reassurance={journey.reassurance} />
     </div>
-    <footer><button type="button" className="journey-open-module" onClick={() => onExplore(journeyKey === 'exit' ? 'salidas' : journeyKey === 'analysis' ? 'seguimiento' : 'reportes')}>Abrir módulo real ↗</button><span>{isPlaying ? 'Reproducción automática' : `Paso ${journeyStep + 1} de ${journey.steps.length}`}</span><div><button type="button" disabled={journeyStep === 0} onClick={() => { onInteraction(); setJourneyStep((current) => Math.max(0, current - 1)); }}>← Anterior</button><button type="button" disabled={journeyStep === journey.steps.length - 1} onClick={() => { onInteraction(); setJourneyStep((current) => Math.min(journey.steps.length - 1, current + 1)); }}>Siguiente →</button></div></footer>
+    <footer>{onExplore && <button type="button" className="journey-open-module" onClick={() => onExplore(journeyKey === 'exit' ? 'salidas' : journeyKey === 'analysis' ? 'seguimiento' : 'reportes')}>Abrir módulo real ↗</button>}<span>{isPlaying ? 'Reproducción automática' : `Paso ${journeyStep + 1} de ${journey.steps.length}`}</span><div><button type="button" disabled={journeyStep === 0} onClick={() => { onInteraction(); setJourneyStep((current) => Math.max(0, current - 1)); }}>← Anterior</button><button type="button" disabled={journeyStep === journey.steps.length - 1} onClick={() => { onInteraction(); setJourneyStep((current) => Math.min(journey.steps.length - 1, current + 1)); }}>Siguiente →</button></div></footer>
   </main>;
 }
 
