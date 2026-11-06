@@ -8,6 +8,11 @@ const INACTIVITY_LIMIT_MS = 30 * 60 * 1000;
 const ACTIVITY_REFRESH_INTERVAL_MS = 60 * 1000;
 const EXPIRATION_WARNING_MS = 5 * 60 * 1000;
 const SESSION_MESSAGE_KEY = 'sigde_logout_message';
+const PUBLIC_PATHS = new Set(['/', '/expo', '/feria', '/terminos', '/politica-datos']);
+
+function isPublicPath() {
+  return PUBLIC_PATHS.has(window.location.pathname.replace(/\/$/, '') || '/');
+}
 
 type AuthContextValue = {
   usuario: SessionUser | null;
@@ -37,8 +42,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setExpiraEn(session.autenticado ? session.expiraEn ?? null : null);
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
-        sessionStorage.setItem(SESSION_MESSAGE_KEY, 'Tu sesión expiró. Inicia sesión nuevamente.');
-        window.location.replace('/');
+        if (!isPublicPath()) {
+          sessionStorage.setItem(SESSION_MESSAGE_KEY, 'Tu sesión expiró. Inicia sesión nuevamente.');
+          window.location.replace('/');
+        }
       } else {
         console.error(error);
       }
@@ -89,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refrescarSesion]);
 
   useEffect(() => {
-    if (cargando || usuario || window.location.pathname === '/') return;
+    if (cargando || usuario || isPublicPath()) return;
     window.location.replace('/');
   }, [cargando, usuario]);
 
