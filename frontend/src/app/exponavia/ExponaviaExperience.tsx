@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
-import styles from './feria.module.css';
+import styles from './exponavia.module.css';
 
 const modules = [
   { icon: '▦', name: 'Dashboard', text: 'Un vistazo rápido a la información importante del sistema.' },
@@ -20,7 +20,7 @@ const views = [
   { number: '04', title: 'Datos que se pueden comprender', label: 'Estadísticas', detail: 'Las visualizaciones ayudan a leer la información del sistema.', tags: ['Indicadores', 'Gráficas', 'Consulta'] },
 ];
 
-export default function FeriaExperience({ formUrl }: { formUrl: string }) {
+export default function ExponaviaExperience({ formUrl }: { formUrl: string }) {
   const galleryRef = useRef<HTMLDivElement>(null);
   const overviewRef = useRef<HTMLElement>(null);
   const [showFloating, setShowFloating] = useState(false);
@@ -45,14 +45,14 @@ export default function FeriaExperience({ formUrl }: { formUrl: string }) {
       <header className={styles.header}>
         <a className={styles.brand} href="#inicio" aria-label="SIGDE, ir al inicio">
           <Image src="/Logo-login.png" alt="" width={36} height={38} priority />
-          <span>SIGDE <small>FERIA 2026</small></span>
+          <span>SIGDE <small>EXPONAVIA 2026</small></span>
         </a>
         <a className={styles.headerLink} href="#evaluar">Evaluar proyecto <span aria-hidden="true">↗</span></a>
       </header>
 
       <section id="inicio" className={styles.hero} aria-labelledby="hero-title">
         <div className={styles.heroCopy}>
-          <span className={styles.eyebrow}><span className={styles.dot} /> PROYECTO DE GRADO · 11-2</span>
+          <span className={styles.eyebrow}><span className={styles.dot} /> EXPONAVIA 2026 · 11-2</span>
           <h1 id="hero-title">¡Conoce <em>SIGDE!</em></h1>
           <p className={styles.heroLead}>Una nueva forma de organizar la información escolar.</p>
           <p className={styles.heroSub}>Soy Alejandro Hurtado, de 11-2, y desarrollé este sistema como mi proyecto de grado. Te invito a conocerlo en menos de un minuto.</p>
@@ -94,7 +94,7 @@ export default function FeriaExperience({ formUrl }: { formUrl: string }) {
 
       <section id="evaluar" className={`${styles.section} ${styles.evaluateSection}`} aria-labelledby="evaluate-title"><div className={styles.evaluateGlow} aria-hidden="true" /><span className={styles.kicker}>05 / TU OPINIÓN CUENTA</span><div className={styles.stars} aria-label="Escala máxima de cinco estrellas">☆ ☆ ☆ ☆ ☆</div><h2 id="evaluate-title">¡Ahora quiero conocer <em>tu opinión!</em></h2><p>Gracias por tomarte un momento para conocer SIGDE. Tu evaluación es muy importante para mi proyecto de grado.</p><a className={styles.evaluateButton} href={formUrl} target="_blank" rel="noopener noreferrer">Evaluar SIGDE <span aria-hidden="true">↗</span></a><small>Son solo 5 preguntas y puedes responder en menos de un minuto.</small><p className={styles.honestNote}>Si mi proyecto te gustó, ¡tu buena calificación me ayudaría muchísimo! Responde según tu experiencia.</p></section>
 
-      <footer className={styles.footer}><Image src="/Logo-login.png" alt="" width={44} height={48} /><h2>¡Gracias por apoyar mi proyecto!</h2><p>Alejandro Hurtado — Grado 11-2</p><span>SIGDE — Feria de proyectos de grado 2026</span></footer>
+      <footer className={styles.footer}><Image src="/Logo-login.png" alt="" width={44} height={48} /><h2>¡Gracias por apoyar mi proyecto!</h2><p>Alejandro Hurtado — Grado 11-2</p><span>SIGDE — EXPONAVIA 2026</span></footer>
       {showFloating && <a className={styles.floatingEval} href="#evaluar">Evaluar SIGDE <span aria-hidden="true">↗</span></a>}
     </main>
   );
