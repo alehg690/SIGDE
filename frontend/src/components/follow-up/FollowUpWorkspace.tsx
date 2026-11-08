@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { CSSProperties } from 'react';
 import { parseReportDate } from '@/lib/report-dates';
 import ModuleHeader from '@/components/ui/ModuleHeader';
 import KpiGrid from '@/components/ui/KpiGrid';
@@ -31,13 +30,6 @@ async function leerError(response: Response, fallback: string) {
 
 const STATUS_LABELS: Record<AlertStatus, string> = { new: 'Nueva', reviewed: 'Revisada', monitoring: 'En seguimiento', resolved: 'Resuelta', dismissed: 'Descartada' };
 const LEVEL_LABELS: Record<AttentionLevel, string> = { informational: 'Informativa', low: 'Observación', medium: 'Seguimiento recomendado', high: 'Revisión humana prioritaria' };
-
-const LEVEL_GUIDANCE: Record<AttentionLevel, { eyebrow: string; message: string }> = {
-  informational: { eyebrow: 'Contexto disponible', message: 'Conviene conservar este patrón como contexto para futuras revisiones.' },
-  low: { eyebrow: 'Observación preventiva', message: 'Hay señales para observar, sin necesidad de una intervención inmediata.' },
-  medium: { eyebrow: 'Seguimiento sugerido', message: 'El patrón merece contraste con el contexto del estudiante y seguimiento cercano.' },
-  high: { eyebrow: 'Atención prioritaria', message: 'El patrón requiere revisión humana oportuna y contraste con la evidencia.' },
-};
 
 function origenLabel(origen: string, detail = false) {
   if (origen === 'rule+local') return 'Análisis de SIGDE';
@@ -96,13 +88,6 @@ function fechaLegible(value: string | null) {
 
 function normalizarFiltro(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es-CO').trim();
-}
-
-function confidenceLabel(value: number | null) {
-  if (value == null) return 'Sin estimación';
-  if (value >= .8) return 'Base consistente';
-  if (value >= .55) return 'Base moderada';
-  return 'Base limitada';
 }
 
 function exportarCsv(alertas: Alert[]) {
@@ -221,32 +206,17 @@ export default function FollowUpWorkspace({ canManage, initialAlertId }: { canMa
           <span className="follow-up-records"><strong>{alerta.cantidadReportes}</strong><small>registros</small></span><span className={`module-status module-status--${alerta.estado}`}>{STATUS_LABELS[alerta.estado]}</span><time dateTime={alerta.actualizadoEn}><small>Actualizada</small>{fechaLegible(alerta.actualizadoEn)}</time>
         </button>)}
       </div></section>
-    {seleccionadaId !== null && <div className="follow-up-modal-backdrop" role="presentation" onMouseDown={cerrarDetalle}><aside ref={detalleRef} className={`module-detail-panel alert-detail-panel follow-up-modal follow-up-modal--${detalle?.nivelAtencion ?? 'medium'}`} role="dialog" aria-modal="true" aria-labelledby="follow-up-detail-title" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>{detalle ? <>
+    {seleccionadaId !== null && <div className="follow-up-modal-backdrop" role="presentation" onMouseDown={cerrarDetalle}><aside ref={detalleRef} className="module-detail-panel alert-detail-panel follow-up-modal" role="dialog" aria-modal="true" aria-labelledby="follow-up-detail-title" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>{detalle ? <>
         <button className="follow-up-modal-close" type="button" aria-label="Cerrar detalle" disabled={guardando} onClick={cerrarDetalle}>×</button>
-        <DecisionHero detail={detalle} />
-        <div className="follow-up-detail-columns"><div><section className="alert-detail-section alert-analysis-summary"><header><span className="analysis-section-kicker">LECTURA EJECUTIVA</span><h4>Lo esencial, en segundos</h4></header><ol className="alert-analysis-points">{resumenAnalisisClaro(detalle).map((item, index) => <li key={item}><span>{String(index + 1).padStart(2, '0')}</span><p>{item}</p></li>)}</ol></section><div className="follow-up-analysis-grid"><AnalysisList tone="hypothesis" title="Hipótesis para contrastar" items={detalle.analisisIa?.hypotheses} /><AnalysisList tone="action" title="Rutas de acción" items={detalle.analisisIa?.suggestedActions} /><AnalysisList tone="positive" title="Factores protectores" items={detalle.analisisIa?.positiveSignals} /><AnalysisList tone="missing" title="Vacíos de información" items={detalle.analisisIa?.missingInformation} /></div><p className="alert-ai-notice"><span aria-hidden="true">◇</span><strong>Copiloto, no piloto automático.</strong> Este análisis orienta la lectura; la decisión siempre pertenece al equipo institucional.</p></div><div className="follow-up-support-grid"><section className="alert-detail-section alert-evidence-section"><h4>Evidencias relacionadas <span>{detalle.evidencia.length}</span></h4>{detalle.evidencia.length ? <ul>{detalle.evidencia.map((item) => <li key={item.id}><strong>Reporte #{item.reporteId}</strong><span>{evidenciaLabel(item.tipoFalta || item.tipoEvidencia)} · {fechaLegible(item.fecha)}</span>{item.situacion && <small>{item.situacion}</small>}</li>)}</ul> : <p>Sin evidencias disponibles.</p>}</section><section className="alert-detail-section alert-history-section"><h4>Bitácora de decisiones</h4>{detalle.historial.length ? <ol className="alert-history">{detalle.historial.map((item) => <li key={item.id}><strong>{item.estadoAnterior ? `${estadoLabel(item.estadoAnterior)} → ${estadoLabel(item.estadoNuevo)}` : 'Alerta creada'}</strong><span>{textoLegible(item.motivo)}</span><small>Registrado por {item.usuario || item.proceso || 'SIGDE'} · {fechaLegible(item.creadoEn)}</small></li>)}</ol> : <p>Esta alerta todavía no registra cambios.</p>}</section></div></div>
+        <div className="module-detail-heading"><div><span>{reglaLabel(detalle.ruleId)}</span><h3 id="follow-up-detail-title">{detalle.estudiante}</h3><p>Curso {detalle.grado}-{detalle.grupo} · {origenLabel(detalle.origen, true)}</p></div><strong>{detalle.cantidadReportes}<small>registros</small></strong></div>
+        <dl className="module-detail-metadata"><div><dt>Estado</dt><dd>{STATUS_LABELS[detalle.estado]}</dd></div><div><dt>Nivel</dt><dd>{LEVEL_LABELS[detalle.nivelAtencion]}</dd></div><div><dt>Periodo</dt><dd>{fechaLegible(detalle.periodoInicio)} — {fechaLegible(detalle.periodoFin)}</dd></div><div><dt>Confianza</dt><dd>{detalle.confianza == null ? 'No disponible' : `${Math.round(detalle.confianza * 100)}%`}</dd></div></dl>
+        <div className="follow-up-detail-summary"><section><span>Motivo de la alerta</span><strong>{reglaLabel(detalle.ruleId)}</strong><p>{detalle.resumenCorto}</p></section><section><span>Origen del análisis</span><strong>{origenLabel(detalle.origen, true)}</strong><p>La valoración final siempre corresponde al equipo institucional.</p></section></div>
+        <div className="follow-up-detail-columns"><div><section className="alert-detail-section alert-analysis-summary"><h4>Resumen del análisis</h4><ul className="alert-analysis-points">{resumenAnalisisClaro(detalle).map((item) => <li key={item}>{item}</li>)}</ul></section><div className="follow-up-analysis-grid"><AnalysisList title="Posibles explicaciones" items={detalle.analisisIa?.hypotheses} /><AnalysisList title="Acciones sugeridas" items={detalle.analisisIa?.suggestedActions} /><AnalysisList title="Señales positivas" items={detalle.analisisIa?.positiveSignals} /><AnalysisList title="Información faltante" items={detalle.analisisIa?.missingInformation} /></div><p className="alert-ai-notice">Análisis orientativo generado por SIGDE. Requiere revisión humana.</p></div><div className="follow-up-support-grid"><section className="alert-detail-section alert-evidence-section"><h4>Evidencias relacionadas <span>{detalle.evidencia.length}</span></h4>{detalle.evidencia.length ? <ul>{detalle.evidencia.map((item) => <li key={item.id}><strong>Reporte #{item.reporteId}</strong><span>{evidenciaLabel(item.tipoFalta || item.tipoEvidencia)} · {fechaLegible(item.fecha)}</span>{item.situacion && <small>{item.situacion}</small>}</li>)}</ul> : <p>Sin evidencias disponibles.</p>}</section><section className="alert-detail-section"><h4>Historial de la alerta</h4>{detalle.historial.length ? <ol className="alert-history">{detalle.historial.map((item) => <li key={item.id}><strong>{item.estadoAnterior ? `${estadoLabel(item.estadoAnterior)} → ${estadoLabel(item.estadoNuevo)}` : 'Alerta creada'}</strong><span>{textoLegible(item.motivo)}</span><small>Registrado por {item.usuario || item.proceso || 'SIGDE'} · {fechaLegible(item.creadoEn)}</small></li>)}</ol> : <p>Esta alerta todavía no registra cambios.</p>}</section></div></div>
         {canManage ? <div className="follow-up-editor"><label><span>Motivo o corrección</span><textarea value={nota} maxLength={1500} onChange={(event) => setNota(event.target.value)} placeholder="Obligatorio para corregir, descartar o cerrar." /><small>{nota.length}/1500</small></label><div className="alert-action-grid"><button disabled={guardando} onClick={() => void actuar('review')}>Marcar como revisada</button><button disabled={guardando} onClick={() => void actuar('confirm')}>Confirmar</button><button disabled={guardando} onClick={() => void actuar('correct')}>Corregir</button><button disabled={guardando} onClick={() => void actuar('dismiss')}>Descartar</button><button disabled={guardando} onClick={() => void actuar('close')}>Cerrar alerta</button><button disabled={guardando} onClick={() => void actuar('regenerate')}>Regenerar análisis</button></div></div> : <div className="module-readonly-note"><strong>Consulta docente</strong><p>El análisis y la evidencia son de consulta. Coordinación registra los cambios de estado.</p></div>}
       </> : <div className="module-empty-state"><strong>Cargando detalle…</strong><p>Estamos preparando la trazabilidad de la alerta.</p></div>}</aside></div>}
   </section>;
 }
 
-function DecisionHero({ detail }: { detail: AlertDetail }) {
-  const confidence = detail.confianza == null ? null : Math.max(0, Math.min(100, Math.round(detail.confianza * 100)));
-  const guidance = LEVEL_GUIDANCE[detail.nivelAtencion];
-  const nextAction = detail.analisisIa?.suggestedActions?.[0] || 'Revisar las evidencias y contrastar el patrón con el contexto del estudiante.';
-  return <section className="decision-hero" aria-label="Panorama de la alerta">
-    <div className="decision-hero-glow" aria-hidden="true" />
-    <header className="decision-hero-heading"><div><span className="decision-live"><i /> ANÁLISIS ACTIVO</span><p>{reglaLabel(detail.ruleId)}</p><h3 id="follow-up-detail-title">{detail.estudiante}</h3><small>Curso {detail.grado}-{detail.grupo} · {origenLabel(detail.origen, true)}</small></div><span className={`decision-status decision-status--${detail.nivelAtencion}`}>{LEVEL_LABELS[detail.nivelAtencion]}</span></header>
-    <div className="decision-hero-grid">
-      <div className="decision-signal"><div className="decision-orbit" style={{ '--confidence': `${confidence ?? 0}%` } as CSSProperties}><span><strong>{confidence == null ? '—' : confidence}</strong>{confidence != null && <small>%</small>}</span></div><div><span>CONFIANZA DEL ANÁLISIS</span><strong>{confidenceLabel(detail.confianza)}</strong><p>Indica la solidez de la información disponible, no la certeza de una decisión.</p></div></div>
-      <div className="decision-readout"><span>{guidance.eyebrow}</span><strong>{detail.cantidadReportes} {detail.cantidadReportes === 1 ? 'señal conectada' : 'señales conectadas'}</strong><p>{guidance.message}</p><div className="decision-period"><span>Ventana analizada</span><time>{fechaLegible(detail.periodoInicio)} — {fechaLegible(detail.periodoFin)}</time></div></div>
-      <div className="decision-next-step"><span>SIGUIENTE MEJOR PASO</span><p>{nextAction}</p><small><i aria-hidden="true">→</i> Validar con evidencia antes de actuar</small></div>
-    </div>
-    <footer><span>Estado: <strong>{STATUS_LABELS[detail.estado]}</strong></span><span>Última actualización: <strong>{fechaLegible(detail.actualizadoEn)}</strong></span></footer>
-  </section>;
-}
-
-function AnalysisList({ title, items, tone }: { title: string; items?: string[]; tone: 'hypothesis' | 'action' | 'positive' | 'missing' }) {
-  const symbols = { hypothesis: '⌁', action: '↗', positive: '✦', missing: '?' };
-  return <section className={`alert-detail-section analysis-card analysis-card--${tone}`}><header><span aria-hidden="true">{symbols[tone]}</span><div><h4>{title}</h4><small>{items?.length || 0} hallazgos</small></div></header>{items?.length ? <ul>{items.map((item, index) => <li key={`${title}-${index}`}>{item}</li>)}</ul> : <p>Sin información suficiente por ahora.</p>}</section>;
+function AnalysisList({ title, items }: { title: string; items?: string[] }) {
+  return <section className="alert-detail-section"><h4>{title}</h4>{items?.length ? <ul>{items.map((item, index) => <li key={`${title}-${index}`}>{item}</li>)}</ul> : <p>Sin información suficiente.</p>}</section>;
 }

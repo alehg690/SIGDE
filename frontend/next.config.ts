@@ -46,9 +46,6 @@ const nextConfig: NextConfig = {
   output: "standalone",
   agentRules: false,
   ...(process.env.NODE_ENV === 'development' ? { allowedDevOrigins: ['127.0.0.1', '192.168.1.17'] } : {}),
-  async redirects() {
-    return [{ source: '/feria', destination: '/exponavia', permanent: true }];
-  },
   async headers() {
     return [
       { source: '/api/:path*', headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0' }] },
